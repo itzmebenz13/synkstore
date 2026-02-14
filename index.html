@@ -755,6 +755,7 @@
         }
 
         function togglePayWithCredits() {
+            if ((state.userProfile?.credits || 0) <= 0) return;
             state.payWithCredits = !state.payWithCredits;
             render(false);
         }
@@ -1305,15 +1306,15 @@
                     </div>
 
                     ${state.user ? `
-                    <div class="mb-4 bg-zinc-900 border border-white/10 p-3 rounded-sm">
-                        <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="mb-4 bg-zinc-900 border border-white/10 p-3 rounded-sm ${(state.userProfile?.credits || 0) <= 0 ? 'opacity-60' : ''}">
+                        <label class="flex items-center gap-3 ${(state.userProfile?.credits || 0) <= 0 ? 'cursor-not-allowed' : 'cursor-pointer'}">
                             <div class="relative">
-                                <input type="checkbox" onchange="window.togglePayWithCredits()" ${state.payWithCredits ? 'checked' : ''} class="sr-only peer" />
-                                <div class="w-8 h-4 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                                <input type="checkbox" onchange="window.togglePayWithCredits()" ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? 'checked' : ''} ${(state.userProfile?.credits || 0) <= 0 ? 'disabled' : ''} class="sr-only peer" />
+                                <div class="w-8 h-4 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600 peer-disabled:opacity-50"></div>
                             </div>
                             <div>
                                 <span class="text-[10px] font-bold text-white uppercase tracking-wide">Use Wallet</span>
-                                <p class="text-[9px] text-zinc-500">Balance: ${formatPHP(state.userProfile?.credits || 0)} • Applied as discount</p>
+                                <p class="text-[9px] text-zinc-500">Balance: ${formatPHP(state.userProfile?.credits || 0)} ${(state.userProfile?.credits || 0) <= 0 ? '• Spin daily to earn' : '• Applied as discount'}</p>
                             </div>
                         </label>
                         ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? `
