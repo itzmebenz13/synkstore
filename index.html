@@ -1,0 +1,1015 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  ShoppingBag, 
+  Search, 
+  Menu, 
+  ArrowLeft, 
+  CheckCircle, 
+  Clock, 
+  CreditCard, 
+  ChevronRight, 
+  Copy, 
+  Package, 
+  X,
+  TrendingUp,
+  ShieldCheck,
+  User,
+  Settings,
+  Lock,
+  MessageSquare,
+  RefreshCw,
+  Bell,
+  Eye,
+  EyeOff,
+  Trash2,
+  Send,
+  Sparkles,
+  Share2,
+  ShieldAlert
+} from 'lucide-react';
+
+// --- Configuration & Mock Data ---
+
+const SITE_NAME = "SYNK STORE";
+const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; // Placeholder
+const GCASH_NUMBER = "0917 123 4567";
+const GCASH_NAME = "SYNK VAULT";
+const apiKey = ""; // Gemini API Key injected by environment
+
+const PRODUCTS = [
+  {
+    id: 1,
+    title: "SHEIN Account | 73% OFF Capped",
+    tag: "BEST SELLER",
+    price: 35,
+    bulkPrice: 30,
+    bulkThreshold: 10,
+    description: "Premium verified accounts with 73% off voucher capped at 469. Instant delivery.",
+    image: "https://api.iconify.design/simple-icons:shein.svg?color=%23000000",
+    color: "bg-gray-100"
+  },
+  {
+    id: 2,
+    title: "SHEIN Account | 70% OFF Capped",
+    tag: "HOT DEAL",
+    price: 20,
+    bulkPrice: 15,
+    bulkThreshold: 10,
+    description: "Standard verified accounts with 70% off voucher capped at 410. Perfect for daily use.",
+    image: "https://api.iconify.design/simple-icons:shein.svg?color=%23333333",
+    color: "bg-gray-50"
+  }
+];
+
+// --- Helper Functions ---
+
+const formatPHP = (amount) => {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+  }).format(amount);
+};
+
+const generateOrderId = () => {
+  return 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+};
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+};
+
+// --- Components ---
+
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, size = 'normal' }) => {
+  const baseStyle = "font-bold tracking-wide transition-all uppercase flex items-center justify-center gap-2 rounded-none";
+  const sizes = {
+    small: "py-2 px-3 text-[10px]",
+    normal: "py-3 px-4 text-xs"
+  };
+  const variants = {
+    primary: "bg-black text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed",
+    outline: "border border-black text-black hover:bg-gray-50 disabled:border-gray-300 disabled:text-gray-300",
+    danger: "bg-red-600 text-white hover:bg-red-700",
+    ghost: "text-gray-500 hover:text-black hover:bg-gray-100",
+    success: "bg-emerald-600 text-white hover:bg-emerald-700",
+    ai: "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white hover:opacity-90 border-0"
+  };
+
+  return (
+    <button 
+      onClick={onClick} 
+      className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Input = ({ label, value, onChange, placeholder, type = "text", className = "" }) => (
+  <div className={`mb-4 ${className}`}>
+    <label className="block text-[10px] font-bold uppercase text-gray-500 mb-1 tracking-wider">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full border-b border-gray-300 py-2 text-sm focus:outline-none focus:border-black transition-colors bg-transparent placeholder-gray-300 font-medium"
+    />
+  </div>
+);
+
+const Badge = ({ children, color = "bg-black", className = "" }) => (
+  <span className={`${color} text-white text-[9px] font-bold px-2 py-1 uppercase tracking-wider rounded-sm ${className}`}>
+    {children}
+  </span>
+);
+
+// --- Main Application ---
+
+export default function App() {
+  // Navigation State
+  const [view, setView] = useState('home'); 
+  
+  // Data State
+  const [orders, setOrders] = useState([]);
+  
+  // User Flow State
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [refNumber, setRefNumber] = useState('');
+  const [lastOrderId, setLastOrderId] = useState(null);
+  const [trackerInput, setTrackerInput] = useState('');
+  const [searchResult, setSearchResult] = useState(null);
+  
+  // AI State
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiContent, setAiContent] = useState(null); // { type: 'security' | 'reseller', text: '' }
+  
+  // Admin State
+  const [adminPass, setAdminPass] = useState('');
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [adminTab, setAdminTab] = useState('orders'); // orders, otp
+  const [fulfillmentText, setFulfillmentText] = useState('');
+  const [activeFulfillmentId, setActiveFulfillmentId] = useState(null);
+
+  // Initialize Data
+  useEffect(() => {
+    const savedOrders = localStorage.getItem('synk_orders');
+    if (savedOrders) setOrders(JSON.parse(savedOrders));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('synk_orders', JSON.stringify(orders));
+  }, [orders]);
+
+  // Navigation Handlers
+  const goHome = () => {
+    setView('home');
+    setQuantity(1);
+    setRefNumber('');
+  };
+
+  const selectProduct = (product) => {
+    setSelectedProduct(product);
+    setView('product');
+  };
+
+  // Pricing Logic
+  const getCurrentPrice = () => {
+    if (!selectedProduct) return 0;
+    return quantity >= selectedProduct.bulkThreshold ? selectedProduct.bulkPrice : selectedProduct.price;
+  };
+
+  const getTotal = () => getCurrentPrice() * quantity;
+
+  // Order Submission
+  const submitOrder = () => {
+    if (!refNumber) {
+      alert("Please enter the payment reference number.");
+      return;
+    }
+
+    const newOrder = {
+      id: generateOrderId(),
+      date: new Date().toISOString(),
+      product: selectedProduct.title,
+      quantity: quantity,
+      total: getTotal(),
+      refNumber: refNumber,
+      status: 'Processing',
+      accounts: [] // Will store { id, creds, used, otpRequest: { status, code } }
+    };
+
+    setOrders([newOrder, ...orders]);
+    setLastOrderId(newOrder.id);
+    setView('success');
+  };
+
+  // Gemini AI Function
+  const callGemini = async (prompt, type) => {
+    setAiLoading(true);
+    setAiContent(null);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (text) {
+        setAiContent({ type, text });
+      } else {
+        setAiContent({ type, text: "System busy. Try again." });
+      }
+    } catch (error) {
+      console.error(error);
+      setAiContent({ type, text: "Connection error." });
+    }
+    setAiLoading(false);
+  };
+
+  const generateSecurityBriefing = (productName) => {
+    const prompt = `You are a secure digital asset vault AI. Provide 3 critical, strict bullet points on how to safely use a '${productName}' without getting flagged or banned. Tone: Professional, secretive, like a mission briefing. Max 50 words. Do not use markdown formatting, just plain text with dashes.`;
+    callGemini(prompt, 'security');
+  };
+
+  const generateResellerCaption = (productName) => {
+    const prompt = `Write a short, high-energy social media caption for a reseller selling '${productName}'. Use emojis. Do not mention specific prices. Create a sense of urgency. Max 30 words.`;
+    callGemini(prompt, 'reseller');
+  };
+
+  // User Actions
+  const handleTrack = () => {
+    const found = orders.find(o => o.id === trackerInput.trim());
+    setSearchResult(found || 'not-found');
+    setAiContent(null); // Reset AI content on new search
+  };
+
+  const cancelOrder = (id) => {
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+    
+    const timeDiff = new Date() - new Date(order.date);
+    if (timeDiff < 60000) { // 1 minute
+      if(confirm('Cancel this order? This action cannot be undone.')) {
+        const updatedOrders = orders.map(o => o.id === id ? { ...o, status: 'Cancelled' } : o);
+        setOrders(updatedOrders);
+        setSearchResult(prev => ({ ...prev, status: 'Cancelled' }));
+      }
+    } else {
+      alert('Cancellation window (1 minute) has expired.');
+    }
+  };
+
+  const toggleAccountUsed = (orderId, accId) => {
+    const updatedOrders = orders.map(o => {
+      if (o.id === orderId) {
+        return {
+          ...o,
+          accounts: o.accounts.map(acc => acc.id === accId ? { ...acc, used: !acc.used } : acc)
+        };
+      }
+      return o;
+    });
+    setOrders(updatedOrders);
+    
+    // Update local view immediately if tracking the current order
+    if (searchResult && searchResult.id === orderId) {
+       setSearchResult(updatedOrders.find(o => o.id === orderId));
+    }
+  };
+
+  const requestOtp = (orderId, accId) => {
+    const updatedOrders = orders.map(o => {
+      if (o.id === orderId) {
+        return {
+          ...o,
+          accounts: o.accounts.map(acc => 
+            acc.id === accId ? { ...acc, otpRequest: { status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc
+          )
+        };
+      }
+      return o;
+    });
+    setOrders(updatedOrders);
+    if (searchResult && searchResult.id === orderId) {
+       setSearchResult(updatedOrders.find(o => o.id === orderId));
+    }
+  };
+
+  // Admin Actions
+  const handleAdminLogin = () => {
+    if (adminPass === 'admin123') setIsAdminAuth(true);
+    else alert('Invalid Access Code');
+  };
+
+  const fulfillOrder = (id) => {
+    if (!fulfillmentText.trim()) return alert("Please enter accounts");
+    
+    // Parse text into account objects
+    const accountLines = fulfillmentText.trim().split('\n').filter(line => line.trim() !== '');
+    const newAccounts = accountLines.map((line, index) => ({
+      id: `acc-${Date.now()}-${index}`,
+      creds: line.trim(),
+      used: false,
+      otpRequest: { status: 'idle', code: null, requestedAt: null }
+    }));
+
+    const updatedOrders = orders.map(o => 
+      o.id === id ? { ...o, status: 'Completed', accounts: newAccounts } : o
+    );
+    
+    setOrders(updatedOrders);
+    setActiveFulfillmentId(null);
+    setFulfillmentText('');
+  };
+
+  const sendOtp = (orderId, accId, code) => {
+    const updatedOrders = orders.map(o => {
+      if (o.id === orderId) {
+        return {
+          ...o,
+          accounts: o.accounts.map(acc => 
+            acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'sent', code: code } } : acc
+          )
+        };
+      }
+      return o;
+    });
+    setOrders(updatedOrders);
+  };
+
+  const getPendingOtpCount = () => {
+    let count = 0;
+    orders.forEach(o => {
+      if (o.accounts) {
+        o.accounts.forEach(a => {
+          if (a.otpRequest.status === 'pending') count++;
+        });
+      }
+    });
+    return count;
+  };
+
+  // --- Views ---
+
+  const HomeView = () => (
+    <div className="pb-16 animate-in fade-in duration-500">
+      <div className="bg-black text-white p-5 mb-6 relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2 text-emerald-400">
+            <Lock size={12} fill="currentColor" />
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase">SECURED TRANSACTION</p>
+          </div>
+          <h1 className="text-2xl font-bold leading-none mb-3 tracking-tighter">BUY AN ACCOUNT<br/>ANONYMOUSLY.</h1>
+          <p className="text-[10px] text-gray-400 max-w-[200px] leading-relaxed">
+            Fresh made accounts and delivered fast to your dashboard.
+          </p>
+        </div>
+        <div className="absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-zinc-800 to-transparent opacity-50 transform skew-x-12"></div>
+      </div>
+
+      <div className="px-4">
+        <div className="flex justify-between items-end mb-4 border-b border-gray-100 pb-2">
+          <h2 className="font-bold text-sm tracking-wide">INVENTORY</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-3">
+          {PRODUCTS.map(product => (
+            <div 
+              key={product.id} 
+              onClick={() => selectProduct(product)}
+              className="group cursor-pointer bg-white border border-gray-100 p-3 flex gap-4 hover:border-black transition-colors"
+            >
+              <div className={`w-20 h-20 ${product.color} flex items-center justify-center shrink-0`}>
+                <img src={product.image} className="w-10 h-10 opacity-80 group-hover:scale-110 transition-transform" alt="logo" />
+              </div>
+              <div className="flex flex-col justify-between py-1 w-full">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xs font-bold uppercase tracking-wide">{product.title}</h3>
+                    <Badge>{product.tag}</Badge>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1 line-clamp-2">{product.description}</p>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold">{formatPHP(product.price)}</span>
+                  <span className="text-[9px] text-gray-400 uppercase">Min. 10 for Bulk</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const ProductView = () => (
+    <div className="pb-24 animate-in slide-in-from-right duration-300">
+      <div className="relative h-48 bg-gray-50 flex items-center justify-center mb-6">
+        <button onClick={goHome} className="absolute top-4 left-4 p-2 hover:bg-white rounded-full transition-colors z-10">
+          <ArrowLeft size={20} />
+        </button>
+        <img src={selectedProduct.image} className="w-24 h-24 opacity-80 grayscale" alt="product" />
+      </div>
+
+      <div className="px-6">
+        <h1 className="text-lg font-bold uppercase mb-2 leading-tight tracking-wide">{selectedProduct.title}</h1>
+        <p className="text-gray-500 text-xs mb-6 leading-relaxed">{selectedProduct.description}</p>
+
+        <div className="bg-gray-50 p-4 mb-6 border border-gray-100">
+          <div className={`flex justify-between items-center mb-2 ${quantity < selectedProduct.bulkThreshold ? 'text-black' : 'text-gray-400'}`}>
+            <span className="text-xs uppercase font-bold">Standard Price</span>
+            <span className="font-mono text-sm">{formatPHP(selectedProduct.price)}</span>
+          </div>
+          <div className={`flex justify-between items-center ${quantity >= selectedProduct.bulkThreshold ? 'text-emerald-600' : 'text-gray-400'}`}>
+            <span className="text-xs uppercase font-bold flex items-center gap-1">
+              Bulk Price (10+)
+              {quantity >= selectedProduct.bulkThreshold && <CheckCircle size={10} />}
+            </span>
+            <span className="font-mono text-sm">{formatPHP(selectedProduct.bulkPrice)}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-8">
+          <span className="text-xs font-bold uppercase tracking-widest">Quantity</span>
+          <div className="flex items-center border border-black">
+            <button 
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            >
+              -
+            </button>
+            <span className="w-12 text-center text-sm font-mono font-bold">{quantity}</span>
+            <button 
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 safe-area-bottom z-20">
+        <div className="max-w-md mx-auto flex items-center gap-4">
+          <div className="flex-1">
+            <span className="text-[10px] uppercase text-gray-400 block mb-1">Total Payment</span>
+            <span className="text-xl font-bold font-mono">{formatPHP(getTotal())}</span>
+          </div>
+          <Button onClick={() => setView('checkout')} className="flex-1">
+            Checkout <ChevronRight size={14} />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const CheckoutView = () => (
+    <div className="min-h-screen bg-white pb-20 animate-in fade-in duration-300">
+      <div className="p-4 border-b border-gray-100 flex items-center gap-4 sticky top-0 bg-white z-10">
+        <button onClick={() => setView('product')}><ArrowLeft size={18} /></button>
+        <h2 className="font-black text-xs uppercase tracking-widest">Confirm Order</h2>
+      </div>
+
+      <div className="p-6">
+        <div className="bg-gray-50 p-4 mb-6 border border-gray-100">
+          <div className="flex justify-between mb-2 text-sm">
+            <span className="font-medium text-xs uppercase text-gray-500">{selectedProduct.title}</span>
+            <span className="font-mono font-bold">x{quantity}</span>
+          </div>
+          <div className="border-t border-gray-200 my-2 pt-2 flex justify-between items-center">
+            <span className="font-bold text-xs uppercase">Total Due</span>
+            <span className="text-xl font-mono font-bold">{formatPHP(getTotal())}</span>
+          </div>
+        </div>
+
+        <div className="mb-8 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Scan via GCash</p>
+          <div className="inline-block border p-4 bg-white shadow-sm">
+            <img src={GCASH_QR_URL} alt="QR" className="w-40 h-40 object-cover mb-2 mix-blend-multiply" />
+            <p className="font-mono font-bold">{GCASH_NUMBER}</p>
+          </div>
+        </div>
+
+        <div>
+          <Input 
+            label="Payment Reference No." 
+            placeholder="e.g. 1004 5678 9012" 
+            value={refNumber}
+            onChange={(e) => setRefNumber(e.target.value)}
+          />
+          <Button onClick={submitOrder} className="w-full mt-6">
+            Submit Order
+          </Button>
+          <p className="text-[10px] text-center text-gray-400 mt-4 px-4">
+            Orders are processed automatically. Do not close the browser until you see the confirmation.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SuccessView = () => (
+    <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-white animate-in zoom-in-95 duration-500">
+      <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center mb-6 shadow-lg shadow-gray-200">
+        <CheckCircle size={24} />
+      </div>
+      <h2 className="text-2xl font-bold tracking-tight mb-2">ORDER PLACED</h2>
+      <p className="text-gray-400 text-xs mb-8 max-w-[200px] leading-relaxed">
+        We have received your payment reference. Verification takes 10-30 minutes.
+      </p>
+      
+      <div className="bg-gray-50 border border-gray-200 p-4 w-full mb-6 relative group">
+        <p className="text-[9px] text-gray-400 uppercase tracking-widest mb-1">Your Order ID</p>
+        <p className="text-lg font-mono font-bold">{lastOrderId}</p>
+        <button 
+          onClick={() => {navigator.clipboard.writeText(lastOrderId); alert('Copied!')}}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black p-2"
+        >
+          <Copy size={14} />
+        </button>
+      </div>
+
+      <div className="space-y-3 w-full">
+        <Button onClick={() => setView('tracker')} variant="outline">
+          Track Order
+        </Button>
+        <Button onClick={goHome} variant="ghost">
+          Back to Store
+        </Button>
+      </div>
+    </div>
+  );
+
+  const TrackerView = () => (
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+      <div className="p-4 bg-white border-b border-gray-100 flex items-center gap-4 sticky top-0 z-10">
+        <button onClick={goHome} className="hover:bg-gray-100 p-1 rounded-full"><ArrowLeft size={18} /></button>
+        <span className="text-xs font-black uppercase tracking-widest">Order Tracking</span>
+      </div>
+
+      <div className="p-4 max-w-md mx-auto">
+        <div className="bg-white border border-gray-200 p-5 shadow-sm mb-4">
+          <Input 
+            label="Order ID" 
+            placeholder="ORD-XXXXXXXX" 
+            value={trackerInput}
+            onChange={(e) => setTrackerInput(e.target.value)}
+          />
+          <Button onClick={handleTrack} className="w-full mt-2">Find Order</Button>
+        </div>
+
+        {searchResult && (
+          <div className="animate-in slide-in-from-bottom-2 duration-300">
+            {searchResult === 'not-found' ? (
+              <div className="text-center p-8 text-gray-400 border border-dashed border-gray-300 bg-white">
+                <Package size={24} className="mx-auto mb-2 opacity-50" />
+                <p className="text-xs">No order found with that ID.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                 {/* Status Card */}
+                <div className="bg-white border border-gray-200 p-5 shadow-sm relative overflow-hidden">
+                  <div className={`absolute top-0 left-0 w-1 h-full ${
+                    searchResult.status === 'Completed' ? 'bg-emerald-500' :
+                    searchResult.status === 'Cancelled' ? 'bg-red-500' :
+                    'bg-yellow-400'
+                  }`}></div>
+                  
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="font-bold text-sm tracking-tight mb-1">{searchResult.id}</h3>
+                      <p className="text-[10px] text-gray-400">{formatDate(searchResult.date)}</p>
+                    </div>
+                    <Badge color={
+                      searchResult.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                      searchResult.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }>{searchResult.status}</Badge>
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-3 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Item</span>
+                      <span className="font-medium truncate max-w-[150px]">{searchResult.product}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Total</span>
+                      <span className="font-bold font-mono">{formatPHP(searchResult.total)}</span>
+                    </div>
+                  </div>
+
+                  {/* AI Feature: Security Briefing (Only if completed) */}
+                  {searchResult.status === 'Completed' && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-indigo-600">
+                          <Sparkles size={10} /> AI Command
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          size="small" 
+                          variant="ai"
+                          onClick={() => generateSecurityBriefing(searchResult.product)}
+                          disabled={aiLoading}
+                        >
+                           {aiLoading && aiContent?.type === 'security' ? 'Decrypting...' : 'Security Protocol ✨'}
+                        </Button>
+                        <Button 
+                          size="small" 
+                          variant="outline"
+                          onClick={() => generateResellerCaption(searchResult.product)}
+                          disabled={aiLoading}
+                        >
+                           {aiLoading && aiContent?.type === 'reseller' ? 'Drafting...' : 'Resell Caption ✨'}
+                        </Button>
+                      </div>
+
+                      {/* AI Output Display */}
+                      {aiContent && (
+                        <div className="mt-3 bg-gray-900 text-emerald-400 p-3 text-xs font-mono rounded-sm relative overflow-hidden animate-in fade-in">
+                          <div className="absolute top-0 right-0 p-1 opacity-50">
+                             {aiContent.type === 'security' ? <ShieldAlert size={12} /> : <Share2 size={12} />}
+                          </div>
+                          <p className="uppercase text-[9px] text-gray-500 mb-2 border-b border-gray-800 pb-1">
+                            {aiContent.type === 'security' ? 'Protocol Decrypted' : 'Social Copy Generated'}
+                          </p>
+                          <div className="whitespace-pre-wrap leading-relaxed">
+                            {aiContent.text}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {searchResult.status === 'Processing' && (new Date() - new Date(searchResult.date) < 60000) && (
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <Button onClick={() => cancelOrder(searchResult.id)} variant="danger" size="small" className="w-full">
+                        Cancel Order (Undo)
+                      </Button>
+                      <p className="text-[9px] text-gray-400 text-center mt-2">Available for 1 minute after purchase</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Digital Fulfillment Box */}
+                {searchResult.status === 'Completed' && searchResult.accounts && searchResult.accounts.length > 0 && (
+                  <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="bg-gray-900 text-white p-3 flex justify-between items-center">
+                      <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        <User size={12} /> Your Accounts
+                      </h3>
+                      <button onClick={handleTrack} className="text-gray-400 hover:text-white"><RefreshCw size={12} /></button>
+                    </div>
+                    
+                    <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
+                      {searchResult.accounts.map((acc, idx) => (
+                        <div key={acc.id} className={`p-4 transition-all ${acc.used ? 'bg-gray-50' : 'bg-white'}`}>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] text-gray-400 font-mono">#{idx + 1}</span>
+                            
+                            <div className="flex gap-2">
+                               {acc.used ? (
+                                 <button 
+                                  onClick={() => toggleAccountUsed(searchResult.id, acc.id)}
+                                  className="text-[9px] text-gray-400 hover:text-black uppercase flex items-center gap-1"
+                                 >
+                                   <Trash2 size={10} /> Undo
+                                 </button>
+                               ) : (
+                                 <button 
+                                  onClick={() => toggleAccountUsed(searchResult.id, acc.id)}
+                                  className="text-[9px] text-gray-400 hover:text-red-600 uppercase font-bold"
+                                 >
+                                   Mark Used
+                                 </button>
+                               )}
+                            </div>
+                          </div>
+                          
+                          <div className={`font-mono text-sm mb-3 select-all break-all ${acc.used ? 'line-through text-gray-400' : 'text-black'}`}>
+                            {acc.creds}
+                          </div>
+
+                          {/* OTP Section */}
+                          <div className={`p-2 rounded border flex items-center justify-between gap-2 transition-colors ${acc.used ? 'border-gray-100 bg-gray-100 opacity-50 pointer-events-none' : 'border-gray-100 bg-gray-50'}`}>
+                            {acc.otpRequest.status === 'sent' ? (
+                              <div className="flex items-center gap-2 w-full justify-between">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase">OTP Code:</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-emerald-600 text-lg tracking-widest">{acc.otpRequest.code}</span>
+                                  <Copy size={12} className="text-gray-400 cursor-pointer" onClick={() => navigator.clipboard.writeText(acc.otpRequest.code)}/>
+                                </div>
+                              </div>
+                            ) : acc.otpRequest.status === 'pending' ? (
+                              <div className="flex items-center gap-2 w-full text-yellow-600 justify-center py-1">
+                                <Clock size={12} className="animate-spin" />
+                                <span className="text-[10px] font-bold uppercase tracking-wide">Waiting for Admin...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span className="text-[10px] text-gray-400 uppercase">Need Login Code?</span>
+                                <button 
+                                  onClick={() => requestOtp(searchResult.id, acc.id)}
+                                  className="bg-white border border-black text-black text-[9px] font-bold px-3 py-1 uppercase hover:bg-black hover:text-white transition-colors"
+                                  disabled={acc.used}
+                                >
+                                  Request OTP
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const AdminView = () => (
+    <div className="min-h-screen bg-gray-100 text-gray-900 font-sans">
+      <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-50">
+        <h2 className="font-black text-sm tracking-widest flex items-center gap-2">
+          SYNK ADMIN <span className="bg-red-500 text-white px-1 text-[9px] rounded-sm">V2.1</span>
+        </h2>
+        <button onClick={goHome} className="text-xs font-bold hover:underline">LOGOUT</button>
+      </div>
+
+      {!isAdminAuth ? (
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="bg-white p-8 shadow-xl max-w-sm w-full border-t-4 border-black">
+            <h3 className="font-bold text-center mb-6 uppercase tracking-widest">Restricted Access</h3>
+            <Input 
+              label="Secure Passkey" 
+              type="password" 
+              value={adminPass}
+              onChange={(e) => setAdminPass(e.target.value)}
+              className="mb-6"
+            />
+            <Button onClick={handleAdminLogin} className="w-full">Authenticate</Button>
+            <p className="text-center mt-4 text-[10px] text-gray-300">pass: admin123</p>
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-5xl mx-auto p-4">
+          
+          {/* Dashboard Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 border border-gray-200">
+              <p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p>
+              <p className="text-xl font-bold font-mono">{formatPHP(orders.reduce((acc, cur) => acc + cur.total, 0))}</p>
+            </div>
+            <div className="bg-white p-4 border border-gray-200">
+              <p className="text-[10px] text-gray-400 uppercase font-bold">Orders</p>
+              <p className="text-xl font-bold">{orders.length}</p>
+            </div>
+            <div className="bg-white p-4 border border-gray-200">
+              <p className="text-[10px] text-gray-400 uppercase font-bold">Pending</p>
+              <p className="text-xl font-bold text-yellow-600">{orders.filter(o => o.status === 'Processing').length}</p>
+            </div>
+            <div 
+              onClick={() => setAdminTab('otp')}
+              className={`bg-white p-4 border cursor-pointer hover:border-black transition-colors ${getPendingOtpCount() > 0 ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'}`}
+            >
+              <p className="text-[10px] text-gray-400 uppercase font-bold flex justify-between">
+                OTP Req <Bell size={10} />
+              </p>
+              <p className="text-xl font-bold text-red-600">{getPendingOtpCount()}</p>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-4 mb-4 border-b border-gray-200 pb-1">
+            <button 
+              onClick={() => setAdminTab('orders')}
+              className={`text-xs font-bold uppercase pb-2 px-2 transition-colors ${adminTab === 'orders' ? 'border-b-2 border-black text-black' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              All Orders
+            </button>
+            <button 
+              onClick={() => setAdminTab('otp')}
+              className={`text-xs font-bold uppercase pb-2 px-2 transition-colors flex items-center gap-2 ${adminTab === 'otp' ? 'border-b-2 border-black text-black' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              OTP Center 
+              {getPendingOtpCount() > 0 && <span className="bg-red-500 text-white px-1.5 rounded-full text-[9px] animate-pulse">{getPendingOtpCount()}</span>}
+            </button>
+          </div>
+
+          {/* ORDERS TAB */}
+          {adminTab === 'orders' && (
+            <div className="bg-white shadow-sm border border-gray-200 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="p-4 text-[10px] font-bold uppercase text-gray-500">Details</th>
+                    <th className="p-4 text-[10px] font-bold uppercase text-gray-500">Status</th>
+                    <th className="p-4 text-[10px] font-bold uppercase text-gray-500 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {orders.map(order => (
+                    <React.Fragment key={order.id}>
+                      <tr className="hover:bg-gray-50 group transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                             <span className="font-bold text-sm">{order.id}</span>
+                             {order.status === 'Processing' && <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono mt-1">Ref: {order.refNumber}</div>
+                          <div className="text-[10px] text-gray-400 mt-1">{order.product} (x{order.quantity})</div>
+                        </td>
+                        <td className="p-4">
+                          <Badge color={
+                            order.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
+                            order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }>{order.status}</Badge>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            {order.status === 'Processing' && (
+                              <Button 
+                                size="small" 
+                                onClick={() => setActiveFulfillmentId(activeFulfillmentId === order.id ? null : order.id)}
+                              >
+                                Fulfill
+                              </Button>
+                            )}
+                            {order.status === 'Processing' && (
+                              <Button 
+                                size="small" 
+                                variant="outline"
+                                onClick={() => {
+                                  const updated = orders.map(o => o.id === order.id ? { ...o, status: 'Cancelled' } : o);
+                                  setOrders(updated);
+                                }}
+                              >
+                                Decline
+                              </Button>
+                            )}
+                            {order.status === 'Completed' && (
+                              <span className="text-[10px] text-emerald-600 font-bold uppercase flex items-center gap-1 justify-end bg-emerald-50 px-2 py-1 rounded">
+                                <CheckCircle size={10} /> Fulfilled
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Fulfillment Drawer */}
+                      {activeFulfillmentId === order.id && (
+                        <tr>
+                          <td colSpan="3" className="bg-gray-50 p-6 border-y border-gray-200 animate-in slide-in-from-top-2">
+                            <h4 className="text-[10px] font-bold uppercase mb-2 text-gray-500">Paste Accounts (One per line)</h4>
+                            <p className="text-[10px] text-gray-400 mb-2">Each line will be created as a separate card for the user.</p>
+                            <textarea
+                              className="w-full border border-gray-300 p-3 text-xs font-mono h-32 mb-4 focus:border-black focus:outline-none rounded-sm"
+                              placeholder={`user1@mail.com:pass1\nuser2@mail.com:pass2\nuser3@mail.com:pass3`}
+                              value={fulfillmentText}
+                              onChange={(e) => setFulfillmentText(e.target.value)}
+                            ></textarea>
+                            <div className="flex justify-end gap-2">
+                              <Button size="small" variant="ghost" onClick={() => setActiveFulfillmentId(null)}>Cancel</Button>
+                              <Button size="small" variant="success" onClick={() => fulfillOrder(order.id)}>Complete Order & Send</Button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* OTP TAB */}
+          {adminTab === 'otp' && (
+            <div className="bg-white shadow-sm border border-gray-200 min-h-[300px]">
+               {orders.some(o => o.accounts?.some(a => a.otpRequest.status === 'pending')) ? (
+                 <div className="divide-y divide-gray-100">
+                    {orders.map(order => 
+                      order.accounts?.map((acc, idx) => {
+                        if (acc.otpRequest.status === 'pending') {
+                          return (
+                            <div key={`${order.id}-${acc.id}`} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in slide-in-from-right-4 bg-yellow-50/50">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-bold text-sm">{order.id}</span>
+                                  <span className="text-[10px] bg-white border border-gray-200 px-1 rounded text-gray-500 uppercase font-bold">Account #{idx + 1}</span>
+                                </div>
+                                <div className="font-mono text-sm px-2 py-1 inline-block border border-gray-200 bg-white text-gray-700 rounded-sm mb-1">
+                                  {acc.creds}
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                  <Clock size={10} />
+                                  Requested: {new Date(acc.otpRequest.requestedAt).toLocaleTimeString()}
+                                </div>
+                              </div>
+                              <div className="flex gap-2 items-center bg-white p-2 rounded shadow-sm border border-gray-100">
+                                <input 
+                                  type="text" 
+                                  id={`otp-${acc.id}`}
+                                  placeholder="Type Code (e.g. 123456)" 
+                                  className="border border-gray-200 p-2 text-sm w-48 focus:border-black focus:outline-none font-mono"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                          sendOtp(order.id, acc.id, e.target.value);
+                                      }
+                                  }}
+                                />
+                                <Button 
+                                  size="small" 
+                                  className="h-full"
+                                  onClick={() => {
+                                    const input = document.getElementById(`otp-${acc.id}`);
+                                    if(input.value) sendOtp(order.id, acc.id, input.value);
+                                  }}
+                                >
+                                  <Send size={12} /> Send
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })
+                    )}
+                 </div>
+               ) : (
+                 <div className="h-64 flex flex-col items-center justify-center text-center text-gray-400">
+                   <div className="bg-gray-50 p-4 rounded-full mb-4">
+                     <CheckCircle size={32} className="text-gray-300" />
+                   </div>
+                   <p className="text-sm font-bold uppercase text-gray-800">All Caught Up</p>
+                   <p className="text-xs">No pending OTP requests at the moment.</p>
+                 </div>
+               )}
+            </div>
+          )}
+
+        </div>
+      )}
+    </div>
+  );
+
+  const Header = () => (
+    <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <div className="flex justify-between items-center h-14 px-4">
+        <div className="flex items-center gap-4">
+          <button className="text-gray-800"><Menu size={20} /></button>
+          <button onClick={goHome} className="font-sans font-black text-lg tracking-tight italic">
+            {SITE_NAME}
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <button onClick={() => setView('tracker')} className="relative">
+            <User size={20} className="text-gray-800" />
+          </button>
+          <button onClick={() => setView('admin')}><Settings size={20} className="text-gray-800" /></button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (view === 'admin') return <AdminView />;
+
+  return (
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl overflow-hidden font-sans text-gray-900 relative border-x border-gray-100">
+      <Header />
+      
+      {view === 'home' && <HomeView />}
+      {view === 'product' && <ProductView />}
+      {view === 'checkout' && <CheckoutView />}
+      {view === 'success' && <SuccessView />}
+      {view === 'tracker' && <TrackerView />}
+
+      {view === 'home' && (
+         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/90 text-white text-[10px] px-4 py-2 rounded-none backdrop-blur-sm flex items-center gap-2 shadow-lg z-40 whitespace-nowrap border border-gray-800">
+           <TrendingUp size={12} className="text-emerald-500" />
+           <span className="tracking-wide">LIVE: User88 just bought 50x Accounts</span>
+         </div>
+      )}
+    </div>
+  );
+}
