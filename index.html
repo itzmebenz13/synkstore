@@ -196,7 +196,7 @@
             searchResult: null,
             adminAuth: false,
             adminTab: 'orders',
-            activeFulfillmentId: null,
+            activeFulfillmentId: null, // Used for expanding row in admin
             fulfillmentText: '',
             aiLoading: false,
             aiContent: null,
@@ -542,9 +542,6 @@
         async function handleAdminLogin() {
             const pass = document.getElementById('adminPassInput').value;
             
-            // Check DB instead of hardcoded string
-            // We use .single() because we expect only one match
-            // Note: In a real app, never query passwords directly. Use Supabase Auth (GoTrue).
             const { data, error } = await supabaseClient
                 .from('admins')
                 .select('*')
@@ -561,6 +558,14 @@
             }
         }
 
+        function handleLogout() {
+            state.adminAuth = false;
+            state.adminTab = 'orders';
+            state.activeFulfillmentId = null;
+            goHome();
+            showToast("Logged out successfully", "success");
+        }
+
         async function fulfillOrder(id) {
             const text = document.getElementById('fulfillmentTextArea').value;
             if (!text.trim()) return showToast("Please enter accounts", "error");
@@ -570,7 +575,8 @@
                 id: `acc-${Date.now()}-${index}`,
                 creds: line.trim(),
                 used: false,
-                otpRequest: { status: 'idle', code: null, requestedAt: null }
+                otpRequest: { status: 'idle', code: null, requestedAt: null },
+                messages: [] // Init empty messages array
             }));
 
             const { error } = await supabaseClient
@@ -587,6 +593,69 @@
             } else {
                 showToast("Database Error", "error");
             }
+        }
+
+        async function adminAction(id, action) {
+            let updatePayload = {};
+            if (action === 'cancel') {
+                if(!confirm('Are you sure you want to CANCEL this order?')) return;
+                updatePayload = { status: 'Cancelled' };
+            } else if (action === 'refund') {
+                if(!confirm('Mark this order as REFUNDED?')) return;
+                updatePayload = { status: 'Refunded' };
+            } else {
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update(updatePayload)
+                .eq('id', id);
+
+            if(error) showToast("Action failed", "error");
+            else showToast(`Order ${action}ed`, "success");
+        }
+
+        async function updateAdminPassword() {
+            const newPass = document.getElementById('newAdminPass').value;
+            if (!newPass || newPass.length < 4) return showToast("Password too short", "error");
+
+            const { error } = await supabaseClient
+                .from('admins')
+                .update({ password: newPass })
+                .eq('username', 'admin');
+
+            if(error) showToast("Update failed", "error");
+            else {
+                showToast("Password updated. Please login again.", "success");
+                handleLogout();
+            }
+        }
+
+        async function sendAccountMessage(orderId, accId, text, sender) {
+            if(!text || !text.trim()) return;
+
+            const order = state.orders.find(o => o.id === orderId);
+            if(!order) return;
+
+            const updatedAccounts = order.accounts.map(acc => {
+                if(acc.id === accId) {
+                    const msgs = acc.messages || [];
+                    return { 
+                        ...acc, 
+                        messages: [...msgs, { text: text.trim(), sender: sender, time: new Date().toISOString() }] 
+                    };
+                }
+                return acc;
+            });
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ accounts_data: updatedAccounts })
+                .eq('id', orderId);
+
+            if(error) showToast("Message failed to send", "error");
+            else showToast("Message sent", "success");
         }
 
         async function sendOtp(orderId, accId, code) {
@@ -988,12 +1057,14 @@
                                 </div>
                                 <div class="font-mono text-xs mb-3 select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${acc.creds}</div>
                                 
-                                <div class="bg-black/50 p-1.5 rounded flex items-center justify-between gap-2 border border-white/5">
+                                <div class="bg-black/50 p-1.5 rounded flex flex-col gap-2 border border-white/5">
                                     ${acc.otpRequest.status === 'sent' ? `
-                                    <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-mono font-bold text-white text-sm tracking-widest">${acc.otpRequest.code}</span>
-                                        <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-mono font-bold text-white text-sm tracking-widest">${acc.otpRequest.code}</span>
+                                            <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
+                                        </div>
                                     </div>` : acc.otpRequest.status === 'pending' ? `
                                     <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-0.5">
                                         <i data-lucide="loader" class="w-3 h-3 animate-spin"></i>
@@ -1003,6 +1074,23 @@
                                         <span class="text-[8px] text-zinc-500 uppercase">Login Verification (OTP)</span>
                                         <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
                                     </div>`}
+
+                                    <!-- Message Admin Section -->
+                                    <div class="border-t border-white/5 pt-2 mt-1">
+                                        ${acc.messages && acc.messages.length > 0 ? `
+                                        <div class="mb-2 space-y-1">
+                                            ${acc.messages.map(msg => `
+                                                <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono">
+                                                    <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                        ` : ''}
+                                        <div class="flex gap-2">
+                                            <input type="text" id="msg-${acc.id}" placeholder="Msg Admin..." class="bg-zinc-900 border border-zinc-800 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-600 rounded-sm text-zinc-300" />
+                                            <button onclick="window.sendAccountMessage('${res.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded-sm"><i data-lucide="send" class="w-3 h-3"></i></button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             `).join('')}
@@ -1145,7 +1233,6 @@
                             <input type="password" id="adminPassInput" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
                         </div>
                         <button onclick="window.handleAdminLogin()" class="w-full bg-white text-black font-bold py-2.5 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Authenticate</button>
-                        <p class="text-center mt-4 text-[9px] text-zinc-700 font-mono">KEY: admin123</p>
                     </div>
                 </div>`;
             }
@@ -1166,7 +1253,7 @@
                                 <td class="p-3">
                                     <div class="flex items-center gap-2">
                                         <span class="font-bold text-[10px] text-white font-mono">${order.id}</span>
-                                        ${order.status === 'Processing' ? '<span class="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>' : ''}
+                                        <!-- Removed blinking dot here as requested -->
                                     </div>
                                     <div class="text-[9px] text-zinc-500 font-mono mt-0.5 opacity-60">Ref: ${order.refNumber}</div>
                                     <div class="text-[9px] text-zinc-400 mt-0.5 uppercase tracking-wide">${order.product} <span class="text-zinc-600">x${order.quantity}</span></div>
@@ -1176,26 +1263,59 @@
                                 </td>
                                 <td class="p-3 text-right">
                                     ${order.status === 'Processing' || order.status === 'Refund Pending' ? `
-                                        <button onclick="state.activeFulfillmentId = '${order.id}'; render()" class="bg-white text-black hover:bg-zinc-200 px-2 py-1 text-[9px] uppercase font-bold tracking-wide">Fulfill</button>
-                                    ` : order.status === 'Completed' ? '<span class="text-[9px] text-zinc-500 font-bold uppercase"><i data-lucide="check" class="w-3 h-3 inline"></i> Done</span>' : ''}
+                                        <div class="flex gap-1 justify-end">
+                                            <button onclick="state.activeFulfillmentId = '${order.id}'; render()" class="bg-white text-black hover:bg-zinc-200 px-2 py-1 text-[9px] uppercase font-bold tracking-wide">Fulfill</button>
+                                            <button onclick="window.adminAction('${order.id}', 'cancel')" class="border border-white/10 text-zinc-400 hover:text-white px-2 py-1 text-[9px] uppercase font-bold"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                            <button onclick="window.adminAction('${order.id}', 'refund')" class="border border-white/10 text-zinc-400 hover:text-white px-2 py-1 text-[9px] uppercase font-bold"><i data-lucide="refresh-ccw" class="w-3 h-3"></i></button>
+                                        </div>
+                                    ` : order.status === 'Completed' ? `
+                                        <button onclick="state.activeFulfillmentId = state.activeFulfillmentId === '${order.id}' ? null : '${order.id}'; render()" class="text-[9px] text-zinc-500 hover:text-white font-bold uppercase underline">View</button>
+                                    ` : ''}
                                 </td>
                             </tr>
                             ${state.activeFulfillmentId === order.id ? `
                             <tr>
                                 <td colspan="3" class="bg-zinc-800/50 p-4 border-y border-white/5 animate-enter">
-                                    <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Add Accts (Line Separated)</h4>
-                                    <textarea id="fulfillmentTextArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono h-24 mb-3 focus:border-emerald-500/50 focus:outline-none text-white" placeholder="user:pass..."></textarea>
-                                    <div class="flex justify-end gap-2">
-                                        <button onclick="state.activeFulfillmentId = null; render()" class="text-zinc-500 hover:text-white text-[10px] font-bold uppercase transition-colors">Cancel</button>
-                                        <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
-                                    </div>
+                                    ${order.status === 'Completed' ? `
+                                        <div class="mb-4">
+                                            <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Account Details</h4>
+                                            ${order.accounts.map(acc => `
+                                                <div class="bg-black/50 p-2 mb-2 border border-white/5 rounded-sm">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <span class="text-emerald-500 font-mono text-[10px]">${acc.creds}</span>
+                                                        <span class="text-[8px] text-zinc-500">${acc.otpRequest.status === 'sent' ? 'OTP Sent' : 'No OTP'}</span>
+                                                    </div>
+                                                    ${acc.messages && acc.messages.length > 0 ? `
+                                                    <div class="border-t border-white/5 mt-2 pt-2">
+                                                        ${acc.messages.map(msg => `
+                                                            <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono mb-0.5">
+                                                                <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                    ` : ''}
+                                                    <div class="flex gap-2 mt-2">
+                                                        <input type="text" id="admin-msg-${acc.id}" placeholder="Reply to user..." class="bg-zinc-900 border border-zinc-700 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-500 text-white" />
+                                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('admin-msg-${acc.id}').value, 'admin')" class="bg-zinc-700 hover:bg-zinc-600 text-white px-2 rounded-sm text-[9px] uppercase font-bold">Send</button>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : `
+                                        <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Add Accts (Line Separated)</h4>
+                                        <textarea id="fulfillmentTextArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono h-24 mb-3 focus:border-emerald-500/50 focus:outline-none text-white" placeholder="user:pass..."></textarea>
+                                        <div class="flex justify-end gap-2">
+                                            <button onclick="state.activeFulfillmentId = null; render()" class="text-zinc-500 hover:text-white text-[10px] font-bold uppercase transition-colors">Cancel</button>
+                                            <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
+                                        </div>
+                                    `}
                                 </td>
                             </tr>` : ''}
                             `).join('')}
                         </tbody>
                     </table>
                 </div>`;
-            } else {
+            } else if (state.adminTab === 'otp') {
                 const pendingReqs = [];
                 state.orders.forEach(o => {
                     if (o.accounts) o.accounts.forEach((a, idx) => {
@@ -1226,13 +1346,23 @@
                 } else {
                     tabContent = `<div class="p-8 text-center text-zinc-600 bg-zinc-900 border border-white/5"><p class="text-[10px] font-bold uppercase tracking-widest">No pending OTP requests</p></div>`;
                 }
+            } else if (state.adminTab === 'settings') {
+                tabContent = `
+                <div class="bg-zinc-900 border border-white/5 p-6 max-w-sm">
+                    <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Security Settings</h3>
+                    <div class="mb-4">
+                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">New Password</label>
+                        <input type="password" id="newAdminPass" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
+                    </div>
+                    <button onclick="window.updateAdminPassword()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Update Password</button>
+                </div>`;
             }
 
             return `
             <div class="min-h-screen bg-black text-white font-sans">
                 <div class="fixed top-0 left-0 w-full z-50 bg-black border-b border-white/10 p-4 flex justify-between items-center">
-                    <h2 class="font-black text-xs tracking-[0.2em] flex items-center gap-2 text-zinc-300">ADMIN PANEL <span class="bg-red-900/50 text-red-200 border border-red-500/30 px-1 text-[8px] rounded-sm">V3.0</span></h2>
-                    <button onclick="window.goHome()" class="text-[9px] font-bold hover:text-emerald-400 uppercase tracking-wider transition-colors">Logout</button>
+                    <h2 class="font-black text-xs tracking-[0.2em] flex items-center gap-2 text-zinc-300">ADMIN PANEL <span class="bg-red-900/50 text-red-200 border border-red-500/30 px-1 text-[8px] rounded-sm">V3.1</span></h2>
+                    <button onclick="window.handleLogout()" class="text-[9px] font-bold hover:text-emerald-400 uppercase tracking-wider transition-colors">Logout</button>
                 </div>
                 <div class="pt-20 max-w-7xl mx-auto p-4">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -1248,6 +1378,7 @@
                     <div class="flex gap-4 mb-5 border-b border-white/5 pb-1 px-1">
                         <button onclick="state.adminTab = 'orders'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'orders' ? 'border-b-2 border-white text-white' : 'text-zinc-600 hover:text-zinc-400'}">Orders</button>
                         <button onclick="state.adminTab = 'otp'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest flex items-center gap-2 ${state.adminTab === 'otp' ? 'border-b-2 border-white text-white' : 'text-zinc-600 hover:text-zinc-400'}">OTP Codes ${pendingOtp > 0 ? `<span class="bg-red-500 text-white px-1.5 rounded-full text-[8px] animate-pulse">${pendingOtp}</span>` : ''}</button>
+                        <button onclick="state.adminTab = 'settings'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'settings' ? 'border-b-2 border-white text-white' : 'text-zinc-600 hover:text-zinc-400'}">Settings</button>
                     </div>
                     ${tabContent}
                 </div>
@@ -1288,7 +1419,11 @@
         window.toggleAccountUsed = toggleAccountUsed;
         window.requestOtp = requestOtp;
         window.handleAdminLogin = handleAdminLogin;
+        window.handleLogout = handleLogout;
         window.fulfillOrder = fulfillOrder;
+        window.adminAction = adminAction;
+        window.updateAdminPassword = updateAdminPassword;
+        window.sendAccountMessage = sendAccountMessage;
         window.sendOtp = sendOtp;
         window.callGemini = callGemini;
         window.showToast = showToast;
