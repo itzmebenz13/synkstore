@@ -129,6 +129,53 @@
         </div>
     </div>
 
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-sm font-bold uppercase tracking-widest text-white">Add New Product</h3>
+                <button onclick="window.closeAddProductModal()" class="text-zinc-500 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Title</label>
+                    <input type="text" id="new-prod-title" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="e.g. SHEIN ACCT (100c)" />
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Tag</label>
+                    <input type="text" id="new-prod-tag" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="e.g. HOT SALE" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Price (₱)</label>
+                        <input type="number" id="new-prod-price" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Initial Stock</label>
+                        <input type="number" id="new-prod-stock" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Bulk Price (₱)</label>
+                        <input type="number" id="new-prod-bulk-price" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Bulk Threshold</label>
+                        <input type="number" id="new-prod-bulk-thresh" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" value="10" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Description</label>
+                    <textarea id="new-prod-desc" rows="3" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="Product details..."></textarea>
+                </div>
+                <button onclick="window.submitNewProduct()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors mt-2">
+                    Create Product
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="app" class="w-full min-h-screen bg-black overflow-x-hidden relative text-zinc-100 flex flex-col text-sm">
         <!-- Content injected by JS -->
         <div class="flex items-center justify-center h-screen">
@@ -303,6 +350,53 @@
             closeModal();
         }
 
+        function openAddProductModal() {
+            const modal = document.getElementById('add-product-modal');
+            const modalContent = modal.querySelector('div');
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            });
+        }
+
+        function closeAddProductModal() {
+            const modal = document.getElementById('add-product-modal');
+            const modalContent = modal.querySelector('div');
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        async function submitNewProduct() {
+            const title = document.getElementById('new-prod-title').value;
+            const tag = document.getElementById('new-prod-tag').value;
+            const price = document.getElementById('new-prod-price').value;
+            const stock = document.getElementById('new-prod-stock').value;
+            const bulkPrice = document.getElementById('new-prod-bulk-price').value;
+            const bulkThresh = document.getElementById('new-prod-bulk-thresh').value;
+            const desc = document.getElementById('new-prod-desc').value;
+
+            if(!title || !price || !stock) return showToast("Title, Price and Stock are required", "error");
+
+            const { error } = await supabaseClient.from('products').insert([{
+                title, tag, price, stock, 
+                bulk_price: bulkPrice || price,
+                bulk_threshold: bulkThresh || 10,
+                description: desc,
+                color: 'bg-zinc-900'
+            }]);
+
+            if(error) showToast("Failed to create product", "error");
+            else {
+                showToast("Product Created", "success");
+                closeAddProductModal();
+                fetchProducts();
+            }
+        }
+
         // --- Supabase Logic ---
 
         async function fetchProducts() {
@@ -314,7 +408,12 @@
 
             if (data) {
                 state.products = data;
-                render(false);
+                // If rendering admin page, refresh it to show new products
+                if(state.view === 'admin' && state.adminTab === 'products') {
+                    render(false);
+                } else if(state.view === 'home') {
+                    render(false);
+                }
             } else if (error) {
                 console.error("Fetch products error:", error);
             }
@@ -330,7 +429,7 @@
 
             if (data) {
                 state.orders = data.map(mapOrderData);
-                render(false);
+                if(state.view === 'admin') render(false);
             }
         }
 
@@ -824,13 +923,22 @@
             }
         }
 
+        async function saveProductChanges(id) {
+            const title = document.getElementById(`prod-title-${id}`).value;
+            const price = document.getElementById(`prod-price-${id}`).value;
+            const stock = document.getElementById(`prod-stock-${id}`).value;
+
+            const { error } = await supabaseClient.from('products').update({
+                title, price, stock
+            }).eq('id', id);
+
+            if(error) showToast("Failed to save changes", "error");
+            else showToast("Changes saved", "success");
+        }
+
         async function updateProduct(id, field, value) {
-            const update = {};
-            update[field] = value;
-            
-            const { error } = await supabaseClient.from('products').update(update).eq('id', id);
-            if(error) showToast("Failed to update product", "error");
-            else showToast("Product updated", "success");
+            // Deprecated direct update, used saveProductChanges instead.
+            // Keeping empty to avoid errors if referenced elsewhere
         }
 
         async function sendOtp(orderId, accId, code) {
@@ -1566,25 +1674,34 @@
             } else if (state.adminTab === 'products') {
                 tabContent = `
                 <div class="bg-zinc-900 border border-white/5">
+                    <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 tracking-widest">Inventory Management</h3>
+                        <button onclick="window.openAddProductModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Product</button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                         ${state.products.map(p => `
-                        <div class="bg-black/50 border border-white/5 p-4 relative group">
-                            <h3 class="text-xs font-bold text-white mb-2 line-clamp-1" title="${p.title}">${p.title}</h3>
-                            <div class="space-y-2">
+                        <div class="bg-black/50 border border-white/5 p-4 relative group rounded-sm">
+                            <div class="mb-3">
+                                <label class="text-[8px] text-zinc-500 uppercase font-bold block mb-1">Product Title</label>
+                                <input type="text" id="prod-title-${p.id}" value="${p.title}" class="bg-zinc-900 border border-zinc-700 w-full text-xs p-2 text-white focus:outline-none focus:border-emerald-500 rounded-sm" />
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
-                                    <label class="text-[8px] text-zinc-500 uppercase font-bold">Price</label>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-zinc-500 text-xs">₱</span>
-                                        <input type="number" value="${p.price}" onchange="window.updateProduct('${p.id}', 'price', this.value)" class="bg-zinc-900 border border-zinc-700 w-full text-xs p-1 text-white focus:outline-none focus:border-emerald-500" />
+                                    <label class="text-[8px] text-zinc-500 uppercase font-bold block mb-1">Price</label>
+                                    <div class="relative">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">₱</span>
+                                        <input type="number" id="prod-price-${p.id}" value="${p.price}" class="bg-zinc-900 border border-zinc-700 w-full text-xs py-2 pl-6 pr-2 text-white focus:outline-none focus:border-emerald-500 rounded-sm" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="text-[8px] text-zinc-500 uppercase font-bold">Stock</label>
-                                    <input type="number" value="${p.stock}" onchange="window.updateProduct('${p.id}', 'stock', this.value)" class="bg-zinc-900 border border-zinc-700 w-full text-xs p-1 text-white focus:outline-none focus:border-emerald-500" />
+                                    <label class="text-[8px] text-zinc-500 uppercase font-bold block mb-1">Stock</label>
+                                    <input type="number" id="prod-stock-${p.id}" value="${p.stock}" class="bg-zinc-900 border border-zinc-700 w-full text-xs p-2 text-white focus:outline-none focus:border-emerald-500 rounded-sm" />
                                 </div>
                             </div>
-                            <div class="absolute top-2 right-2 opacity-50">
-                                <span class="text-[8px] bg-white/10 px-1 rounded text-zinc-300">${p.id}</span>
+
+                            <div class="flex justify-end pt-2 border-t border-white/5">
+                                <button onclick="window.saveProductChanges('${p.id}')" class="bg-white text-black hover:bg-zinc-200 px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide rounded-sm">Save Changes</button>
                             </div>
                         </div>
                         `).join('')}
@@ -1719,6 +1836,12 @@
         window.showModal = showModal;
         window.closeModal = closeModal;
         window.confirmModalAction = confirmModalAction;
+        
+        // New Expose Functions
+        window.openAddProductModal = openAddProductModal;
+        window.closeAddProductModal = closeAddProductModal;
+        window.submitNewProduct = submitNewProduct;
+        window.saveProductChanges = saveProductChanges;
         
         // Auth Expose
         window.handleLogin = handleLogin;
