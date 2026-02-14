@@ -209,6 +209,51 @@
             }, 3000);
         }
 
+        // Fix: Robust Clipboard Copy with Fallback
+        function copyToClipboard(text) {
+            // Try modern API first if available and context is secure
+            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Copied to clipboard', 'success');
+                }).catch(err => {
+                    // Fallback if permission denied or other error
+                    console.warn("Clipboard API failed, using fallback", err);
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                // Fallback for non-secure contexts (http) or older browsers
+                fallbackCopyTextToClipboard(text);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Ensure element is not visible but part of DOM
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('Copied to clipboard', 'success');
+                } else {
+                    showToast('Copy failed', 'error');
+                }
+            } catch (err) {
+                console.error("Fallback copy failed", err);
+                showToast('Copy failed', 'error');
+            }
+
+            document.body.removeChild(textArea);
+        }
+
         // --- Core Logic ---
 
         function init() {
@@ -793,7 +838,7 @@
                 <div class="bg-zinc-900 border border-dashed border-zinc-700 p-3 w-full mb-6 relative group max-w-xs">
                     <p class="text-[8px] text-zinc-500 uppercase tracking-widest mb-1 font-mono">Order Reference ID</p>
                     <p class="text-lg font-mono font-bold text-white tracking-widest">${state.lastOrderId}</p>
-                    <button onclick="navigator.clipboard.writeText('${state.lastOrderId}'); showToast('Copied to clipboard', 'success')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white p-1.5 transition-colors">
+                    <button onclick="window.copyToClipboard('${state.lastOrderId}')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white p-1.5 transition-colors">
                         <i data-lucide="copy" class="w-3 h-3"></i>
                     </button>
                 </div>
@@ -865,7 +910,7 @@
                                     <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
                                     <div class="flex items-center gap-2">
                                         <span class="font-mono font-bold text-white text-sm tracking-widest">${acc.otpRequest.code}</span>
-                                        <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="navigator.clipboard.writeText('${acc.otpRequest.code}'); showToast('Code copied', 'success')"></i>
+                                        <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
                                     </div>` : acc.otpRequest.status === 'pending' ? `
                                     <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-0.5">
                                         <i data-lucide="loader" class="w-3 h-3 animate-spin"></i>
@@ -1172,6 +1217,7 @@
         window.showToast = showToast;
         window.applyDiscount = applyDiscount;
         window.submitRefundRequest = submitRefundRequest;
+        window.copyToClipboard = copyToClipboard;
 
         // --- Initialization ---
         init();
