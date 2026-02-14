@@ -562,7 +562,8 @@
             state.adminAuth = false;
             state.adminTab = 'orders';
             state.activeFulfillmentId = null;
-            goHome();
+            // Go to admin login screen
+            setView('admin'); 
             showToast("Logged out successfully", "success");
         }
 
@@ -620,13 +621,20 @@
             const newPass = document.getElementById('newAdminPass').value;
             if (!newPass || newPass.length < 4) return showToast("Password too short", "error");
 
-            const { error } = await supabaseClient
+            // We use .select() to force a response from the DB to verify the update actually happened
+            const { data, error } = await supabaseClient
                 .from('admins')
                 .update({ password: newPass })
-                .eq('username', 'admin');
+                .eq('username', 'admin')
+                .select();
 
-            if(error) showToast("Update failed", "error");
-            else {
+            if (error) {
+                console.error(error);
+                showToast("Update failed. Check database permissions.", "error");
+            } else if (data.length === 0) {
+                // If data is empty, it means the update didn't match any rows or was blocked by RLS
+                showToast("Update failed. Row locked.", "error");
+            } else {
                 showToast("Password updated. Please login again.", "success");
                 handleLogout();
             }
