@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SYNK STORE | Digital Asset Vault</title>
     
+    <!-- Supabase Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -109,9 +112,14 @@
 
     <div id="toast-container"></div>
 
-    <!-- Removed max-w restrictions and borders -->
     <div id="app" class="w-full min-h-screen bg-black overflow-x-hidden relative text-zinc-100 flex flex-col text-sm">
         <!-- Content injected by JS -->
+        <div class="flex items-center justify-center h-screen">
+            <div class="flex flex-col items-center gap-2">
+                <i data-lucide="loader" class="animate-spin w-6 h-6 text-emerald-500"></i>
+                <span class="text-xs font-mono text-zinc-500 uppercase">Connecting to Database...</span>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -120,6 +128,19 @@
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
+
+        // --- SUPABASE CONFIGURATION ---
+        // Configured with your specific credentials
+        const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
+        
+        // Initialize Client
+        let supabaseClient;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch(e) {
+            console.error("Supabase failed to init:", e);
+        }
 
         const PRODUCTS = [
             {
@@ -167,7 +188,7 @@
         // --- State Management ---
         const state = {
             view: 'home',
-            orders: [],
+            orders: [], // This will now be synced with Supabase
             selectedProduct: null,
             quantity: 1,
             refNumber: '',
@@ -181,7 +202,7 @@
             aiLoading: false,
             aiContent: null,
             discount: 0,
-            isSubmitting: false // Added loading state
+            isSubmitting: false
         };
 
         // --- Helpers ---
@@ -211,17 +232,14 @@
 
         // Fix: Robust Clipboard Copy with Fallback
         function copyToClipboard(text) {
-            // Try modern API first if available and context is secure
             if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
                 navigator.clipboard.writeText(text).then(() => {
                     showToast('Copied to clipboard', 'success');
                 }).catch(err => {
-                    // Fallback if permission denied or other error
                     console.warn("Clipboard API failed, using fallback", err);
                     fallbackCopyTextToClipboard(text);
                 });
             } else {
-                // Fallback for non-secure contexts (http) or older browsers
                 fallbackCopyTextToClipboard(text);
             }
         }
@@ -229,47 +247,86 @@
         function fallbackCopyTextToClipboard(text) {
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            
-            // Ensure element is not visible but part of DOM
             textArea.style.position = "fixed";
             textArea.style.left = "-9999px";
             textArea.style.top = "0";
-            
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-
             try {
                 const successful = document.execCommand('copy');
-                if (successful) {
-                    showToast('Copied to clipboard', 'success');
-                } else {
-                    showToast('Copy failed', 'error');
-                }
+                if (successful) showToast('Copied to clipboard', 'success');
+                else showToast('Copy failed', 'error');
             } catch (err) {
-                console.error("Fallback copy failed", err);
                 showToast('Copy failed', 'error');
             }
-
             document.body.removeChild(textArea);
+        }
+
+        // --- Supabase Integration Logic ---
+
+        // Fetch initial data
+        async function fetchOrders() {
+            if(!supabaseClient) return;
+            const { data, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching orders:', error);
+                // showToast('Failed to sync database', 'error');
+            } else if (data) {
+                // Map DB columns to our App's expected object structure
+                state.orders = data.map(o => ({
+                    id: o.id,
+                    date: o.created_at,
+                    product: o.product_title,
+                    quantity: o.quantity,
+                    total: o.total,
+                    refNumber: o.ref_number,
+                    status: o.status,
+                    accounts: o.accounts_data || [],
+                    refundRequest: o.refund_request || null
+                }));
+            }
+        }
+
+        // Setup Realtime Listeners
+        function setupRealtime() {
+            if(!supabaseClient) return;
+            supabaseClient.channel('public:orders')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+                console.log('Realtime update:', payload);
+                // Simple strategy: Just refetch all orders to ensure consistent state
+                // In a huge app, you'd merge the payload manually, but for this size, fetch is safer/easier
+                fetchOrders().then(() => {
+                    // Refresh view if we are tracking or in admin
+                    if(state.view === 'admin' || state.view === 'tracker') {
+                        // If tracking specific order, update the search result reference
+                        if(state.searchResult) {
+                            state.searchResult = state.orders.find(o => o.id === state.searchResult.id);
+                        }
+                        render(false); // Re-render without animation reset
+                        showToast('Data updated', 'info');
+                    }
+                });
+            })
+            .subscribe();
         }
 
         // --- Core Logic ---
 
-        function init() {
-            // Fix: Prevent browser from restoring scroll position on refresh
-            if ('scrollRestoration' in history) {
-                history.scrollRestoration = 'manual';
-            }
+        async function init() {
+            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
             window.scrollTo(0, 0);
 
-            const savedOrders = localStorage.getItem('synk_orders');
-            if (savedOrders) state.orders = JSON.parse(savedOrders);
+            // Wait for DB fetch before first render
+            await fetchOrders();
+            setupRealtime();
+            
             render();
-        }
-
-        function saveOrders() {
-            localStorage.setItem('synk_orders', JSON.stringify(state.orders));
+            lucide.createIcons();
         }
 
         function goHome() {
@@ -317,10 +374,7 @@
             const code = input.value.trim().toUpperCase();
             
             if (code === 'TEST1111') {
-                if (state.discount > 0) {
-                    showToast("Discount already applied", "info");
-                    return;
-                }
+                if (state.discount > 0) return showToast("Discount already applied", "info");
                 state.discount = 0.05; 
                 showToast("Voucher Applied: 5% OFF", "success");
                 render(false); 
@@ -331,41 +385,50 @@
             }
         }
 
-        function submitOrder() {
+        async function submitOrder() {
             const refInput = document.getElementById('refNumberInput');
             if (!refInput || !refInput.value.trim()) {
                 showToast("Please enter the payment reference number.", "error");
                 return;
             }
             
-            // Set loading state
             state.isSubmitting = true;
-            render(false); // Re-render without page transition
+            render(false); 
 
-            setTimeout(() => {
-                const baseTotal = getPrice() * state.quantity;
-                const finalTotal = baseTotal - (baseTotal * state.discount);
+            const baseTotal = getPrice() * state.quantity;
+            const finalTotal = baseTotal - (baseTotal * state.discount);
+            const newOrderId = generateOrderId();
 
-                const newOrder = {
-                    id: generateOrderId(),
-                    date: new Date().toISOString(),
-                    product: state.selectedProduct.title,
-                    quantity: state.quantity,
-                    total: finalTotal,
-                    refNumber: refInput.value.trim(),
-                    status: 'Processing',
-                    accounts: [] 
-                };
+            // Prepare for DB
+            const dbPayload = {
+                id: newOrderId,
+                // created_at is auto-generated by DB
+                product_title: state.selectedProduct.title,
+                quantity: state.quantity,
+                total: finalTotal,
+                ref_number: refInput.value.trim(),
+                status: 'Processing',
+                accounts_data: [],
+                refund_request: null
+            };
 
-                state.orders.unshift(newOrder);
-                state.lastOrderId = newOrder.id;
-                saveOrders();
-                
-                // Reset loading state
+            const { error } = await supabaseClient.from('orders').insert([dbPayload]);
+
+            if(error) {
+                console.error(error);
                 state.isSubmitting = false;
-                setView('success');
-                showToast("Order submitted successfully", "success");
-            }, 3000); // 3-second delay
+                render(false);
+                showToast("Error submitting order. Try again.", "error");
+                return;
+            }
+
+            // Update local state immediately for UX
+            state.lastOrderId = newOrderId;
+            await fetchOrders(); // Sync
+            
+            state.isSubmitting = false;
+            setView('success');
+            showToast("Order submitted successfully", "success");
         }
 
         function handleTrack() {
@@ -377,31 +440,40 @@
                 return;
             }
 
-            const found = state.orders.find(o => o.id === state.trackerInput);
-            state.searchResult = found || 'not-found';
-            state.aiContent = null;
-            render();
+            // Force refresh to make sure we have latest
+            fetchOrders().then(() => {
+                const found = state.orders.find(o => o.id === state.trackerInput);
+                state.searchResult = found || 'not-found';
+                state.aiContent = null;
+                render();
+            });
         }
 
-        function cancelOrder(id) {
+        async function cancelOrder(id) {
             const order = state.orders.find(o => o.id === id);
             if (!order) return;
             
             const timeDiff = new Date() - new Date(order.date);
             if (timeDiff < 60000) {
                 if(confirm('Cancel this order? This action cannot be undone.')) {
-                    order.status = 'Cancelled';
-                    state.searchResult = order;
-                    saveOrders();
-                    render();
-                    showToast("Order cancelled", "info");
+                    
+                    const { error } = await supabaseClient
+                        .from('orders')
+                        .update({ status: 'Cancelled' })
+                        .eq('id', id);
+
+                    if(error) showToast("Error cancelling order", "error");
+                    else {
+                        showToast("Order cancelled", "info");
+                        fetchOrders(); // Update UI via listener usually, but explicit here
+                    }
                 }
             } else {
                 showToast('Cancellation window has expired.', 'error');
             }
         }
 
-        function submitRefundRequest(orderId) {
+        async function submitRefundRequest(orderId) {
             const name = document.getElementById('refundName').value;
             const number = document.getElementById('refundNumber').value;
 
@@ -410,46 +482,62 @@
                 return;
             }
 
-            const order = state.orders.find(o => o.id === orderId);
-            if (order) {
-                order.refundRequest = {
-                    gcashName: name,
-                    gcashNumber: number,
-                    requestedAt: new Date().toISOString()
-                };
-                order.status = 'Refund Pending';
-                
-                saveOrders();
-                // Update local search result reference
-                state.searchResult = order;
-                render();
-                showToast("Refund request submitted", "success");
-            }
+            const payload = {
+                gcashName: name,
+                gcashNumber: number,
+                requestedAt: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ 
+                    status: 'Refund Pending',
+                    refund_request: payload
+                })
+                .eq('id', orderId);
+
+            if(error) showToast("Failed to submit refund", "error");
+            else showToast("Refund request submitted", "success");
         }
 
-        function toggleAccountUsed(orderId, accId) {
+        async function toggleAccountUsed(orderId, accId) {
             const order = state.orders.find(o => o.id === orderId);
-            if(order) {
-                const acc = order.accounts.find(a => a.id === accId);
-                if(acc) {
-                    acc.used = !acc.used;
-                    saveOrders();
-                    render();
-                }
-            }
+            if(!order) return;
+
+            // We need to modify the specific account in the array
+            const updatedAccounts = order.accounts.map(acc => {
+                if(acc.id === accId) return { ...acc, used: !acc.used };
+                return acc;
+            });
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ accounts_data: updatedAccounts })
+                .eq('id', orderId);
+            
+            if(error) showToast("Update failed", "error");
         }
 
-        function requestOtp(orderId, accId) {
+        async function requestOtp(orderId, accId) {
             const order = state.orders.find(o => o.id === orderId);
-            if(order) {
-                const acc = order.accounts.find(a => a.id === accId);
-                if(acc) {
-                    acc.otpRequest = { status: 'pending', code: null, requestedAt: new Date().toISOString() };
-                    saveOrders();
-                    render();
-                    showToast("OTP Requested. Wait for admin.", "info");
+            if(!order) return;
+
+            const updatedAccounts = order.accounts.map(acc => {
+                if(acc.id === accId) {
+                    return { 
+                        ...acc, 
+                        otpRequest: { status: 'pending', code: null, requestedAt: new Date().toISOString() } 
+                    };
                 }
-            }
+                return acc;
+            });
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ accounts_data: updatedAccounts })
+                .eq('id', orderId);
+
+            if(!error) showToast("OTP Requested. Wait for admin.", "info");
         }
 
         function handleAdminLogin() {
@@ -463,7 +551,7 @@
             }
         }
 
-        function fulfillOrder(id) {
+        async function fulfillOrder(id) {
             const text = document.getElementById('fulfillmentTextArea').value;
             if (!text.trim()) return showToast("Please enter accounts", "error");
 
@@ -475,29 +563,42 @@
                 otpRequest: { status: 'idle', code: null, requestedAt: null }
             }));
 
-            const order = state.orders.find(o => o.id === id);
-            if(order) {
-                order.status = 'Completed';
-                order.accounts = newAccounts;
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ 
+                    status: 'Completed',
+                    accounts_data: newAccounts
+                })
+                .eq('id', id);
+
+            if(!error) {
                 state.activeFulfillmentId = null;
-                saveOrders();
-                render();
                 showToast("Order fulfilled successfully", "success");
+            } else {
+                showToast("Database Error", "error");
             }
         }
 
-        function sendOtp(orderId, accId, code) {
+        async function sendOtp(orderId, accId, code) {
             const order = state.orders.find(o => o.id === orderId);
-            if(order) {
-                const acc = order.accounts.find(a => a.id === accId);
-                if(acc) {
-                    acc.otpRequest.status = 'sent';
-                    acc.otpRequest.code = code;
-                    saveOrders();
-                    render();
-                    showToast("OTP Sent to user", "success");
+            if(!order) return;
+
+            const updatedAccounts = order.accounts.map(acc => {
+                if(acc.id === accId) {
+                    return { 
+                        ...acc, 
+                        otpRequest: { ...acc.otpRequest, status: 'sent', code: code } 
+                    };
                 }
-            }
+                return acc;
+            });
+
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ accounts_data: updatedAccounts })
+                .eq('id', orderId);
+
+            if(!error) showToast("OTP Sent to user", "success");
         }
 
         function getPendingOtpCount() {
@@ -515,7 +616,7 @@
         async function callGemini(prompt, type) {
             state.aiLoading = true;
             state.aiContent = null;
-            render();
+            render(false); // don't scroll top
 
             try {
                 const response = await fetch(
@@ -535,13 +636,12 @@
             }
             
             state.aiLoading = false;
-            render();
+            render(false); // don't scroll top
         }
 
-        // --- Render Functions ---
+        // --- Render Functions (Mostly Unchanged, just slight UI tweaks) ---
 
         function renderHeader() {
-            // Fixed header full width
             return `
             <div class="fixed top-0 left-0 w-full z-50 glass">
                 <div class="flex justify-between items-center h-14 px-6 max-w-7xl mx-auto">
@@ -559,16 +659,12 @@
 
         function renderHome(animate = true) {
             const animClass = animate ? 'animate-enter' : '';
-            // Added pt-14 for fixed header spacing
             return `
             <div class="pt-14 pb-16 ${animClass}">
-                <!-- Status Bar -->
                 <div class="bg-zinc-900/50 border-b border-white/5 py-1.5 px-4 flex justify-center items-center gap-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
-                    <i data-lucide="lock" class="w-3 h-3"></i>
-                    All transactions are secured and safe
+                    <i data-lucide="database" class="w-3 h-3 text-emerald-500"></i>
+                    System Online
                 </div>
-
-                <!-- Marquee -->
                 <div class="overflow-hidden bg-black border-b border-white/5 py-3 relative">
                      <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-600 uppercase tracking-[0.2em]">
                         <span>VERIFIED SHEIN ACCTS</span>
@@ -579,12 +675,10 @@
                         <span>VERIFIED SHEIN ACCTS</span>
                         <span>BULK PRICING AVAILABLE</span>
                         <span>MANUAL ORDER VERIFICATION</span>
-                     </div>
-                     <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black to-transparent z-10"></div>
-                     <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black to-transparent z-10"></div>
+                      </div>
+                      <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black to-transparent z-10"></div>
+                      <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black to-transparent z-10"></div>
                 </div>
-
-                <!-- Hero -->
                 <div class="p-5 mb-2 relative overflow-hidden group max-w-7xl mx-auto">
                     <div class="relative z-10">
                         <h1 class="text-3xl font-bold leading-none mb-3 tracking-tighter text-white">DIGITAL<br/>ASSETS.</h1>
@@ -594,15 +688,11 @@
                     </div>
                     <div class="absolute right-0 top-0 w-56 h-56 bg-gradient-to-b from-zinc-800 to-transparent opacity-20 blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                 </div>
-
-                <!-- Grid -->
                 <div class="px-6 max-w-7xl mx-auto w-full">
                     <div class="flex items-center gap-2 mb-4 opacity-50">
                         <i data-lucide="grid" class="w-3 h-3 text-white"></i>
                         <span class="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400">AVAILABLE STOCK</span>
                     </div>
-                    
-                    <!-- Scrollable Product Container -->
                     <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20">
                             ${PRODUCTS.map(p => `
@@ -647,11 +737,8 @@
             const isBulk = state.quantity >= p.bulkThreshold;
             const animClass = animate ? 'animate-enter' : '';
 
-            // Added pt-14 for fixed header
-            // Note: Footer is now OUTSIDE this container to prevent animation conflict
             return `
             <div class="pt-14 pb-32 ${animClass} flex flex-col h-full max-w-7xl mx-auto w-full">
-                <!-- Nav -->
                 <div class="p-6">
                     <button onclick="window.goHome()" class="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors">
                         <i data-lucide="arrow-left" class="w-3 h-3"></i> Back to Catalog
@@ -666,7 +753,6 @@
                     
                     <p class="text-zinc-400 text-xs mb-6 leading-relaxed font-light border-l-2 border-zinc-800 pl-3">${p.description}</p>
 
-                    <!-- Pricing Tier -->
                     <div class="bg-zinc-900/50 border border-white/5 p-4 mb-6 rounded-sm">
                         <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/5 ${!isBulk ? 'text-white' : 'text-zinc-500'}">
                             <span class="text-[10px] uppercase font-bold tracking-wider">Single Unit</span>
@@ -681,7 +767,6 @@
                         </div>
                     </div>
 
-                    <!-- Quantity Control -->
                     <div class="flex items-center justify-between mb-6">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">QUANTITY</span>
                         <div class="flex items-center gap-1 bg-zinc-900 border border-white/10 p-1 rounded-full">
@@ -691,7 +776,6 @@
                         </div>
                     </div>
 
-                    <!-- Discount Code (Moved Here) -->
                     <div class="mb-10">
                         <label class="block text-[10px] font-bold uppercase text-zinc-500 mb-2 tracking-wider">Voucher Code</label>
                         <div class="flex gap-2">
@@ -703,7 +787,6 @@
                 </div>
             </div>
 
-            <!-- Sticky Footer - Fixed width removed & Moved outside animated container -->
             <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-4 safe-area-bottom z-20">
                 <div class="max-w-7xl mx-auto flex items-center gap-3">
                     <div class="flex-1">
@@ -731,7 +814,6 @@
                 : `Confirm Payment`;
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
 
-            // Added pt-14 and adjusted internal header top position
             return `
             <div class="min-h-screen bg-black pb-16 pt-14 ${animClass}">
                 <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
@@ -740,9 +822,7 @@
                 </div>
 
                 <div class="p-5 max-w-2xl mx-auto w-full">
-                    <!-- Receipt Card -->
                     <div class="bg-zinc-50 text-black p-5 mb-6 relative font-mono text-[10px] shadow-xl transform rotate-1">
-                         <!-- Rip effect top -->
                          <div class="absolute top-0 left-0 right-0 h-1.5 bg-black" style="clip-path: polygon(0 2px, 5px 0, 10px 2px, 15px 0, 20px 2px, 25px 0, 30px 2px, 35px 0, 40px 2px, 45px 0, 50px 2px, 55px 0, 60px 2px, 65px 0, 70px 2px, 75px 0, 80px 2px, 85px 0, 90px 2px, 95px 0, 100% 2px, 100% 100%, 0 100%);"></div>
                          
                          <div class="text-center mb-4 mt-2">
@@ -783,7 +863,6 @@
                          </div>
                     </div>
 
-                    <!-- Payment Method -->
                     <div class="mb-6">
                         <div class="flex items-center gap-2 mb-3">
                             <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
@@ -802,7 +881,6 @@
                         </div>
                     </div>
 
-                    <!-- Ref Input -->
                     <div>
                         <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Reference Number</label>
                         <div class="relative">
@@ -820,10 +898,8 @@
 
         function renderSuccess(animate = true) {
             const animClass = animate ? 'animate-enter' : '';
-            // Added pt-20
             return `
             <div class="min-h-screen flex flex-col items-center justify-center p-6 pt-20 text-center bg-black ${animClass} relative overflow-hidden">
-                <!-- Background Glow -->
                 <div class="absolute inset-0 bg-emerald-500/5 radial-gradient"></div>
 
                 <div class="w-16 h-16 bg-zinc-900 border border-emerald-500/30 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.2)] relative z-10">
@@ -874,9 +950,6 @@
                 
                 const timeDiff = new Date() - new Date(res.date);
                 const canCancel = isProcessing && timeDiff < 60000;
-                
-                // Refund Condition: Order is processing AND more than 1 hour (3600000 ms) has passed
-                // For testing, you can reduce 3600000 to a smaller number like 10000 (10 seconds)
                 const canRequestRefund = isProcessing && timeDiff > 3600000;
 
                 let statusColor = '';
@@ -991,7 +1064,6 @@
                 content = `
                 <div class="animate-enter mt-5 pb-16">
                     <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm">
-                        <!-- Status Bar -->
                         <div class="absolute top-0 left-0 w-1 h-full ${isCompleted ? 'bg-emerald-500' : (isCancelled ? 'bg-red-500' : (isRefundPending ? 'bg-orange-500' : 'bg-yellow-500'))}"></div>
                         
                         <div class="flex justify-between items-start mb-5 pl-2">
@@ -1114,9 +1186,6 @@
                     </table>
                 </div>`;
             } else {
-                // OTP Tab Content
-                // ... same as before ...
-                // Re-using existing OTP code
                 const pendingReqs = [];
                 state.orders.forEach(o => {
                     if (o.accounts) o.accounts.forEach((a, idx) => {
@@ -1175,7 +1244,6 @@
             </div>`;
         }
 
-        // --- Main Render Loop ---
         function render(animate = true) {
             const app = document.getElementById('app');
             let html = '';
@@ -1194,13 +1262,12 @@
             app.innerHTML = html;
             lucide.createIcons();
 
-            // Fix: Scroll to top when changing views (animate=true), but not when updating quantity (animate=false)
             if (animate) {
                 window.scrollTo(0, 0);
             }
         }
 
-        // Expose functions to window for inline onclick handlers
+        // Expose functions to window
         window.goHome = goHome;
         window.setView = setView;
         window.selectProduct = selectProduct;
