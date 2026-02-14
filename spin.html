@@ -151,7 +151,8 @@
         <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
             <div class="flex items-center gap-2">
                 <i data-lucide="zap" class="w-5 h-5 text-emerald-500 fill-emerald-500/20"></i>
-                <span class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">StakzSpin</span>
+                <!-- Fixed clipping by adding pr-2 pb-1 to match index.html styling -->
+                <span class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500 pr-2 pb-1">StakzSpin</span>
             </div>
             <div id="user-credits-badge" class="hidden flex items-center gap-2 text-xs font-mono text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-sm bg-emerald-500/5">
                 <span>Loading...</span>
@@ -160,6 +161,27 @@
     </div>
 
     <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-xs pointer-events-none px-4"></div>
+
+    <!-- Sign In Modal -->
+    <div id="login-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 p-4">
+        <div id="login-modal-content" class="bg-zinc-900 border border-zinc-800 rounded-lg w-full max-w-xs p-6 shadow-2xl transform transition-transform duration-200 scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-sm font-bold uppercase tracking-widest text-white">Sign In</h3>
+                <button type="button" id="login-modal-close" class="text-zinc-500 hover:text-white transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form id="login-form" class="space-y-3">
+                <input type="email" id="login-modal-email" placeholder="Email" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none" required />
+                <div class="relative">
+                    <input type="password" id="login-modal-pass" placeholder="Password" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" required />
+                    <button type="button" id="login-modal-toggle-pass" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                </div>
+                <button type="submit" id="login-modal-submit" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
+                    Sign In
+                </button>
+            </form>
+            <a href="index.html" class="block mt-4 text-center text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors">Create account or reset password</a>
+        </div>
+    </div>
 
     <main class="flex-grow flex flex-col items-center justify-center p-6 relative pt-24 pb-12">
         
@@ -180,9 +202,9 @@
             </div>
 
             <div class="space-y-3 w-full">
-                <a href="index.html" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 text-[10px] uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl block text-center">
+                <button type="button" id="btn-sign-in-claim" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 text-[10px] uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl block text-center">
                     Sign In to Claim
-                </a>
+                </button>
                 <p class="text-[8px] text-zinc-600 uppercase tracking-[0.3em] mt-4">Verified Rewards Distribution Program</p>
             </div>
 
@@ -310,6 +332,7 @@
                     } else {
                         $('#loading-screen').style.display = 'none';
                         $('#login-prompt').classList.remove('hidden');
+                        this.setupLoginModal();
                         lucide.createIcons();
                     }
                 } catch (e) {
@@ -383,6 +406,59 @@
                     `;
                 }).join('');
                 lucide.createIcons();
+            },
+
+            setupLoginModal: function() {
+                const modal = $('#login-modal');
+                const openBtn = $('#btn-sign-in-claim');
+                const closeBtn = $('#login-modal-close');
+                const form = $('#login-form');
+                const passInput = $('#login-modal-pass');
+                const togglePass = $('#login-modal-toggle-pass');
+
+                const openModal = () => {
+                    modal.classList.remove('hidden');
+                    const content = $('#login-modal-content');
+                    requestAnimationFrame(() => {
+                        modal.classList.remove('opacity-0');
+                        if (content) content.classList.remove('scale-95');
+                    });
+                    document.body.style.overflow = 'hidden';
+                };
+                const closeModal = () => {
+                    modal.classList.add('opacity-0');
+                    $('#login-modal-content').classList.add('scale-95');
+                    setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 200);
+                };
+
+                openBtn?.addEventListener('click', openModal);
+                closeBtn?.addEventListener('click', closeModal);
+                modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+                togglePass?.addEventListener('click', () => {
+                    passInput.type = passInput.type === 'password' ? 'text' : 'password';
+                });
+
+                form?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = $('#login-modal-email').value.trim();
+                    const pass = passInput.value;
+                    if (!email || !pass) return showToast('Please fill all fields', 'error');
+                    const submitBtn = $('#login-modal-submit');
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-loader !w-4 !h-4 mr-1"></span> Signing In...';
+                    try {
+                        const { data, error } = await this.supabase.auth.signInWithPassword({ email, password: pass });
+                        if (error) throw error;
+                        showToast('Welcome back!', 'success');
+                        closeModal();
+                        location.reload();
+                    } catch (err) {
+                        showToast(err.message || 'Login failed', 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Sign In';
+                    }
+                });
             },
 
             setupHistoryToggle: function() {
