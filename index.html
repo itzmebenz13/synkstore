@@ -7,6 +7,9 @@
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -177,7 +180,6 @@
     </div>
 
     <div id="app" class="w-full min-h-screen bg-black overflow-x-hidden relative text-zinc-100 flex flex-col text-sm">
-        <!-- Content injected by JS -->
         <div class="flex items-center justify-center h-screen">
             <div class="flex flex-col items-center gap-2">
                 <i data-lucide="loader" class="animate-spin w-6 h-6 text-emerald-500"></i>
@@ -192,14 +194,13 @@
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
-        // Notification Sound (Short Beep)
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
+        const SITE_KEY = "0x4AAAAAACcm7IGyb3q3w9nr";
 
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
         
-        // Initialize Client
         let supabaseClient;
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -210,10 +211,10 @@
         // --- State Management ---
         const state = {
             view: 'home',
-            user: null, // Logged in customer
-            products: [], // Fetched from DB
-            orders: [], // Admin view orders
-            userOrders: [], // Logged in user orders
+            user: null,
+            products: [],
+            orders: [],
+            userOrders: [],
             selectedProduct: null,
             quantity: 1,
             refNumber: '',
@@ -229,7 +230,9 @@
             discount: 0,
             isSubmitting: false,
             authLoading: false,
-            modalCallback: null // Stores the function to execute on confirmation
+            modalCallback: null,
+            sessionOrderCount: 0,
+            captchaToken: null
         };
 
         // --- Helpers ---
@@ -241,16 +244,13 @@
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast';
-            
             let icon = '';
             if (type === 'success') icon = '<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>';
             else if (type === 'error') icon = '<i data-lucide="alert-circle" class="w-4 h-4 text-red-400"></i>';
             else icon = '<i data-lucide="info" class="w-4 h-4 text-blue-400"></i>';
-
             toast.innerHTML = `${icon} <span>${message}</span>`;
             container.appendChild(toast);
             lucide.createIcons();
-
             setTimeout(() => {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
@@ -290,20 +290,31 @@
             }
         }
 
+        function toggleOrderDetails(id) {
+            const el = document.getElementById(`order-details-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function renderTurnstile() {
+            const container = document.getElementById('captcha-container');
+            if (container && window.turnstile) {
+                container.innerHTML = ''; 
+                window.turnstile.render('#captcha-container', {
+                    sitekey: SITE_KEY,
+                    callback: function(token) { state.captchaToken = token; },
+                });
+            }
+        }
+
         // --- Modal Logic ---
         function showModal(title, message, callback, type = 'danger', confirmText = 'Confirm') {
             const modal = document.getElementById('confirmation-modal');
             const modalContent = document.getElementById('modal-content');
-            
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-message').textContent = message;
-            
             const confirmBtn = document.getElementById('modal-confirm-btn');
             confirmBtn.textContent = confirmText;
-            
             const iconContainer = document.getElementById('modal-icon');
-            
-            // Customize styling based on type
             if (type === 'danger') {
                 confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-white bg-red-600 hover:bg-red-500 transition-colors rounded-sm tracking-wider shadow-lg shadow-red-900/20";
                 iconContainer.className = "w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center mb-3 text-red-500";
@@ -313,17 +324,13 @@
                 iconContainer.className = "w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center mb-3 text-orange-500";
                 iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
             } else {
-                // Default / Success
                 confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-black bg-white hover:bg-zinc-200 transition-colors rounded-sm tracking-wider shadow-lg";
                 iconContainer.className = "w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-white";
                 iconContainer.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
             }
-            
             state.modalCallback = callback;
             lucide.createIcons();
-            
             modal.classList.remove('hidden');
-            // Small delay to allow display:block to apply before opacity transition
             requestAnimationFrame(() => {
                 modal.classList.remove('opacity-0');
                 modalContent.classList.remove('scale-95');
@@ -334,11 +341,9 @@
         function closeModal() {
             const modal = document.getElementById('confirmation-modal');
             const modalContent = document.getElementById('modal-content');
-            
             modal.classList.add('opacity-0');
             modalContent.classList.remove('scale-100');
             modalContent.classList.add('scale-95');
-            
             setTimeout(() => {
                 modal.classList.add('hidden');
                 state.modalCallback = null;
@@ -346,9 +351,7 @@
         }
 
         function confirmModalAction() {
-            if (state.modalCallback) {
-                state.modalCallback();
-            }
+            if (state.modalCallback) state.modalCallback();
             closeModal();
         }
 
@@ -370,6 +373,34 @@
             modalContent.classList.remove('scale-100');
             modalContent.classList.add('scale-95');
             setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        // --- Core Application Functions (Defined before usage) ---
+
+        async function callGemini(prompt, type) {
+            state.aiLoading = true;
+            state.aiContent = null;
+            render(false); 
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    }
+                );
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "System busy.";
+                state.aiContent = { type, text };
+            } catch (e) {
+                console.error(e);
+                state.aiContent = { type, text: "Connection error. Check API Key." };
+            }
+            
+            state.aiLoading = false;
+            render(false); 
         }
 
         async function submitNewProduct() {
@@ -399,7 +430,18 @@
             }
         }
 
-        // --- Supabase Logic ---
+        async function saveProductChanges(id) {
+            const title = document.getElementById(`prod-title-${id}`).value;
+            const price = document.getElementById(`prod-price-${id}`).value;
+            const stock = document.getElementById(`prod-stock-${id}`).value;
+
+            const { error } = await supabaseClient.from('products').update({
+                title, price, stock
+            }).eq('id', id);
+
+            if(error) showToast("Failed to save changes", "error");
+            else showToast("Changes saved", "success");
+        }
 
         async function fetchProducts() {
             if(!supabaseClient) return;
@@ -410,18 +452,11 @@
 
             if (data) {
                 state.products = data;
-                // If rendering admin page, refresh it to show new products
-                if(state.view === 'admin' && state.adminTab === 'products') {
-                    render(false);
-                } else if(state.view === 'home') {
-                    render(false);
-                }
-            } else if (error) {
-                console.error("Fetch products error:", error);
+                if(state.view === 'admin' && state.adminTab === 'products') render(false);
+                else if(state.view === 'home') render(false);
             }
         }
 
-        // Fetch All Orders (Admin Only)
         async function fetchAllOrders() {
             if(!supabaseClient || !state.adminAuth) return;
             const { data, error } = await supabaseClient
@@ -431,11 +466,10 @@
 
             if (data) {
                 state.orders = data.map(mapOrderData);
-                if(state.view === 'admin') render(false);
+                render(false);
             }
         }
 
-        // Fetch My Orders (User Only)
         async function fetchUserOrders() {
             if(!supabaseClient || !state.user) return;
             const { data, error } = await supabaseClient
@@ -444,9 +478,7 @@
                 .eq('user_id', state.user.id)
                 .order('created_at', { ascending: false });
 
-            if(data) {
-                state.userOrders = data.map(mapOrderData);
-            }
+            if(data) state.userOrders = data.map(mapOrderData);
         }
 
         function mapOrderData(o) {
@@ -467,25 +499,17 @@
         function setupRealtime() {
             if(!supabaseClient) return;
             
-            // Listen for Products
             supabaseClient.channel('public:products')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
-                fetchProducts();
-            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
             .subscribe();
 
-            // Listen for Orders
             supabaseClient.channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
-                // Play notification if admin and message count increased
                 if(state.adminAuth && payload.eventType === 'UPDATE' && payload.new.accounts_data) {
-                    // This is a naive check (checks if user message count > 0 in new payload), 
-                    // ideally compares with old state, but this works for basic notif.
-                    // Actually, let's just check if it was an update to an order while we are in admin
-                    const hasUserMessages = payload.new.accounts_data.some(acc => 
-                        acc.messages && acc.messages.some(m => m.sender === 'user')
+                    const hasUnread = payload.new.accounts_data.some(acc => 
+                        acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)
                     );
-                    if(hasUserMessages) {
+                    if(hasUnread) {
                         try { NOTIFICATION_SOUND.play(); } catch(e) {}
                     }
                 }
@@ -494,14 +518,31 @@
                 if(state.user) fetchUserOrders().then(() => {
                     if (state.view === 'my-orders') render(false);
                 });
-                if(state.view === 'tracker' && state.trackerInput) {
-                    handleTrack(true);
-                }
+                if(state.view === 'tracker' && state.trackerInput) handleTrack(true);
             })
             .subscribe();
         }
 
-        // --- Auth Functions ---
+        async function markMessagesRead(orderId) {
+            const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
+            if(!data) return;
+
+            let hasUpdates = false;
+            const updatedAccounts = data.accounts_data.map(acc => {
+                if(acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)) {
+                    hasUpdates = true;
+                    return {
+                        ...acc,
+                        messages: acc.messages.map(m => m.sender === 'user' ? {...m, read: true} : m)
+                    };
+                }
+                return acc;
+            });
+
+            if(hasUpdates) {
+                await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
+            }
+        }
 
         async function initAuth() {
             if(!supabaseClient) return;
@@ -526,11 +567,7 @@
             state.authLoading = true;
             render(false);
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: pass
-            });
-
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
             state.authLoading = false;
             
             if(error) {
@@ -549,14 +586,13 @@
             if(!email || !pass) return showToast("Please fill all fields", "error");
             if(pass.length < 6) return showToast("Password must be 6+ chars", "error");
 
+            const acctCount = parseInt(localStorage.getItem('stakz_acct_count') || '0');
+            if (acctCount >= 1 && !state.captchaToken) return showToast("Please complete the captcha", "error");
+
             state.authLoading = true;
             render(false);
 
-            const { data, error } = await supabaseClient.auth.signUp({
-                email: email,
-                password: pass
-            });
-
+            const { data, error } = await supabaseClient.auth.signUp({ email, password: pass });
             state.authLoading = false;
 
             if(error) {
@@ -564,6 +600,7 @@
                 render(false);
             } else {
                 showToast("Account created! Logging in...", "success");
+                localStorage.setItem('stakz_acct_count', (acctCount + 1).toString());
                 if(data.session) {
                     state.user = data.user;
                     goHome();
@@ -582,13 +619,11 @@
             render(false);
 
             const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
-            
             state.authLoading = false;
             render(false);
 
-            if(error) {
-                showToast(error.message, "error");
-            } else {
+            if(error) showToast(error.message, "error");
+            else {
                 showToast("Password reset link sent to email", "success");
                 setView('login');
             }
@@ -602,40 +637,22 @@
             showToast("Logged out", "success");
         }
 
-        // --- Core Logic ---
-
-        async function init() {
-            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-            window.scrollTo(0, 0);
-            
-            await initAuth();
-            await fetchProducts(); // Fetch products on init
-            setupRealtime();
-            render();
-            lucide.createIcons();
-        }
-
-        function goHome() {
-            setView('home');
-        }
+        function goHome() { setView('home'); }
 
         function setView(view) {
             state.view = view;
             if(view === 'home' || view === 'product') {
                 state.discount = 0; 
                 state.quantity = 1;
+                state.captchaToken = null;
             }
-            if (view === 'admin' && state.adminAuth) {
-                fetchAllOrders();
-            }
+            if (view === 'admin' && state.adminAuth) fetchAllOrders();
             render();
         }
 
         function selectProduct(id) {
             state.selectedProduct = state.products.find(p => p.id === id);
-            // Check stock
             if(state.selectedProduct.stock <= 0) return showToast("Item out of stock", "error");
-            
             state.quantity = 1;
             setView('product');
         }
@@ -673,11 +690,10 @@
 
         async function submitOrder() {
             const refInput = document.getElementById('refNumberInput');
-            if (!refInput || !refInput.value.trim()) {
-                showToast("Please enter the payment reference number.", "error");
-                return;
-            }
+            if (!refInput || !refInput.value.trim()) return showToast("Please enter the payment reference number.", "error");
             
+            if (state.sessionOrderCount >= 3 && !state.captchaToken) return showToast("Please complete the captcha", "error");
+
             state.isSubmitting = true;
             render(false); 
 
@@ -708,6 +724,8 @@
             }
 
             state.lastOrderId = newOrderId;
+            state.sessionOrderCount++;
+            state.captchaToken = null; 
             if(state.user) fetchUserOrders(); 
             
             state.isSubmitting = false;
@@ -719,22 +737,11 @@
             const input = document.getElementById('trackerInputVal');
             if(input) state.trackerInput = input.value.trim();
             
-            if(!state.trackerInput && !silent) {
-                showToast("Please enter an Order ID", "error");
-                return;
-            }
+            if(!state.trackerInput && !silent) return showToast("Please enter an Order ID", "error");
 
-            const { data, error } = await supabaseClient
-                .from('orders')
-                .select('*')
-                .eq('id', state.trackerInput)
-                .single();
-
-            if (data) {
-                state.searchResult = mapOrderData(data);
-            } else {
-                state.searchResult = 'not-found';
-            }
+            const { data, error } = await supabaseClient.from('orders').select('*').eq('id', state.trackerInput).single();
+            if (data) state.searchResult = mapOrderData(data);
+            else state.searchResult = 'not-found';
             
             if(!silent) render();
         }
@@ -744,80 +751,45 @@
             const inUser = state.userOrders.find(o => o.id === id);
             const inAdmin = state.orders.find(o => o.id === id);
             const inSearch = state.searchResult && state.searchResult.id === id ? state.searchResult : null;
-            
             const target = inUser || inAdmin || inSearch;
             
             if (target) {
                 orderDate = new Date(target.date);
                 const timeDiff = new Date() - orderDate;
-                if (timeDiff > 60000 && !state.adminAuth) { 
-                    return showToast('Cancellation window has expired.', 'error');
-                }
+                if (timeDiff > 60000 && !state.adminAuth) return showToast('Cancellation window has expired.', 'error');
             }
 
-            // Using Custom Modal
-            showModal(
-                'Cancel Order?',
-                'Are you sure you want to cancel this order? This action cannot be undone.',
-                async () => {
-                    const { error } = await supabaseClient
-                        .from('orders')
-                        .update({ status: 'Cancelled' })
-                        .eq('id', id);
-
-                    if(error) showToast("Error cancelling order", "error");
-                    else showToast("Order cancelled", "info");
-                },
-                'danger',
-                'Yes, Cancel Order'
-            );
+            showModal('Cancel Order?', 'Are you sure you want to cancel this order? This action cannot be undone.', async () => {
+                const { error } = await supabaseClient.from('orders').update({ status: 'Cancelled' }).eq('id', id);
+                if(error) showToast("Error cancelling order", "error");
+                else showToast("Order cancelled", "info");
+            }, 'danger', 'Yes, Cancel Order');
         }
 
         async function deleteOrder(id) {
             showModal('Delete Order?', 'This will permanently remove this order from your history.', async () => {
                 const { error } = await supabaseClient.from('orders').delete().eq('id', id);
                 if(error) showToast("Failed to delete", "error");
-                else {
-                    showToast("Order deleted", "success");
-                    // Data will refresh via Realtime
-                }
+                else showToast("Order deleted", "success");
             }, 'danger', 'Delete');
         }
 
         async function submitRefundRequest(orderId) {
             const name = document.getElementById('refundName').value;
             const number = document.getElementById('refundNumber').value;
-
             if (!name || !number) return showToast("Please fill in all refund details", "error");
 
-            const payload = {
-                gcashName: name,
-                gcashNumber: number,
-                requestedAt: new Date().toISOString()
-            };
-
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ 
-                    status: 'Refund Pending',
-                    refund_request: payload
-                })
-                .eq('id', orderId);
+            const payload = { gcashName: name, gcashNumber: number, requestedAt: new Date().toISOString() };
+            const { error } = await supabaseClient.from('orders').update({ status: 'Refund Pending', refund_request: payload }).eq('id', orderId);
 
             if(error) showToast("Failed to submit refund", "error");
             else showToast("Refund request submitted", "success");
         }
 
-        // Admin & User Actions
         async function sendAccountMessage(orderId, accId, text, sender) {
             if(!text || !text.trim()) return;
 
-            const { data, error: fetchError } = await supabaseClient
-                .from('orders')
-                .select('accounts_data')
-                .eq('id', orderId)
-                .single();
-                
+            const { data, error: fetchError } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(fetchError || !data) return showToast("Error fetching order", "error");
 
             const updatedAccounts = data.accounts_data.map(acc => {
@@ -825,17 +797,13 @@
                     const msgs = acc.messages || [];
                     return { 
                         ...acc, 
-                        messages: [...msgs, { text: text.trim(), sender: sender, time: new Date().toISOString() }] 
+                        messages: [...msgs, { text: text.trim(), sender: sender, time: new Date().toISOString(), read: false }] 
                     };
                 }
                 return acc;
             });
 
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ accounts_data: updatedAccounts })
-                .eq('id', orderId);
-
+            const { error } = await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
             if(error) showToast("Message failed to send", "error");
             else {
                 showToast("Message sent", "success");
@@ -844,16 +812,9 @@
             }
         }
 
-        // Admin Logic
         async function handleAdminLogin() {
             const pass = document.getElementById('adminPassInput').value;
-            
-            const { data, error } = await supabaseClient
-                .from('admins')
-                .select('*')
-                .eq('username', 'admin')
-                .eq('password', pass)
-                .single();
+            const { data } = await supabaseClient.from('admins').select('*').eq('username', 'admin').eq('password', pass).single();
 
             if (data) {
                 state.adminAuth = true;
@@ -887,20 +848,11 @@
                 messages: [] 
             }));
 
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ 
-                    status: 'Completed',
-                    accounts_data: newAccounts
-                })
-                .eq('id', id);
-
+            const { error } = await supabaseClient.from('orders').update({ status: 'Completed', accounts_data: newAccounts }).eq('id', id);
             if(!error) {
                 state.activeFulfillmentId = null;
                 showToast("Order fulfilled successfully", "success");
-            } else {
-                showToast("Database Error", "error");
-            }
+            } else showToast("Database Error", "error");
         }
 
         async function adminAction(id, action) {
@@ -912,19 +864,18 @@
 
             if (action === 'cancel') {
                 title = 'Cancel Order?';
-                message = 'Are you sure you want to CANCEL this order? The customer will see the status change.';
+                message = 'Are you sure you want to CANCEL this order?';
                 updatePayload = { status: 'Cancelled' };
                 btnType = 'danger';
                 btnText = 'Yes, Cancel';
             } else if (action === 'refund') {
                 title = 'Refund Order?';
-                message = 'Mark this order as REFUNDED? Ensure payment has been returned first.';
+                message = 'Mark this order as REFUNDED? Ensure payment has been returned.';
                 updatePayload = { status: 'Refunded' };
                 btnType = 'warning';
                 btnText = 'Mark Refunded';
             } else return;
 
-            // Using Custom Modal
             showModal(title, message, async () => {
                 const { error } = await supabaseClient.from('orders').update(updatePayload).eq('id', id);
                 if(error) showToast("Action failed", "error");
@@ -936,90 +887,34 @@
             const newPass = document.getElementById('newAdminPass').value;
             if (!newPass || newPass.length < 4) return showToast("Password too short", "error");
 
-            const { data, error } = await supabaseClient
-                .from('admins')
-                .update({ password: newPass })
-                .eq('username', 'admin')
-                .select();
-
-            if (error || data.length === 0) showToast("Update failed. Check database.", "error");
+            const { data, error } = await supabaseClient.from('admins').update({ password: newPass }).eq('username', 'admin').select();
+            if (error || data.length === 0) showToast("Update failed.", "error");
             else {
                 showToast("Password updated. Please login again.", "success");
                 handleAdminLogout();
             }
         }
 
-        async function saveProductChanges(id) {
-            const title = document.getElementById(`prod-title-${id}`).value;
-            const price = document.getElementById(`prod-price-${id}`).value;
-            const stock = document.getElementById(`prod-stock-${id}`).value;
-
-            const { error } = await supabaseClient.from('products').update({
-                title, price, stock
-            }).eq('id', id);
-
-            if(error) showToast("Failed to save changes", "error");
-            else showToast("Changes saved", "success");
-        }
-
-        async function updateProduct(id, field, value) {
-            // Deprecated direct update, used saveProductChanges instead.
-            // Keeping empty to avoid errors if referenced elsewhere
-        }
-
         async function sendOtp(orderId, accId, code) {
-            const { data, error: fErr } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
+            const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(!data) return;
-
-            const updatedAccounts = data.accounts_data.map(acc => {
-                if(acc.id === accId) {
-                    return { 
-                        ...acc, 
-                        otpRequest: { ...acc.otpRequest, status: 'sent', code: code } 
-                    };
-                }
-                return acc;
-            });
-
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ accounts_data: updatedAccounts })
-                .eq('id', orderId);
-
-            if(!error) showToast("OTP Sent to user", "success");
+            const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'sent', code: code } } : acc);
+            await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
+            showToast("OTP Sent", "success");
         }
         
         async function requestOtp(orderId, accId) {
-            const { data, error: fErr } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
+            const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(!data) return;
-
-            const updatedAccounts = data.accounts_data.map(acc => {
-                if(acc.id === accId) {
-                    return { 
-                        ...acc, 
-                        otpRequest: { status: 'pending', code: null, requestedAt: new Date().toISOString() } 
-                    };
-                }
-                return acc;
-            });
-
-            const { error } = await supabaseClient
-                .from('orders')
-                .update({ accounts_data: updatedAccounts })
-                .eq('id', orderId);
-
-            if(!error) showToast("OTP Requested. Wait for admin.", "info");
+            const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc);
+            await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
+            showToast("OTP Requested", "info");
         }
 
         async function toggleAccountUsed(orderId, accId) {
-             const { data, error: fErr } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
+             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(!data) return;
-
-            const updatedAccounts = data.accounts_data.map(acc => {
-                if(acc.id === accId) return { ...acc, used: !acc.used };
-                return acc;
-            });
-
+            const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, used: !acc.used } : acc);
             const { error } = await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
             if(error) showToast("Update failed", "error");
         }
@@ -1027,39 +922,9 @@
         function getPendingOtpCount() {
             let count = 0;
             state.orders.forEach(o => {
-                if (o.accounts) {
-                    o.accounts.forEach(a => {
-                        if (a.otpRequest.status === 'pending') count++;
-                    });
-                }
+                if (o.accounts) o.accounts.forEach(a => { if (a.otpRequest.status === 'pending') count++; });
             });
             return count;
-        }
-
-        async function callGemini(prompt, type) {
-            state.aiLoading = true;
-            state.aiContent = null;
-            render(false); 
-
-            try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                    }
-                );
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "System busy.";
-                state.aiContent = { type, text };
-            } catch (e) {
-                console.error(e);
-                state.aiContent = { type, text: "Connection error. Check API Key." };
-            }
-            
-            state.aiLoading = false;
-            render(false); 
         }
 
         // --- Render Functions ---
@@ -1070,7 +935,6 @@
                 <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
                     <div class="flex items-center gap-3">
                         <button class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="menu" class="w-4 h-4"></i></button>
-                        <!-- Added pr-2 pb-1 to fix 'p' cutoff -->
                         <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500 pr-2 pb-1">${SITE_NAME}</button>
                     </div>
                     <div class="flex items-center gap-4">
@@ -1087,7 +951,6 @@
         }
 
         function renderLogin() {
-            // Added h-screen overflow-hidden to prevent scrolling
             return `
             <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
@@ -1115,7 +978,9 @@
         }
 
         function renderRegister() {
-            // Added h-screen overflow-hidden to prevent scrolling
+            const acctCount = parseInt(localStorage.getItem('stakz_acct_count') || '0');
+            const showCaptcha = acctCount >= 1;
+
             return `
             <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
@@ -1129,6 +994,9 @@
                             <input type="password" id="regPass" placeholder="Password (Min 6 chars)" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" />
                             <button onclick="window.togglePassword('regPass')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
                         </div>
+                        
+                        ${showCaptcha ? '<div id="captcha-container" class="my-2"></div>' : ''}
+
                         <button onclick="window.handleRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
                             ${state.authLoading ? 'Creating...' : 'Register'}
                         </button>
@@ -1176,7 +1044,7 @@
                         </div>
                     ` : `
                         <div class="space-y-4">
-                            ${state.userOrders.map(order => renderOrderCard(order)).join('')}
+                            ${state.userOrders.map(order => renderOrderCard(order, true)).join('')}
                         </div>
                     `}
                 </div>
@@ -1262,6 +1130,7 @@
             const discountAmount = subtotal * state.discount;
             const finalTotal = subtotal - discountAmount;
             const animClass = animate ? 'animate-enter' : '';
+            const showCaptcha = state.sessionOrderCount >= 3;
             
             const buttonContent = state.isSubmitting 
                 ? `<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> VERIFYING...`
@@ -1342,6 +1211,8 @@
                             <i data-lucide="hash" class="w-3 h-3 text-zinc-600 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
                         </div>
                         
+                        ${showCaptcha ? '<div id="captcha-container" class="my-4"></div>' : ''}
+
                         <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-black font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ${buttonDisabled}">
                             ${buttonContent}
                         </button>
@@ -1385,7 +1256,7 @@
         }
 
         // Shared Render Logic for Order Cards (Used in Tracker and User Orders)
-        function renderOrderCard(res) {
+        function renderOrderCard(res, isMyOrders = false) {
             const isProcessing = res.status === 'Processing';
             const isRefundPending = res.status === 'Refund Pending';
             const isCompleted = res.status === 'Completed';
@@ -1403,7 +1274,7 @@
 
             let accountsHtml = '';
             if(isCompleted && res.accounts && res.accounts.length > 0) {
-                accountsHtml = `
+                const content = `
                 <div class="mt-5 border-t border-dashed border-zinc-800 pt-4">
                     <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3"></i> Access Details</h4>
                     <div class="space-y-2">
@@ -1453,6 +1324,20 @@
                         </div>`).join('')}
                     </div>
                 </div>`;
+                
+                if (isMyOrders) {
+                    accountsHtml = `
+                    <div class="mt-4 pt-3 border-t border-white/5">
+                        <button onclick="window.toggleOrderDetails('${res.id}')" class="w-full text-center text-[9px] font-bold uppercase text-zinc-500 hover:text-white transition-colors py-2 flex items-center justify-center gap-2">
+                            <span>View Accounts</span> <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                        </button>
+                        <div id="order-details-${res.id}" class="hidden">
+                            ${content}
+                        </div>
+                    </div>`;
+                } else {
+                    accountsHtml = content;
+                }
             }
 
             return `
@@ -1645,9 +1530,9 @@
                     <table class="w-full text-left">
                         <tbody class="divide-y divide-white/5">
                             ${state.orders.map(order => {
-                                // Count User Messages
+                                // Count User Messages: only unread
                                 const msgCount = order.accounts 
-                                    ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user').length : 0), 0)
+                                    ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user' && !m.read).length : 0), 0)
                                     : 0;
 
                                 return `
@@ -1671,7 +1556,7 @@
                                         </div>
                                     ` : order.status === 'Completed' ? `
                                         <div class="relative inline-block">
-                                            <button onclick="state.activeFulfillmentId = state.activeFulfillmentId === '${order.id}' ? null : '${order.id}'; render()" class="text-[9px] text-zinc-500 hover:text-white font-bold uppercase underline">View</button>
+                                            <button onclick="window.markMessagesRead('${order.id}'); state.activeFulfillmentId = state.activeFulfillmentId === '${order.id}' ? null : '${order.id}'; render()" class="text-[9px] text-zinc-500 hover:text-white font-bold uppercase underline">View</button>
                                             ${msgCount > 0 ? `<span class="absolute -top-2 -right-3 bg-red-500 text-white text-[8px] px-1.5 rounded-full animate-pulse">${msgCount}</span>` : ''}
                                         </div>
                                     ` : ''}
@@ -1851,6 +1736,11 @@
 
             app.innerHTML = html;
             lucide.createIcons();
+            
+            // Re-render captcha if on relevant screens
+            if (state.view === 'checkout' || state.view === 'register') {
+                renderTurnstile();
+            }
 
             if (animate) {
                 window.scrollTo(0, 0);
@@ -1880,11 +1770,12 @@
         window.submitRefundRequest = submitRefundRequest;
         window.copyToClipboard = copyToClipboard;
         window.togglePassword = togglePassword;
-        window.updateProduct = updateProduct; // New export
         window.showModal = showModal;
         window.closeModal = closeModal;
         window.confirmModalAction = confirmModalAction;
         window.deleteOrder = deleteOrder;
+        window.toggleOrderDetails = toggleOrderDetails;
+        window.markMessagesRead = markMessagesRead;
         
         // New Expose Functions
         window.openAddProductModal = openAddProductModal;
@@ -1899,6 +1790,18 @@
         window.handlePasswordReset = handlePasswordReset;
 
         // Init
+        async function init() {
+            if (!supabaseClient) {
+                showToast("Database connection failed", "error");
+                return;
+            }
+            
+            await initAuth();
+            await fetchProducts();
+            setupRealtime();
+            render();
+        }
+
         init();
 
     </script>
