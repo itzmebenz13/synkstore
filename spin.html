@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Daily Rewards | StakzSpin</title>
+    <title>StakzSpin | Daily Rewards</title>
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,11 +25,26 @@
                     },
                     animation: {
                         'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'marquee': 'marquee 25s linear infinite',
+                        'shiny': 'shiny 2s infinite',
+                        'enter': 'enter 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                     },
                     keyframes: {
                         'pulse-glow': {
                             '0%, 100%': { boxShadow: '0 0 15px rgba(16, 185, 129, 0.1)' },
                             '50%': { boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)' },
+                        },
+                        'marquee': {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-100%)' },
+                        },
+                        'shiny': {
+                            '0%': { left: '-100%' },
+                            '100%': { left: '100%' }
+                        },
+                        'enter': {
+                            'from': { opacity: '0', transform: 'translateY(10px) scale(0.98)' },
+                            'to': { opacity: '1', transform: 'translateY(0) scale(1)' },
                         }
                     }
                 }
@@ -40,12 +55,24 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
         
-        body { background-color: #09090b; color: #f4f4f5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        body { 
+            background-color: #000000; 
+            color: #f4f4f5; 
+            -webkit-font-smoothing: antialiased; 
+            overflow-x: hidden; 
+        }
         
         .toast-enter { transform: translateY(-20px); opacity: 0; }
         .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s ease; }
         .toast-exit { transform: translateY(0); opacity: 1; }
         .toast-exit-active { transform: translateY(-20px); opacity: 0; transition: all 0.3s ease; }
+
+        .glass {
+            background: rgba(24, 24, 27, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
 
         .wheel-wrapper {
             position: relative;
@@ -99,18 +126,18 @@
 
         .spinner-loader {
             width: 24px; height: 24px;
-            border: 3px solid #10b981;
-            border-bottom-color: transparent;
+            border: 2px solid #10b981;
+            border-top-color: transparent;
             border-radius: 50%;
             display: inline-block;
             box-sizing: border-box;
-            animation: rotation 1s linear infinite;
+            animation: rotation 0.8s linear infinite;
         }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes rotation { to { transform: rotate(360deg); } }
 
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; }
 
         @media (max-width: 400px) {
             .wheel-wrapper { width: 280px; height: 280px; }
@@ -119,13 +146,14 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <div class="fixed top-0 left-0 w-full z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800">
-        <div class="flex justify-between items-center h-16 px-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="fixed top-0 left-0 w-full z-40 glass">
+        <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
             <div class="flex items-center gap-2">
                 <i data-lucide="zap" class="w-5 h-5 text-emerald-500 fill-emerald-500/20"></i>
-                <span class="font-bold text-lg tracking-tight text-white italic">StakzSpin</span>
+                <span class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">StakzSpin</span>
             </div>
-            <div id="user-credits-badge" class="hidden flex items-center gap-2 text-xs font-mono text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-full bg-emerald-500/5 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+            <div id="user-credits-badge" class="hidden flex items-center gap-2 text-xs font-mono text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-sm bg-emerald-500/5">
                 <span>Loading...</span>
             </div>
         </div>
@@ -135,27 +163,37 @@
 
     <main class="flex-grow flex flex-col items-center justify-center p-6 relative pt-24 pb-12">
         
-        <div id="loading-screen" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-zinc-950 transition-opacity duration-500">
-            <div class="spinner-loader mb-4"></div>
-            <span class="text-xs font-mono text-zinc-500 uppercase tracking-widest">Loading Resources...</span>
+        <div id="loading-screen" class="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black transition-opacity duration-500">
+            <div class="spinner-loader mb-4 text-emerald-500"></div>
+            <span class="text-xs font-mono text-zinc-500 uppercase tracking-widest">Loading Rewards...</span>
         </div>
 
-        <div id="login-prompt" class="hidden w-full max-w-sm text-center animate-fade-in">
-            <div class="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-zinc-800">
-                <i data-lucide="lock" class="w-8 h-8 text-zinc-500"></i>
+        <!-- REFINED LOGIN PROMPT -->
+        <div id="login-prompt" class="hidden w-full max-w-xs text-center animate-enter flex flex-col items-center">
+            <div class="w-16 h-16 bg-zinc-900/50 rounded-full flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
+                <i data-lucide="shield-check" class="w-7 h-7 text-zinc-400"></i>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Member Exclusive</h2>
-            <p class="text-zinc-400 text-sm mb-8">Login to your account to claim your daily rewards and win free credits.</p>
-            <a href="index.html" class="inline-flex w-full items-center justify-center bg-white text-black font-bold h-12 rounded-lg hover:bg-zinc-200 transition-colors uppercase tracking-wide text-xs">
-                Login to Continue
-            </a>
-            <a href="index.html" class="block mt-6 text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Return to Shop</a>
+            
+            <div class="mb-8 px-4">
+                <h2 class="text-xl font-bold text-white tracking-tighter mb-2">Member Rewards Access</h2>
+                <p class="text-zinc-500 text-[10px] font-mono leading-relaxed uppercase tracking-wider">Please sign in to your StakzShop account to claim your daily rewards.</p>
+            </div>
+
+            <div class="space-y-3 w-full">
+                <a href="index.html" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 text-[10px] uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl block text-center">
+                    Sign In to Claim
+                </a>
+                <p class="text-[8px] text-zinc-600 uppercase tracking-[0.3em] mt-4">Verified Rewards Distribution Program</p>
+            </div>
+
+            <a href="index.html" class="mt-12 text-zinc-700 hover:text-zinc-500 text-[9px] uppercase tracking-widest transition-colors border-b border-transparent hover:border-zinc-800 pb-1">Return to Catalog</a>
         </div>
 
-        <div id="game-ui" class="hidden flex-col items-center w-full max-w-md">
+        <!-- GAME UI -->
+        <div id="game-ui" class="hidden flex-col items-center w-full max-w-md animate-enter">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-white tracking-tighter mb-2">Daily Spin</h1>
-                <p class="text-zinc-400 text-sm" id="subtitle-text">Spin the wheel to win up to <span class="text-emerald-400">₱15</span> or exclusive accounts.</p>
+                <h1 class="text-2xl font-bold text-white tracking-tighter mb-1 uppercase">Daily Distribution</h1>
+                <p class="text-zinc-500 text-[10px] font-mono" id="subtitle-text">Max allocation: <span class="text-emerald-400">₱15.00</span> • Refresh cycle: 24h</p>
             </div>
 
             <div class="relative mb-10">
@@ -171,51 +209,51 @@
                 </div>
 
                 <div class="wheel-hub">
-                    <i data-lucide="gift" class="w-6 h-6 text-emerald-500"></i>
+                    <i data-lucide="gift" class="w-5 h-5 text-emerald-500"></i>
                 </div>
             </div>
 
             <div class="flex flex-col items-center w-full gap-4">
                 <button id="spin-btn" disabled 
-                    class="group relative w-full max-w-[240px] h-14 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-lg font-bold text-white text-sm uppercase tracking-widest shadow-lg shadow-emerald-900/40 hover:shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 overflow-hidden">
+                    class="group relative w-full max-w-[240px] h-14 bg-white hover:bg-zinc-200 text-black rounded-sm font-bold text-[10px] uppercase tracking-[0.2em] shadow-2xl transition-all disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed overflow-hidden">
                     <span class="relative z-10 flex items-center justify-center gap-2">
                         <span id="btn-text">Initializing...</span>
                     </span>
-                    <div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-20 group-hover:animate-shiny"></div>
+                    <div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-black/5 opacity-50 group-hover:animate-shiny"></div>
                 </button>
                 
-                <p id="timer-text" class="text-[10px] font-mono text-zinc-500 h-4"></p>
+                <p id="timer-text" class="text-[10px] font-mono text-zinc-600 h-4 uppercase tracking-widest"></p>
             </div>
 
-            <div id="win-history" class="w-full max-w-sm mt-8 pt-6 border-t border-zinc-800">
-                <button type="button" id="history-toggle" class="flex items-center justify-between w-full text-left text-zinc-400 hover:text-white transition-colors mb-3 group">
-                    <span class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                        <i data-lucide="history" class="w-3 h-3"></i>
-                        Winning History
+            <div id="win-history" class="w-full max-w-sm mt-10 pt-6 border-t border-white/5">
+                <button type="button" id="history-toggle" class="flex items-center justify-between w-full text-left text-zinc-500 hover:text-white transition-colors mb-4 group">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        Recent Activity
                     </span>
                     <i data-lucide="chevron-down" class="w-4 h-4 transition-transform group-data-[open]:rotate-180" id="history-chevron"></i>
                 </button>
-                <div id="history-list" class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar"></div>
-                <p id="history-empty" class="hidden text-[10px] text-zinc-600 font-mono">No spins yet. Spin to see your wins here!</p>
+                <div id="history-list" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>
+                <p id="history-empty" class="hidden text-[10px] text-zinc-700 font-mono italic text-center py-4">No activity logged.</p>
             </div>
             
-            <a href="index.html" class="mt-8 text-zinc-600 hover:text-zinc-300 text-[10px] uppercase tracking-widest transition-colors border-b border-transparent hover:border-zinc-300 pb-0.5">Back to Store</a>
+            <a href="index.html" class="mt-10 text-zinc-700 hover:text-zinc-500 text-[9px] uppercase tracking-[0.2em] transition-colors">Back to Digital Asset Vault</a>
         </div>
     </main>
 
     <script>
         // --- CONFIGURATION ---
-        const SITE_NAME = "StakzSpin"; // Changed from StakzShop
+        const SITE_NAME = "StakzSpin";
         const PRIZES = [
-            { label: 'Better luck!', value: 0, type: 'credit', chance: 0.40, color: '#18181b', text: '#52525b' },
-            { label: '₱1', value: 1, type: 'credit', chance: 0.25, color: '#27272a', text: '#e4e4e7' },
-            { label: '₱2', value: 2, type: 'credit', chance: 0.15, color: '#27272a', text: '#e4e4e7' },
-            { label: '₱3', value: 3, type: 'credit', chance: 0.10, color: '#3f3f46', text: '#ffffff' },
+            { label: 'Better luck!', value: 0, type: 'credit', chance: 0.40, color: '#09090b', text: '#3f3f46' },
+            { label: '₱1', value: 1, type: 'credit', chance: 0.25, color: '#18181b', text: '#f4f4f5' },
+            { label: '₱2', value: 2, type: 'credit', chance: 0.15, color: '#18181b', text: '#f4f4f5' },
+            { label: '₱3', value: 3, type: 'credit', chance: 0.10, color: '#27272a', text: '#ffffff' },
             { label: '₱5', value: 5, type: 'credit', chance: 0.05, color: '#047857', text: '#ffffff' },
             { label: '₱10', value: 10, type: 'credit', chance: 0.03, color: '#059669', text: '#ffffff' },
             { label: '₱15', value: 15, type: 'credit', chance: 0.015, color: '#10b981', text: '#ffffff' },
-            { label: '410c', value: 'SHEIN (410c)', type: 'item', chance: 0.004, color: '#d97706', text: '#fffbeb' },
-            { label: '469c', value: 'SHEIN (469c)', type: 'item', chance: 0.001, color: '#dc2626', text: '#fef2f2' }
+            { label: '410c', value: 'SHEIN (410c)', type: 'item', chance: 0.004, color: '#d97706', text: '#ffffff' },
+            { label: '469c', value: 'SHEIN (469c)', type: 'item', chance: 0.001, color: '#dc2626', text: '#ffffff' }
         ];
 
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
@@ -227,10 +265,10 @@
         function showToast(msg, type = 'info') {
             const container = $('#toast-container');
             const el = document.createElement('div');
-            el.className = 'pointer-events-auto bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-white p-3 rounded-lg shadow-xl flex items-center gap-3 text-xs toast-enter';
+            el.className = 'pointer-events-auto bg-zinc-900/90 backdrop-blur-md border border-white/5 text-white p-3 rounded-sm shadow-2xl flex items-center gap-3 text-[10px] uppercase tracking-wide toast-enter';
             let icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
             let color = type === 'success' ? 'text-emerald-400' : type === 'error' ? 'text-red-400' : 'text-blue-400';
-            el.innerHTML = `<i data-lucide="${icon}" class="${color} w-4 h-4 shrink-0"></i><span>${msg}</span>`;
+            el.innerHTML = `<i data-lucide="${icon}" class="${color} w-3.5 h-3.5 shrink-0"></i><span>${msg}</span>`;
             container.appendChild(el);
             lucide.createIcons();
             requestAnimationFrame(() => el.classList.add('toast-enter-active'));
@@ -241,7 +279,7 @@
         }
 
         const HISTORY_KEY = 'stakz_spin_history';
-        const MAX_HISTORY = 20;
+        const MAX_HISTORY = 10;
 
         const game = {
             user: null,
@@ -272,9 +310,10 @@
                     } else {
                         $('#loading-screen').style.display = 'none';
                         $('#login-prompt').classList.remove('hidden');
+                        lucide.createIcons();
                     }
                 } catch (e) {
-                    showToast("System Error: Could not load game data", "error");
+                    showToast("System Link Failure", "error");
                 }
             },
 
@@ -322,40 +361,40 @@
                 if (!list) return;
                 if (this.spinHistory.length === 0) {
                     list.innerHTML = '';
-                    if (empty) { empty.classList.remove('hidden'); empty.classList.add('block'); }
+                    empty?.classList.remove('hidden');
                     return;
                 }
-                if (empty) empty.classList.add('hidden');
-                list.innerHTML = this.spinHistory.slice(0, 15).map((h, i) => {
+                empty?.classList.add('hidden');
+                list.innerHTML = this.spinHistory.map(h => {
                     const d = new Date(h.at);
-                    const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    const winClass = h.isWin ? 'text-emerald-400' : 'text-zinc-500';
+                    const dateStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const winClass = h.isWin ? 'text-emerald-400' : 'text-zinc-600';
                     const displayVal = h.type === 'credit' && h.value > 0 ? `₱${h.value}` : h.label;
+                    const icon = h.isWin ? 'arrow-up-right' : 'minus';
+                    
                     return `
-                        <div class="flex justify-between items-center py-1.5 px-2 rounded bg-zinc-900/50 border border-zinc-800/50 text-[10px] font-mono">
-                            <span class="${winClass} font-semibold">${displayVal}</span>
-                            <span class="text-zinc-600 text-[9px]">${dateStr}</span>
+                        <div class="flex justify-between items-center p-2.5 rounded-sm bg-zinc-900/30 border border-white/5 font-mono text-[9px] uppercase tracking-wider">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="${icon}" class="${winClass} w-3 h-3"></i>
+                                <span class="${winClass}">${displayVal}</span>
+                            </div>
+                            <span class="text-zinc-800">${dateStr}</span>
                         </div>
                     `;
                 }).join('');
+                lucide.createIcons();
             },
 
             setupHistoryToggle: function() {
                 const btn = $('#history-toggle');
                 const list = $('#history-list');
-                const empty = $('#history-empty');
                 if (!btn) return;
                 btn.addEventListener('click', () => {
-                    const isHidden = list.classList.contains('hidden') && empty.classList.contains('hidden');
-                    if (this.spinHistory.length > 0) {
-                        list.classList.toggle('hidden', !isHidden);
-                    }
-                    empty.classList.toggle('hidden', !isHidden || this.spinHistory.length > 0);
-                    $('#history-chevron')?.style.setProperty('transform', isHidden ? 'rotate(180deg)' : 'rotate(0deg)');
+                    const isOpen = !list.classList.contains('hidden');
+                    list.classList.toggle('hidden', isOpen);
+                    $('#history-chevron')?.style.setProperty('transform', isOpen ? 'rotate(0deg)' : 'rotate(180deg)');
                 });
                 list.classList.add('hidden');
-                if (this.spinHistory.length === 0) empty.classList.remove('hidden');
-                else empty.classList.add('hidden');
             },
 
             checkEligibility: function() {
@@ -370,13 +409,13 @@
 
                 if (canSpin) {
                     btn.disabled = false;
-                    $('#btn-text').innerText = "SPIN NOW";
-                    timer.innerText = "Ready for your daily reward!";
+                    $('#btn-text').innerText = "CLAIM REWARD";
+                    timer.innerText = "ALLOCATION READY";
                 } else {
                     btn.disabled = true;
-                    $('#btn-text').innerText = "COME BACK TOMORROW";
+                    $('#btn-text').innerText = "COOLDOWN ACTIVE";
                     const nextSpin = new Date(lastSpin.getTime() + oneDay);
-                    timer.innerText = `Next spin available at: ${nextSpin.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    timer.innerText = `NEXT ALLOCATION: ${nextSpin.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                 }
             },
 
@@ -420,17 +459,14 @@
                 return PRIZES[0];
             },
 
-            // --- FIXED SPIN LOGIC ---
             spin: async function() {
                 if (this.isSpinning) return;
                 
-                // 1. Instantly disable UI
                 this.isSpinning = true;
                 $('#spin-btn').disabled = true;
                 $('#btn-text').innerText = "VERIFYING...";
 
                 try {
-                    // 2. FORCE check database for actual last spin time (prevents multi-tab exploits)
                     const { data: freshProfile, error: fetchError } = await this.supabase
                         .from('profiles')
                         .select('last_spin_at')
@@ -444,27 +480,22 @@
                     const oneDay = 24 * 60 * 60 * 1000;
 
                     if (lastSpin && (now - lastSpin) < oneDay) {
-                        showToast("You have already spun today!", "error");
+                        showToast("Limit Exceeded", "error");
                         this.profile.last_spin_at = freshProfile.last_spin_at;
                         this.isSpinning = false;
                         this.checkEligibility();
                         return;
                     }
 
-                    // 3. SECURE LOCK: Immediately update DB to 'now' before showing animation
-                    // This burns the spin attempt immediately.
                     const { error: lockError } = await this.supabase
                         .from('profiles')
                         .upsert({ id: this.user.id, last_spin_at: now.toISOString() });
 
                     if (lockError) throw lockError;
-
-                    // 4. Update local state
                     this.profile.last_spin_at = now.toISOString();
 
-                    // 5. Proceed with Animation
                     if (navigator.vibrate) navigator.vibrate(50);
-                    $('#btn-text').innerText = "SPINNING...";
+                    $('#btn-text').innerText = "AUTHORIZING...";
                     
                     const result = this.determineResult();
                     const resultIndex = PRIZES.findIndex(p => p.label === result.label);
@@ -478,10 +509,9 @@
                     setTimeout(() => this.handleWin(result), 4000);
 
                 } catch (err) {
-                    console.error(err);
                     this.isSpinning = false;
                     this.checkEligibility();
-                    showToast("Security check failed. Try again.", "error");
+                    showToast("Security Exception", "error");
                 }
             },
 
@@ -498,15 +528,14 @@
                 }
 
                 if (result.type === 'credit' && result.value > 0) {
-                    msg = `Woohoo! You won ₱${result.value} credits!`;
+                    msg = `Credit Allocated: ₱${result.value}`;
                     this.profile.credits += result.value;
-                    // Save new credit balance
                     await this.supabase.from('profiles').update({ credits: this.profile.credits }).eq('id', this.user.id);
                 } else if (result.type === 'item') {
-                    msg = `JACKPOT! You won ${result.value}. Order created.`;
+                    msg = `Item Secured: ${result.value}`;
                     await this.createOrder(result.value);
                 } else {
-                    msg = "Better luck next time!";
+                    msg = "No Allocation Found";
                 }
 
                 this.saveWin(result);
