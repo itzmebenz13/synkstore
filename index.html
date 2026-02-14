@@ -250,6 +250,7 @@
             authLoading: false,
             modalCallback: null,
             sessionOrderCount: 0,
+            selectedOrderId: null,
             captchaToken: null,
             payWithCredits: false
         };
@@ -620,7 +621,7 @@
 
                 if(state.adminAuth) fetchAllOrders();
                 if(state.user) fetchUserOrders().then(() => {
-                    if (state.view === 'my-orders' || state.view === 'my-accounts') render(false);
+                    if (state.view === 'my-orders') render(false);
                 });
                 if(state.view === 'tracker' && state.trackerInput) handleTrack(true);
             })
@@ -761,6 +762,7 @@
 
         function setView(view) {
             state.view = view;
+            if (view !== 'my-orders') state.selectedOrderId = null;
             if(view === 'home' || view === 'product') {
                 state.discount = 0; 
                 state.quantity = 1;
@@ -768,7 +770,7 @@
                 state.payWithCredits = false;
             }
             if (view === 'admin' && state.adminAuth) fetchAllOrders();
-            if ((view === 'my-orders' || view === 'my-accounts') && state.user) fetchUserOrders().then(() => render(false));
+            if (view === 'my-orders' && state.user) fetchUserOrders().then(() => render(false));
             render();
         }
 
@@ -1118,8 +1120,7 @@
                                     <span>₱${formatPHP(state.userProfile?.credits || 0).replace('₱', '')}</span>
                                </div>
                                <a href="spin.html" class="text-zinc-400 hover:text-yellow-400 transition-colors animate-pulse-slow"><i data-lucide="gift" class="w-4 h-4"></i></a>
-                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
-                               <button onclick="window.setView('my-accounts')" class="text-zinc-400 hover:text-white transition-colors" title="Access details"><i data-lucide="key" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
                             : `<button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-white transition-colors">Login</button>`
                         }
@@ -1210,15 +1211,38 @@
             </div>`;
         }
 
+        function showOrderAccounts(orderId) {
+            state.selectedOrderId = orderId;
+            render(false);
+        }
+
+        function clearOrderSelection() {
+            state.selectedOrderId = null;
+            render(false);
+        }
+
         function renderUserOrders() {
+            const selected = state.selectedOrderId ? state.userOrders.find(o => o.id === state.selectedOrderId) : null;
+            const showingAccounts = selected && selected.status === 'Completed' && selected.accounts && selected.accounts.length > 0;
+
             return `
             <div class="min-h-screen bg-black font-sans pb-16 pt-14">
                 <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
-                    <button onclick="window.goHome()" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">My Order History</span>
+                    <button onclick="${showingAccounts ? "window.clearOrderSelection()" : "window.goHome()"}" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="${showingAccounts ? 'arrow-left' : 'arrow-left'}" class="w-4 h-4"></i></button>
+                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">${showingAccounts ? 'Access details' : 'My Order History'}</span>
                 </div>
                 <div class="p-4 max-w-2xl mx-auto w-full">
-                    ${state.userOrders.length === 0 ? `
+                    ${showingAccounts ? `
+                        <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm mb-4">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                            <div class="pl-2 mb-2">
+                                <h3 class="font-bold text-xs tracking-tight mb-0.5 text-white">${selected.id}</h3>
+                                <p class="text-[9px] text-zinc-500 font-mono">${formatDate(selected.date)} · ${selected.product}</p>
+                            </div>
+                            ${renderOrderAccountsContent(selected)}
+                        </div>
+                        <button onclick="window.clearOrderSelection()" class="w-full text-center text-[9px] font-bold uppercase text-zinc-500 hover:text-white py-2 border border-white/10 rounded-sm transition-colors">Back to order list</button>
+                    ` : state.userOrders.length === 0 ? `
                         <div class="text-center py-10 text-zinc-600">
                             <i data-lucide="package-open" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
                             <p class="text-[10px] uppercase tracking-widest">No orders yet</p>
@@ -1226,39 +1250,6 @@
                     ` : `
                         <div class="space-y-4">
                             ${state.userOrders.map(order => renderOrderCard(order, true)).join('')}
-                        </div>
-                    `}
-                </div>
-            </div>`;
-        }
-
-        function renderMyAccounts() {
-            const completedOrders = (state.userOrders || []).filter(o => o.status === 'Completed' && o.accounts && o.accounts.length > 0);
-            return `
-            <div class="min-h-screen bg-black font-sans pb-16 pt-14">
-                <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
-                    <button onclick="window.goHome()" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">Access Details</span>
-                </div>
-                <div class="p-4 max-w-2xl mx-auto w-full">
-                    ${completedOrders.length === 0 ? `
-                        <div class="text-center py-10 text-zinc-600">
-                            <i data-lucide="key" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                            <p class="text-[10px] uppercase tracking-widest">No access details yet</p>
-                            <p class="text-[9px] text-zinc-600 mt-1">Complete an order to see credentials here</p>
-                        </div>
-                    ` : `
-                        <div class="space-y-6">
-                            ${completedOrders.map(res => `
-                            <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm">
-                                <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-                                <div class="pl-2 mb-4">
-                                    <h3 class="font-bold text-xs tracking-tight mb-0.5 text-white">${res.id}</h3>
-                                    <p class="text-[9px] text-zinc-500 font-mono">${formatDate(res.date)} · ${res.product}</p>
-                                </div>
-                                ${renderOrderAccountsContent(res)}
-                            </div>
-                            `).join('')}
                         </div>
                     `}
                 </div>
@@ -1519,7 +1510,7 @@
                 if (isMyOrders && state.view === 'my-orders') {
                     accountsHtml = `
                     <div class="mt-4 pt-3 border-t border-white/5">
-                        <button onclick="window.setView('my-accounts')" class="w-full text-center text-[9px] font-bold uppercase text-emerald-400 hover:text-emerald-300 transition-colors py-2 flex items-center justify-center gap-2">
+                        <button onclick="window.showOrderAccounts('${res.id}')" class="w-full text-center text-[9px] font-bold uppercase text-emerald-400 hover:text-emerald-300 transition-colors py-2 flex items-center justify-center gap-2">
                             <i data-lucide="key" class="w-3 h-3"></i> View access details
                         </button>
                     </div>`;
@@ -1931,8 +1922,6 @@
                 html = renderForgotPassword();
             } else if (state.view === 'my-orders') {
                 html = renderHeader() + renderUserOrders();
-            } else if (state.view === 'my-accounts') {
-                html = renderHeader() + renderMyAccounts();
             } else {
                 html = renderHeader();
                 if (state.view === 'home') html += renderHome(animate);
@@ -1958,6 +1947,8 @@
         // Functions to Expose
         window.goHome = goHome;
         window.setView = setView;
+        window.showOrderAccounts = showOrderAccounts;
+        window.clearOrderSelection = clearOrderSelection;
         window.selectProduct = selectProduct;
         window.updateQuantity = updateQuantity;
         window.submitOrder = submitOrder;
