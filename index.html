@@ -116,7 +116,6 @@
     <script>
         // --- Configuration ---
         const SITE_NAME = "SYNK STORE";
-        // Version constant removed as requested
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
@@ -222,7 +221,8 @@
             const newQty = state.quantity + change;
             if (newQty >= 1) {
                 state.quantity = newQty;
-                render();
+                // Render with false to skip animation
+                render(false);
             }
         }
 
@@ -420,9 +420,10 @@
             </div>`;
         }
 
-        function renderHome() {
+        function renderHome(animate = true) {
+            const animClass = animate ? 'animate-enter' : '';
             return `
-            <div class="pb-20 animate-enter">
+            <div class="pb-20 ${animClass}">
                 <!-- Status Bar Updated -->
                 <div class="bg-zinc-900/50 border-b border-white/5 py-2 px-4 flex justify-center items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 font-mono">
                     <i data-lucide="lock" class="w-3 h-3"></i>
@@ -499,13 +500,14 @@
             </div>`;
         }
 
-        function renderProduct() {
+        function renderProduct(animate = true) {
             const p = state.selectedProduct;
             const total = getPrice() * state.quantity;
             const isBulk = state.quantity >= p.bulkThreshold;
+            const animClass = animate ? 'animate-enter' : '';
 
             return `
-            <div class="pb-32 animate-enter flex flex-col h-full">
+            <div class="pb-32 ${animClass} flex flex-col h-full">
                 <!-- Nav -->
                 <div class="p-4">
                     <button onclick="window.goHome()" class="flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors">
@@ -562,10 +564,11 @@
             </div>`;
         }
 
-        function renderCheckout() {
+        function renderCheckout(animate = true) {
             const total = getPrice() * state.quantity;
+            const animClass = animate ? 'animate-enter' : '';
             return `
-            <div class="min-h-screen bg-black pb-20 animate-enter">
+            <div class="min-h-screen bg-black pb-20 ${animClass}">
                 <div class="p-4 border-b border-white/5 flex items-center gap-4 sticky top-0 bg-black/80 backdrop-blur-md z-10">
                     <button onclick="window.setView('product')" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
                     <h2 class="font-mono text-xs uppercase tracking-widest text-white">Secure Checkout</h2>
@@ -639,9 +642,10 @@
             </div>`;
         }
 
-        function renderSuccess() {
+        function renderSuccess(animate = true) {
+            const animClass = animate ? 'animate-enter' : '';
             return `
-            <div class="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-black animate-enter relative overflow-hidden">
+            <div class="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-black ${animClass} relative overflow-hidden">
                 <!-- Background Glow -->
                 <div class="absolute inset-0 bg-emerald-500/5 radial-gradient"></div>
 
@@ -673,7 +677,7 @@
             </div>`;
         }
 
-        function renderTracker() {
+        function renderTracker(animate = true) {
             const res = state.searchResult;
             let content = '';
 
@@ -945,7 +949,7 @@
         }
 
         // --- Main Render Loop ---
-        function render() {
+        function render(animate = true) {
             const app = document.getElementById('app');
             let html = '';
 
@@ -953,11 +957,11 @@
                 html = renderAdmin();
             } else {
                 html = renderHeader();
-                if (state.view === 'home') html += renderHome();
-                else if (state.view === 'product') html += renderProduct();
-                else if (state.view === 'checkout') html += renderCheckout();
-                else if (state.view === 'success') html += renderSuccess();
-                else if (state.view === 'tracker') html += renderTracker();
+                if (state.view === 'home') html += renderHome(animate);
+                else if (state.view === 'product') html += renderProduct(animate);
+                else if (state.view === 'checkout') html += renderCheckout(animate);
+                else if (state.view === 'success') html += renderSuccess(animate);
+                else if (state.view === 'tracker') html += renderTracker(animate);
             }
 
             app.innerHTML = html;
