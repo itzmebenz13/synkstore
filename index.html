@@ -1569,8 +1569,6 @@
                 html = renderRegister();
             } else if (state.view === 'forgot-password') {
                 html = renderForgotPassword();
-            } else if (state.view === 'my-orders') {
-                html = renderUserOrders();
             } else {
                 html = renderHeader();
                 if (state.view === 'home') html += renderHome(animate);
@@ -1578,6 +1576,7 @@
                 else if (state.view === 'checkout') html += renderCheckout(animate);
                 else if (state.view === 'success') html += renderSuccess(animate);
                 else if (state.view === 'tracker') html += renderTracker(animate);
+                else if (state.view === 'my-orders') html += renderUserOrders();
             }
 
             app.innerHTML = html;
