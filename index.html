@@ -191,6 +191,12 @@
         // --- Core Logic ---
 
         function init() {
+            // Fix: Prevent browser from restoring scroll position on refresh
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            window.scrollTo(0, 0);
+
             const savedOrders = localStorage.getItem('synk_orders');
             if (savedOrders) state.orders = JSON.parse(savedOrders);
             render();
@@ -1021,6 +1027,11 @@
 
             app.innerHTML = html;
             lucide.createIcons();
+
+            // Fix: Scroll to top when changing views (animate=true), but not when updating quantity (animate=false)
+            if (animate) {
+                window.scrollTo(0, 0);
+            }
         }
 
         // Expose functions to window for inline onclick handlers
