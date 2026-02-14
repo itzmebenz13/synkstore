@@ -124,7 +124,7 @@
         const PRODUCTS = [
             {
                 id: 1,
-                title: "SHEIN Account (469c)",
+                title: "SHEIN ACCT (469c)",
                 tag: "HIGH DEMAND",
                 price: 35,
                 bulkPrice: 30,
@@ -134,7 +134,7 @@
             },
             {
                 id: 2,
-                title: "SHEIN Account (410c)",
+                title: "SHEIN ACCT (410c)",
                 tag: "STABLE",
                 price: 20,
                 bulkPrice: 15,
@@ -144,7 +144,7 @@
             },
             {
                 id: 3,
-                title: "SHEIN Account (255c + 410c)",
+                title: "SHEIN ACCT (255c + 410c)",
                 tag: "WIDE RANGE",
                 price: 40,
                 bulkPrice: 35,
@@ -154,7 +154,7 @@
             },
             {
                 id: 4,
-                title: "SHEIN Account (428c + 410c)",
+                title: "SHEIN ACCT (428c + 410c)",
                 tag: "WIDE RANGE",
                 price: 80,
                 bulkPrice: 70,
@@ -516,12 +516,12 @@
                 <!-- Marquee -->
                 <div class="overflow-hidden bg-black border-b border-white/5 py-3 relative">
                      <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-600 uppercase tracking-[0.2em]">
-                        <span>VERIFIED SHEIN ACCOUNTS</span>
+                        <span>VERIFIED SHEIN ACCTS</span>
                         <span>BULK PRICING AVAILABLE</span>
                         <span>MANUAL ORDER VERIFICATION</span>
                         <span>EXCLUSIVE VOUCHERS INCLUDED</span>
                         <span>SECURE PAYMENT PROCESSING</span>
-                        <span>VERIFIED SHEIN ACCOUNTS</span>
+                        <span>VERIFIED SHEIN ACCTS</span>
                         <span>BULK PRICING AVAILABLE</span>
                         <span>MANUAL ORDER VERIFICATION</span>
                      </div>
@@ -825,14 +825,14 @@
                     accountsHtml = `
                     <div class="mt-5">
                         <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-zinc-400"><i data-lucide="terminal" class="w-3 h-3"></i> Account Credentials</h3>
+                            <h3 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 text-zinc-400"><i data-lucide="terminal" class="w-3 h-3"></i> Acct Credentials</h3>
                             <button onclick="window.handleTrack()" class="text-zinc-600 hover:text-white transition-colors"><i data-lucide="refresh-cw" class="w-3 h-3"></i></button>
                         </div>
                         <div class="space-y-2">
                             ${res.accounts.map((acc, idx) => `
                             <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 relative overflow-hidden group transition-all">
                                 <div class="flex justify-between items-center mb-2">
-                                    <span class="text-[9px] text-zinc-500 font-mono">Account #${idx + 1}</span>
+                                    <span class="text-[9px] text-zinc-500 font-mono">Acct #${idx + 1}</span>
                                     <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold flex items-center gap-1 transition-colors">
                                         ${acc.used ? 'Undo' : 'Mark as Used'}
                                     </button>
@@ -1035,7 +1035,7 @@
                             ${state.activeFulfillmentId === order.id ? `
                             <tr>
                                 <td colspan="3" class="bg-zinc-800/50 p-4 border-y border-white/5 animate-enter">
-                                    <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Add Accounts (Line Separated)</h4>
+                                    <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Add Accts (Line Separated)</h4>
                                     <textarea id="fulfillmentTextArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono h-24 mb-3 focus:border-emerald-500/50 focus:outline-none text-white" placeholder="user:pass..."></textarea>
                                     <div class="flex justify-end gap-2">
                                         <button onclick="state.activeFulfillmentId = null; render()" class="text-zinc-500 hover:text-white text-[10px] font-bold uppercase transition-colors">Cancel</button>
