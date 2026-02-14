@@ -760,27 +760,20 @@
 
         async function submitOrder() {
             const refInput = document.getElementById('refNumberInput');
-            // If paying with credits, ref number is optional/auto-filled
-            if (!state.payWithCredits && (!refInput || !refInput.value.trim())) return showToast("Please enter the payment reference number.", "error");
-            
+            const baseTotal = getPrice() * state.quantity;
+            const finalTotal = baseTotal - (baseTotal * state.discount);
+            const credits = parseFloat(state.userProfile?.credits || 0);
+            const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
+            const remainingToPay = finalTotal - creditsUsed;
+
+            if (remainingToPay > 0 && (!refInput || !refInput.value.trim())) return showToast("Please enter the payment reference number.", "error");
             if (state.sessionOrderCount >= 3 && !state.captchaToken) return showToast("Please complete the captcha", "error");
 
             state.isSubmitting = true;
             render(false); 
-
-            const baseTotal = getPrice() * state.quantity;
-            const finalTotal = baseTotal - (baseTotal * state.discount);
             
-            // Credit Payment Logic
-            if (state.payWithCredits) {
-                const credits = parseFloat(state.userProfile?.credits || 0);
-                if (credits < finalTotal) {
-                    state.isSubmitting = false;
-                    render(false);
-                    return showToast("Insufficient Credits", "error");
-                }
-                
-                const newCredits = credits - finalTotal;
+            if (creditsUsed > 0) {
+                const newCredits = credits - creditsUsed;
                 const { data: updatedProfile, error: credErr } = await supabaseClient
                     .from('profiles')
                     .update({ credits: newCredits })
@@ -796,12 +789,13 @@
             }
 
             const newOrderId = generateOrderId();
+            const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : refInput.value.trim();
             const dbPayload = {
                 id: newOrderId,
                 product_title: state.selectedProduct.title,
                 quantity: state.quantity,
                 total: finalTotal,
-                ref_number: state.payWithCredits ? 'PAID-VIA-CREDITS' : refInput.value.trim(),
+                ref_number: refNumber,
                 status: 'Processing',
                 accounts_data: [],
                 refund_request: null,
@@ -1310,13 +1304,24 @@
                                 <div class="w-8 h-4 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
                             </div>
                             <div>
-                                <span class="text-[10px] font-bold text-white uppercase tracking-wide">Pay with Wallet</span>
-                                <p class="text-[9px] text-zinc-500">Balance: ${formatPHP(state.userProfile?.credits || 0)}</p>
+                                <span class="text-[10px] font-bold text-white uppercase tracking-wide">Use Wallet</span>
+                                <p class="text-[9px] text-zinc-500">Balance: ${formatPHP(state.userProfile?.credits || 0)} • Applied as discount</p>
                             </div>
                         </label>
+                        ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? `
+                        <div class="mt-2 pt-2 border-t border-white/5 space-y-1">
+                            <div class="flex justify-between text-[9px]">
+                                <span class="text-zinc-500">Credits applied</span>
+                                <span class="text-emerald-400 font-mono">-${formatPHP(Math.min(state.userProfile?.credits || 0, finalTotal))}</span>
+                            </div>
+                            <div class="flex justify-between text-[9px] font-bold">
+                                <span class="text-zinc-400">Amount to pay</span>
+                                <span class="text-white font-mono">${formatPHP(Math.max(0, finalTotal - (state.userProfile?.credits || 0)))}</span>
+                            </div>
+                        </div>` : ''}
                     </div>` : ''}
 
-                    ${!state.payWithCredits ? `
+                    ${!(state.payWithCredits && (state.userProfile?.credits || 0) >= finalTotal) ? `
                     <div class="mb-6">
                         <div class="flex items-center gap-2 mb-3">
                             <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
