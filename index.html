@@ -537,6 +537,7 @@
                 quantity: o.quantity,
                 total: o.total,
                 refNumber: o.ref_number,
+                creditsUsed: o.credits_used ?? 0,
                 status: o.status,
                 accounts: o.accounts_data || [],
                 refundRequest: o.refund_request || null,
@@ -796,6 +797,7 @@
                 quantity: state.quantity,
                 total: finalTotal,
                 ref_number: refNumber,
+                credits_used: creditsUsed,
                 status: 'Processing',
                 accounts_data: [],
                 refund_request: null,
@@ -840,27 +842,33 @@
         }
 
         async function cancelOrder(id) {
-            let orderDate = null;
-            const inUser = state.userOrders.find(o => o.id === id);
-            const inAdmin = state.orders.find(o => o.id === id);
-            const inSearch = state.searchResult && state.searchResult.id === id ? state.searchResult : null;
-            const target = inUser || inAdmin || inSearch;
-            
-            if (target) {
-                orderDate = new Date(target.date);
-                const timeDiff = new Date() - orderDate;
-                if (timeDiff > 60000 && !state.adminAuth) return showToast('Cancellation window has expired.', 'error');
-            }
-
             showModal('Cancel Order?', 'Are you sure you want to cancel this order? This action cannot be undone.', async () => {
+                const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('created_at, user_id, credits_used').eq('id', id).single();
+                if (fetchErr || !order) return showToast("Order not found", "error");
+                const timeDiff = new Date() - new Date(order.created_at);
+                if (timeDiff > 60000 && !state.adminAuth) return showToast('Cancellation window has expired.', 'error');
+
                 const { error } = await supabaseClient.from('orders').update({ status: 'Cancelled' }).eq('id', id);
-                if(error) showToast("Error cancelling order", "error");
-                else showToast("Order cancelled", "info");
+                if(error) return showToast("Error cancelling order", "error");
+
+                const creditsToRefund = parseFloat(order.credits_used || 0);
+                if (creditsToRefund > 0 && order.user_id) {
+                    const { data: prof } = await supabaseClient.from('profiles').select('credits').eq('id', order.user_id).single();
+                    const newCredits = parseFloat(prof?.credits || 0) + creditsToRefund;
+                    await supabaseClient.from('profiles').update({ credits: newCredits }).eq('id', order.user_id);
+                    if (state.user?.id === order.user_id) await fetchUserProfile();
+                }
+                showToast("Order cancelled", "info");
             }, 'danger', 'Yes, Cancel Order');
         }
 
         async function deleteOrder(id) {
             showModal('Delete Order?', 'This will permanently remove this order from your history.', async () => {
+                const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('created_at').eq('id', id).single();
+                if (fetchErr || !order) return showToast("Order not found", "error");
+                const timeDiff = new Date() - new Date(order.created_at);
+                if (timeDiff >= 60000) return showToast("Delete window has expired (60s)", "error");
+
                 const { error } = await supabaseClient.from('orders').delete().eq('id', id);
                 if(error) showToast("Failed to delete", "error");
                 else showToast("Order deleted", "success");
@@ -1868,7 +1876,7 @@
             } else if (state.view === 'forgot-password') {
                 html = renderForgotPassword();
             } else if (state.view === 'my-orders') {
-                html = renderUserOrders();
+                html = renderHeader() + renderUserOrders();
             } else {
                 html = renderHeader();
                 if (state.view === 'home') html += renderHome(animate);
