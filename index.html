@@ -942,12 +942,13 @@
             const passwordsEl = document.getElementById('fulfillmentPasswordsArea');
             const emails = (emailsEl?.value || '').trim().split('\n').map(l => l.trim()).filter(Boolean);
             const passwords = (passwordsEl?.value || '').trim().split('\n').map(l => l.trim()).filter(Boolean);
-            if (emails.length === 0 || passwords.length === 0) return showToast("Please enter emails and passwords", "error");
-            if (emails.length !== passwords.length) return showToast("Email and password line counts must match", "error");
+            if (emails.length === 0 || passwords.length === 0) return showToast("Please enter at least one email and one password", "error");
 
+            // Use one password for all emails, or pair by index and reuse last password for extras
+            const getPassword = (i) => passwords[Math.min(i, passwords.length - 1)] || '';
             const newAccounts = emails.map((email, index) => ({
                 id: `acc-${Date.now()}-${index}`,
-                creds: `${email}:${passwords[index] || ''}`,
+                creds: `${email}:${getPassword(index)}`,
                 used: false,
                 otpRequest: { status: 'idle', code: null, requestedAt: null },
                 messages: [] 
