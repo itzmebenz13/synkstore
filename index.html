@@ -251,6 +251,7 @@
             modalCallback: null,
             sessionOrderCount: 0,
             selectedOrderId: null,
+            paymentSettings: { payment_qr_url: '', payment_number: '' },
             captchaToken: null,
             payWithCredits: false
         };
@@ -530,6 +531,26 @@
                 if(state.view === 'admin' && state.adminTab === 'products') render(false);
                 else if(state.view === 'home') render(false);
             }
+        }
+
+        async function fetchPaymentSettings() {
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient.from('settings').select('key, value');
+            if (!error && data && data.length) {
+                const map = {};
+                data.forEach(r => { map[r.key] = r.value || ''; });
+                state.paymentSettings = { payment_qr_url: map.payment_qr_url || '', payment_number: map.payment_number || '' };
+            }
+        }
+
+        function getPaymentQrUrl() {
+            const url = (state.paymentSettings?.payment_qr_url || '').trim();
+            return url || GCASH_QR_URL;
+        }
+
+        function getPaymentNumber() {
+            const num = (state.paymentSettings?.payment_number || '').trim();
+            return num || GCASH_NUMBER;
         }
 
         async function fetchAllOrders() {
@@ -1051,6 +1072,19 @@
             }, btnType, btnText);
         }
 
+        async function savePaymentSettings() {
+            const url = (document.getElementById('settingsPaymentQrUrl')?.value || '').trim();
+            const num = (document.getElementById('settingsPaymentNumber')?.value || '').trim();
+            const { error } = await supabaseClient.from('settings').upsert([
+                { key: 'payment_qr_url', value: url },
+                { key: 'payment_number', value: num }
+            ], { onConflict: 'key' });
+            if (error) return showToast("Failed to save", "error");
+            state.paymentSettings = { payment_qr_url: url, payment_number: num };
+            showToast("Payment settings saved", "success");
+            render(false);
+        }
+
         async function updateAdminPassword() {
             const newPass = document.getElementById('newAdminPass').value;
             if (!newPass || newPass.length < 4) return showToast("Password too short", "error");
@@ -1426,10 +1460,10 @@
                         <div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
                              <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-10"></div>
                              <div class="bg-white p-1.5">
-                                <img src="${GCASH_QR_URL}" alt="QR" class="w-24 h-24 object-cover mix-blend-multiply" />
+                                <img src="${getPaymentQrUrl()}" alt="QR" class="w-24 h-24 object-cover mix-blend-multiply" onerror="this.src='${GCASH_QR_URL}'" />
                              </div>
                              <div class="text-center relative z-10">
-                                <p class="font-mono text-sm font-bold text-white tracking-widest">${GCASH_NUMBER}</p>
+                                <p class="font-mono text-sm font-bold text-white tracking-widest">${getPaymentNumber()}</p>
                                 <p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p>
                              </div>
                         </div>
@@ -1869,14 +1903,31 @@
                     tabContent = `<div class="p-8 text-center text-zinc-600 bg-zinc-900 border border-white/5"><p class="text-[10px] font-bold uppercase tracking-widest">No pending OTP requests</p></div>`;
                 }
             } else if (state.adminTab === 'settings') {
+                const qrUrl = (state.paymentSettings?.payment_qr_url || '').trim();
+                const payNum = (state.paymentSettings?.payment_number || '').trim();
                 tabContent = `
-                <div class="bg-zinc-900 border border-white/5 p-6 max-w-sm">
-                    <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Security Settings</h3>
-                    <div class="mb-4">
-                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">New Password</label>
-                        <input type="password" id="newAdminPass" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
+                <div class="space-y-6 max-w-md">
+                    <div class="bg-zinc-900 border border-white/5 p-6">
+                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Payment (QR + Number)</h3>
+                        <p class="text-[9px] text-zinc-500 mb-3">Upload your QR image in Supabase Storage (Storage → New bucket "payment", Public ON → Upload file), then paste the Public URL below.</p>
+                        <div class="mb-4">
+                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Payment QR image URL</label>
+                            <input type="url" id="settingsPaymentQrUrl" placeholder="https://...supabase.co/storage/v1/object/public/payment/qr.png" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white placeholder-zinc-600" value="${qrUrl.replace(/"/g, '&quot;')}" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">GCash / payment number</label>
+                            <input type="text" id="settingsPaymentNumber" placeholder="0917 123 4567" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white placeholder-zinc-600" value="${payNum.replace(/"/g, '&quot;')}" />
+                        </div>
+                        <button onclick="window.savePaymentSettings()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Save payment settings</button>
                     </div>
-                    <button onclick="window.updateAdminPassword()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Update Password</button>
+                    <div class="bg-zinc-900 border border-white/5 p-6">
+                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Security Settings</h3>
+                        <div class="mb-4">
+                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">New Password</label>
+                            <input type="password" id="newAdminPass" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
+                        </div>
+                        <button onclick="window.updateAdminPassword()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Update Password</button>
+                    </div>
                 </div>`;
             }
 
@@ -1960,6 +2011,7 @@
         window.handleAdminLogout = handleAdminLogout; 
         window.fulfillOrder = fulfillOrder;
         window.adminAction = adminAction;
+        window.savePaymentSettings = savePaymentSettings;
         window.updateAdminPassword = updateAdminPassword;
         window.sendAccountMessage = sendAccountMessage;
         window.sendOtp = sendOtp;
@@ -1998,6 +2050,7 @@
             
             await initAuth();
             await fetchProducts();
+            await fetchPaymentSettings();
             setupRealtime();
             render();
         }
