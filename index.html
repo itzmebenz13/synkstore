@@ -130,7 +130,6 @@
         const apiKey = ""; // Enter Gemini API Key Here
 
         // --- SUPABASE CONFIGURATION ---
-        // Configured with your specific credentials
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
         
@@ -540,9 +539,20 @@
             if(!error) showToast("OTP Requested. Wait for admin.", "info");
         }
 
-        function handleAdminLogin() {
+        async function handleAdminLogin() {
             const pass = document.getElementById('adminPassInput').value;
-            if (pass === 'admin123') {
+            
+            // Check DB instead of hardcoded string
+            // We use .single() because we expect only one match
+            // Note: In a real app, never query passwords directly. Use Supabase Auth (GoTrue).
+            const { data, error } = await supabaseClient
+                .from('admins')
+                .select('*')
+                .eq('username', 'admin') // Assuming single admin user for now
+                .eq('password', pass)
+                .single();
+
+            if (data) {
                 state.adminAuth = true;
                 render();
                 showToast("Welcome back, Admin.", "success");
