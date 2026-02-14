@@ -516,12 +516,13 @@
                 if(data) {
                     state.userProfile = data;
                 } else {
-                    // Initialize profile if doesn't exist
-                    state.userProfile = {
+                    // Create profile if it doesn't exist (ensures credits are recorded)
+                    state.userProfile = { id: state.user.id, credits: 0, last_spin_at: null };
+                    await supabaseClient.from('profiles').upsert({
                         id: state.user.id,
                         credits: 0,
                         last_spin_at: null
-                    };
+                    }, { onConflict: 'id' });
                 }
             } catch(e) {
                 console.error('Profile fetch exception:', e);
@@ -596,15 +597,15 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 state.user = session.user;
-                fetchUserOrders();
-                fetchUserProfile();
+                await fetchUserOrders();
+                await fetchUserProfile();
             }
 
-            supabaseClient.auth.onAuthStateChange((_event, session) => {
+            supabaseClient.auth.onAuthStateChange(async (_event, session) => {
                 state.user = session ? session.user : null;
                 if(state.user) {
-                    fetchUserOrders();
-                    fetchUserProfile();
+                    await fetchUserOrders();
+                    await fetchUserProfile();
                 }
                 render();
             });
@@ -627,6 +628,7 @@
             } else {
                 showToast("Login Successful", "success");
                 state.user = data.user;
+                await fetchUserProfile();
                 goHome();
             }
         }
@@ -653,13 +655,18 @@
                 showToast("Account created! Logging in...", "success");
                 localStorage.setItem('stakz_acct_count', (acctCount + 1).toString());
                 
-                // Ensure profile is created
+                // Ensure profile is created with credits/last_spin_at (same as spin.html)
                 if(data.user) {
-                    await supabaseClient.from('profiles').insert([{ id: data.user.id }]);
+                    await supabaseClient.from('profiles').upsert({
+                        id: data.user.id,
+                        credits: 0,
+                        last_spin_at: null
+                    }, { onConflict: 'id' });
                 }
 
                 if(data.session) {
                     state.user = data.user;
+                    await fetchUserProfile();
                     goHome();
                 } else {
                     showToast("Please check email for verification link", "info");
@@ -773,13 +780,19 @@
                     return showToast("Insufficient Credits", "error");
                 }
                 
-                // Deduct
-                const { error: credErr } = await supabaseClient.from('profiles').update({ credits: credits - finalTotal }).eq('id', state.user.id);
+                const newCredits = credits - finalTotal;
+                const { data: updatedProfile, error: credErr } = await supabaseClient
+                    .from('profiles')
+                    .update({ credits: newCredits })
+                    .eq('id', state.user.id)
+                    .select()
+                    .single();
                 if(credErr) {
                     state.isSubmitting = false;
                     render(false);
                     return showToast("Payment failed", "error");
                 }
+                if (updatedProfile) state.userProfile = updatedProfile;
             }
 
             const newOrderId = generateOrderId();
