@@ -112,6 +112,23 @@
 
     <div id="toast-container"></div>
 
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-xs w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4" id="modal-content">
+            <div class="flex flex-col items-center text-center mb-4">
+                <div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-zinc-400" id="modal-icon">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <h3 id="modal-title" class="text-lg font-bold text-white tracking-tight">Confirm Action</h3>
+            </div>
+            <p id="modal-message" class="text-zinc-400 text-xs mb-6 leading-relaxed text-center">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button onclick="window.closeModal()" class="flex-1 py-3 text-[10px] font-bold uppercase text-zinc-400 hover:text-white transition-colors bg-zinc-800/50 hover:bg-zinc-800 rounded-sm tracking-wider border border-white/5">Cancel</button>
+                <button onclick="window.confirmModalAction()" class="flex-1 py-3 text-[10px] font-bold uppercase text-black bg-white hover:bg-zinc-200 transition-colors rounded-sm tracking-wider shadow-lg" id="modal-confirm-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <div id="app" class="w-full min-h-screen bg-black overflow-x-hidden relative text-zinc-100 flex flex-col text-sm">
         <!-- Content injected by JS -->
         <div class="flex items-center justify-center h-screen">
@@ -162,7 +179,8 @@
             aiContent: null,
             discount: 0,
             isSubmitting: false,
-            authLoading: false
+            authLoading: false,
+            modalCallback: null // Stores the function to execute on confirmation
         };
 
         // --- Helpers ---
@@ -221,6 +239,68 @@
             if (input) {
                 input.type = input.type === "password" ? "text" : "password";
             }
+        }
+
+        // --- Modal Logic ---
+        function showModal(title, message, callback, type = 'danger', confirmText = 'Confirm') {
+            const modal = document.getElementById('confirmation-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.textContent = confirmText;
+            
+            const iconContainer = document.getElementById('modal-icon');
+            
+            // Customize styling based on type
+            if (type === 'danger') {
+                confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-white bg-red-600 hover:bg-red-500 transition-colors rounded-sm tracking-wider shadow-lg shadow-red-900/20";
+                iconContainer.className = "w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center mb-3 text-red-500";
+                iconContainer.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5"></i>';
+            } else if (type === 'warning') {
+                confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-black bg-orange-400 hover:bg-orange-300 transition-colors rounded-sm tracking-wider shadow-lg shadow-orange-900/20";
+                iconContainer.className = "w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center mb-3 text-orange-500";
+                iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-5 h-5"></i>';
+            } else {
+                // Default / Success
+                confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-black bg-white hover:bg-zinc-200 transition-colors rounded-sm tracking-wider shadow-lg";
+                iconContainer.className = "w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-white";
+                iconContainer.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
+            }
+            
+            state.modalCallback = callback;
+            lucide.createIcons();
+            
+            modal.classList.remove('hidden');
+            // Small delay to allow display:block to apply before opacity transition
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            });
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirmation-modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                state.modalCallback = null;
+            }, 200);
+        }
+
+        function confirmModalAction() {
+            if (state.modalCallback) {
+                state.modalCallback();
+            }
+            closeModal();
         }
 
         // --- Supabase Logic ---
@@ -561,15 +641,22 @@
                 }
             }
 
-            if(confirm('Cancel this order? This action cannot be undone.')) {
-                const { error } = await supabaseClient
-                    .from('orders')
-                    .update({ status: 'Cancelled' })
-                    .eq('id', id);
+            // Using Custom Modal
+            showModal(
+                'Cancel Order?',
+                'Are you sure you want to cancel this order? This action cannot be undone.',
+                async () => {
+                    const { error } = await supabaseClient
+                        .from('orders')
+                        .update({ status: 'Cancelled' })
+                        .eq('id', id);
 
-                if(error) showToast("Error cancelling order", "error");
-                else showToast("Order cancelled", "info");
-            }
+                    if(error) showToast("Error cancelling order", "error");
+                    else showToast("Order cancelled", "info");
+                },
+                'danger',
+                'Yes, Cancel Order'
+            );
         }
 
         async function submitRefundRequest(orderId) {
@@ -693,17 +780,31 @@
 
         async function adminAction(id, action) {
             let updatePayload = {};
+            let title = '';
+            let message = '';
+            let btnType = 'danger';
+            let btnText = 'Confirm';
+
             if (action === 'cancel') {
-                if(!confirm('Are you sure you want to CANCEL this order?')) return;
+                title = 'Cancel Order?';
+                message = 'Are you sure you want to CANCEL this order? The customer will see the status change.';
                 updatePayload = { status: 'Cancelled' };
+                btnType = 'danger';
+                btnText = 'Yes, Cancel';
             } else if (action === 'refund') {
-                if(!confirm('Mark this order as REFUNDED?')) return;
+                title = 'Refund Order?';
+                message = 'Mark this order as REFUNDED? Ensure payment has been returned first.';
                 updatePayload = { status: 'Refunded' };
+                btnType = 'warning';
+                btnText = 'Mark Refunded';
             } else return;
 
-            const { error } = await supabaseClient.from('orders').update(updatePayload).eq('id', id);
-            if(error) showToast("Action failed", "error");
-            else showToast(`Order ${action}ed`, "success");
+            // Using Custom Modal
+            showModal(title, message, async () => {
+                const { error } = await supabaseClient.from('orders').update(updatePayload).eq('id', id);
+                if(error) showToast("Action failed", "error");
+                else showToast(`Order ${action}ed`, "success");
+            }, btnType, btnText);
         }
 
         async function updateAdminPassword() {
@@ -835,6 +936,7 @@
                 <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
                     <div class="flex items-center gap-3">
                         <button class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="menu" class="w-4 h-4"></i></button>
+                        <!-- Added pr-2 pb-1 to fix 'p' cutoff -->
                         <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500 pr-2 pb-1">${SITE_NAME}</button>
                     </div>
                     <div class="flex items-center gap-4">
@@ -851,6 +953,7 @@
         }
 
         function renderLogin() {
+            // Added h-screen overflow-hidden to prevent scrolling
             return `
             <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
@@ -878,6 +981,7 @@
         }
 
         function renderRegister() {
+            // Added h-screen overflow-hidden to prevent scrolling
             return `
             <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
@@ -1569,6 +1673,8 @@
                 html = renderRegister();
             } else if (state.view === 'forgot-password') {
                 html = renderForgotPassword();
+            } else if (state.view === 'my-orders') {
+                html = renderUserOrders();
             } else {
                 html = renderHeader();
                 if (state.view === 'home') html += renderHome(animate);
@@ -1576,7 +1682,6 @@
                 else if (state.view === 'checkout') html += renderCheckout(animate);
                 else if (state.view === 'success') html += renderSuccess(animate);
                 else if (state.view === 'tracker') html += renderTracker(animate);
-                else if (state.view === 'my-orders') html += renderUserOrders();
             }
 
             app.innerHTML = html;
@@ -1611,6 +1716,9 @@
         window.copyToClipboard = copyToClipboard;
         window.togglePassword = togglePassword;
         window.updateProduct = updateProduct; // New export
+        window.showModal = showModal;
+        window.closeModal = closeModal;
+        window.confirmModalAction = confirmModalAction;
         
         // Auth Expose
         window.handleLogin = handleLogin;
