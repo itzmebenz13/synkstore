@@ -192,6 +192,8 @@
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
+        // Notification Sound (Short Beep)
+        const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
 
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
@@ -475,6 +477,19 @@
             // Listen for Orders
             supabaseClient.channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+                // Play notification if admin and message count increased
+                if(state.adminAuth && payload.eventType === 'UPDATE' && payload.new.accounts_data) {
+                    // This is a naive check (checks if user message count > 0 in new payload), 
+                    // ideally compares with old state, but this works for basic notif.
+                    // Actually, let's just check if it was an update to an order while we are in admin
+                    const hasUserMessages = payload.new.accounts_data.some(acc => 
+                        acc.messages && acc.messages.some(m => m.sender === 'user')
+                    );
+                    if(hasUserMessages) {
+                        try { NOTIFICATION_SOUND.play(); } catch(e) {}
+                    }
+                }
+
                 if(state.adminAuth) fetchAllOrders();
                 if(state.user) fetchUserOrders().then(() => {
                     if (state.view === 'my-orders') render(false);
@@ -756,6 +771,17 @@
                 'danger',
                 'Yes, Cancel Order'
             );
+        }
+
+        async function deleteOrder(id) {
+            showModal('Delete Order?', 'This will permanently remove this order from your history.', async () => {
+                const { error } = await supabaseClient.from('orders').delete().eq('id', id);
+                if(error) showToast("Failed to delete", "error");
+                else {
+                    showToast("Order deleted", "success");
+                    // Data will refresh via Realtime
+                }
+            }, 'danger', 'Delete');
         }
 
         async function submitRefundRequest(orderId) {
@@ -1449,6 +1475,15 @@
                         <span class="font-bold font-mono text-white">${formatPHP(res.total)}</span>
                     </div>
                 </div>
+                
+                ${(isCancelled || res.status === 'Refunded') && state.view === 'my-orders' ? `
+                <div class="mt-5 pl-2">
+                    <button onclick="window.deleteOrder('${res.id}')" class="w-full bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/20 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Delete from History
+                    </button>
+                </div>
+                ` : ''}
+
                 ${canCancel ? `
                 <div class="mt-5 pl-2">
                     <button onclick="window.cancelOrder('${res.id}')" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide">
@@ -1595,7 +1630,11 @@
             }
 
             const pending = state.orders.filter(o => o.status === 'Processing').length;
-            const revenue = state.orders.reduce((acc, cur) => acc + cur.total, 0);
+            // Updated Revenue Calculation: Only count 'Completed' orders
+            const revenue = state.orders
+                .filter(o => o.status === 'Completed')
+                .reduce((acc, cur) => acc + cur.total, 0);
+            
             const pendingOtp = getPendingOtpCount();
 
             // Orders Tab Content
@@ -1605,7 +1644,13 @@
                 <div class="bg-zinc-900 border border-white/5 overflow-hidden">
                     <table class="w-full text-left">
                         <tbody class="divide-y divide-white/5">
-                            ${state.orders.map(order => `
+                            ${state.orders.map(order => {
+                                // Count User Messages
+                                const msgCount = order.accounts 
+                                    ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user').length : 0), 0)
+                                    : 0;
+
+                                return `
                             <tr class="hover:bg-white/5 group transition-colors">
                                 <td class="p-3">
                                     <div class="flex items-center gap-2">
@@ -1625,7 +1670,10 @@
                                             <button onclick="window.adminAction('${order.id}', 'refund')" class="border border-white/10 text-zinc-400 hover:text-white px-2 py-1 text-[9px] uppercase font-bold"><i data-lucide="refresh-ccw" class="w-3 h-3"></i></button>
                                         </div>
                                     ` : order.status === 'Completed' ? `
-                                        <button onclick="state.activeFulfillmentId = state.activeFulfillmentId === '${order.id}' ? null : '${order.id}'; render()" class="text-[9px] text-zinc-500 hover:text-white font-bold uppercase underline">View</button>
+                                        <div class="relative inline-block">
+                                            <button onclick="state.activeFulfillmentId = state.activeFulfillmentId === '${order.id}' ? null : '${order.id}'; render()" class="text-[9px] text-zinc-500 hover:text-white font-bold uppercase underline">View</button>
+                                            ${msgCount > 0 ? `<span class="absolute -top-2 -right-3 bg-red-500 text-white text-[8px] px-1.5 rounded-full animate-pulse">${msgCount}</span>` : ''}
+                                        </div>
                                     ` : ''}
                                 </td>
                             </tr>
@@ -1667,7 +1715,7 @@
                                     `}
                                 </td>
                             </tr>` : ''}
-                            `).join('')}
+                            `}).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -1836,6 +1884,7 @@
         window.showModal = showModal;
         window.closeModal = closeModal;
         window.confirmModalAction = confirmModalAction;
+        window.deleteOrder = deleteOrder;
         
         // New Expose Functions
         window.openAddProductModal = openAddProductModal;
