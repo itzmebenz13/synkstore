@@ -435,13 +435,48 @@
             const title = document.getElementById(`prod-title-${id}`).value;
             const price = document.getElementById(`prod-price-${id}`).value;
             const stock = document.getElementById(`prod-stock-${id}`).value;
+            const salePrice = document.getElementById(`prod-sale-price-${id}`).value;
+            const originalPrice = document.getElementById(`prod-original-price-${id}`).value;
 
-            const { error } = await supabaseClient.from('products').update({
-                title, price, stock
-            }).eq('id', id);
+            const updateData = { title, price, stock };
+            
+            // Handle sale pricing
+            if (salePrice && salePrice.trim() !== '') {
+                updateData.sale_price = parseFloat(salePrice);
+                updateData.original_price = originalPrice && originalPrice.trim() !== '' ? parseFloat(originalPrice) : parseFloat(price);
+            } else {
+                updateData.sale_price = null;
+                updateData.original_price = null;
+            }
+
+            const { error } = await supabaseClient.from('products').update(updateData).eq('id', id);
 
             if(error) showToast("Failed to save changes", "error");
-            else showToast("Changes saved", "success");
+            else {
+                showToast("Changes saved", "success");
+                fetchProducts();
+            }
+        }
+
+        async function deleteProduct(id) {
+            const product = state.products.find(p => p.id === id);
+            if (!product) return;
+
+            showModal(
+                'Delete Product?', 
+                `Are you sure you want to delete "${product.title}"? This action cannot be undone and will remove the product from the store.`, 
+                async () => {
+                    const { error } = await supabaseClient.from('products').delete().eq('id', id);
+                    if(error) {
+                        showToast("Failed to delete product", "error");
+                    } else {
+                        showToast("Product deleted successfully", "success");
+                        fetchProducts();
+                    }
+                }, 
+                'danger', 
+                'Delete Product'
+            );
         }
 
         async function fetchProducts() {
@@ -681,9 +716,10 @@
 
         function getPrice() {
             if (!state.selectedProduct) return 0;
-            return state.quantity >= state.selectedProduct.bulk_threshold 
+            const basePrice = state.quantity >= state.selectedProduct.bulk_threshold 
                 ? state.selectedProduct.bulk_price 
-                : state.selectedProduct.price;
+                : (state.selectedProduct.sale_price || state.selectedProduct.price);
+            return basePrice;
         }
 
         function applyDiscount() {
@@ -1091,6 +1127,7 @@
 
         function renderUserOrders() {
             return `
+            ${renderHeader()}
             <div class="min-h-screen bg-black font-sans pb-16 pt-14">
                 <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
                     <button onclick="window.goHome()" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
@@ -1157,51 +1194,68 @@
                         </h4>
                     </div>
                     
-                    <div class="space-y-3">
-                        ${order.accounts.map((acc, idx) => `
-                        <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-4 rounded-sm">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">Slot #${idx + 1}</span>
+                    <div class="space-y-2">
+                        ${order.accounts.map((acc, idx) => {
+                            const [email, password] = acc.creds.includes(':') ? acc.creds.split(':') : [acc.creds, ''];
+                            return `
+                        <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-2.5 rounded-sm">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-[8px] text-zinc-500 font-mono uppercase tracking-wider">Slot #${idx + 1}</span>
                                 <button onclick="window.toggleAccountUsed('${order.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold transition-colors">
                                     ${acc.used ? 'Used' : 'Mark Used'}
                                 </button>
                             </div>
-                            <div class="font-mono text-sm mb-4 select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'} p-3 bg-black/50 rounded border border-white/5">${acc.creds}</div>
+                            <div class="space-y-1.5 mb-2">
+                                <div class="flex items-center gap-2 bg-black/50 p-2 rounded border border-white/5">
+                                    <div class="flex-1">
+                                        <div class="text-[8px] text-zinc-500 uppercase mb-0.5">Email</div>
+                                        <div class="font-mono text-xs ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-400'} select-all break-all">${email}</div>
+                                    </div>
+                                    <button onclick="window.copyToClipboard('${email}')" class="text-zinc-500 hover:text-white p-1.5 transition-colors" title="Copy Email">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                                <div class="bg-black/50 p-2 rounded border border-white/5">
+                                    <div class="text-[8px] text-zinc-500 uppercase mb-0.5">Password</div>
+                                    <div class="font-mono text-xs ${acc.used ? 'line-through text-zinc-600' : 'text-white'} select-all break-all">${password || 'N/A'}</div>
+                                </div>
+                            </div>
                             
-                            <div class="bg-black/50 p-3 rounded border border-white/5">
+                            <div class="bg-black/50 p-2 rounded border border-white/5">
                                 ${acc.otpRequest.status === 'sent' ? `
-                                <div class="flex justify-between items-center mb-3">
-                                    <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-[8px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
                                     <div class="flex items-center gap-2">
-                                        <span class="font-mono font-bold text-white text-base tracking-widest">${acc.otpRequest.code}</span>
-                                        <i data-lucide="copy" class="w-4 h-4 text-zinc-500 cursor-pointer hover:text-white transition-colors" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
+                                        <span class="font-mono font-bold text-white text-sm tracking-widest">${acc.otpRequest.code}</span>
+                                        <i data-lucide="copy" class="w-3.5 h-3.5 text-zinc-500 cursor-pointer hover:text-white transition-colors" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
                                     </div>
                                 </div>` : acc.otpRequest.status === 'pending' ? `
-                                <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-2">
-                                    <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-                                    <span class="text-[9px] font-bold uppercase tracking-wide font-mono">Waiting for Admin...</span>
+                                <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-1">
+                                    <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+                                    <span class="text-[8px] font-bold uppercase tracking-wide font-mono">Waiting for Admin...</span>
                                 </div>` : `
                                 <div class="flex items-center justify-between w-full">
-                                    <span class="text-[9px] text-zinc-500 uppercase">Verify Login</span>
-                                    <button onclick="window.requestOtp('${order.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[9px] font-bold px-3 py-1.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
+                                    <span class="text-[8px] text-zinc-500 uppercase">Verify Login</span>
+                                    <button onclick="window.requestOtp('${order.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[8px] font-bold px-2 py-1 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
                                 </div>`}
 
-                                <div class="border-t border-white/5 pt-3 mt-3">
+                                <div class="border-t border-white/5 pt-2 mt-2">
                                     ${acc.messages && acc.messages.length > 0 ? `
-                                    <div class="mb-3 space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                    <div class="mb-2 space-y-1 max-h-24 overflow-y-auto custom-scrollbar">
                                         ${acc.messages.map(msg => `
-                                            <div class="text-[9px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono bg-zinc-900/50 p-2 rounded border border-white/5">
+                                            <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono bg-zinc-900/50 p-1.5 rounded border border-white/5">
                                                 <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
                                             </div>
                                         `).join('')}
                                     </div>` : ''}
-                                    <div class="flex gap-2">
-                                        <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="bg-zinc-800 border border-zinc-700 text-[10px] px-3 py-2 w-full focus:outline-none focus:border-zinc-500 rounded-sm text-zinc-300" />
-                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-3 py-2 rounded-sm transition-colors"><i data-lucide="send" class="w-4 h-4"></i></button>
+                                    <div class="flex gap-1.5">
+                                        <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="bg-zinc-800 border border-zinc-700 text-[9px] px-2 py-1.5 w-full focus:outline-none focus:border-zinc-500 rounded-sm text-zinc-300" />
+                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 py-1.5 rounded-sm transition-colors"><i data-lucide="send" class="w-3.5 h-3.5"></i></button>
                                     </div>
                                 </div>
                             </div>
-                        </div>`).join('')}
+                        </div>`;
+                        }).join('')}
                     </div>
                 </div>
             </div>`;
@@ -1226,7 +1280,10 @@
                 <div class="px-6 flex-1 pt-2 max-w-2xl mx-auto w-full">
                     <div class="flex justify-between items-start mb-3">
                         <h1 class="text-xl font-bold uppercase leading-tight tracking-tight">${p.title}</h1>
-                        <span class="font-mono text-emerald-400 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5">${p.tag}</span>
+                        <div class="flex flex-col items-end gap-1">
+                            ${p.sale_price ? '<span class="bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-bold px-2 py-0.5 uppercase rounded-sm tracking-tight animate-pulse">SALE</span>' : ''}
+                            <span class="font-mono text-emerald-400 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5">${p.tag}</span>
+                        </div>
                     </div>
                     
                     <p class="text-zinc-400 text-xs mb-6 leading-relaxed font-light border-l-2 border-zinc-800 pl-3">${p.description}</p>
@@ -1234,7 +1291,14 @@
                     <div class="bg-zinc-900/50 border border-white/5 p-4 mb-6 rounded-sm">
                         <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/5 ${!isBulk ? 'text-white' : 'text-zinc-500'}">
                             <span class="text-[10px] uppercase font-bold tracking-wider">Single Unit</span>
-                            <span class="font-mono text-xs">${formatPHP(p.price)}</span>
+                            <div class="flex items-baseline gap-2">
+                                ${p.sale_price ? `
+                                    <span class="font-mono text-xs text-emerald-400 font-bold">${formatPHP(p.sale_price)}</span>
+                                    <span class="font-mono text-[10px] text-zinc-600 line-through">${formatPHP(p.original_price || p.price)}</span>
+                                ` : `
+                                    <span class="font-mono text-xs">${formatPHP(p.price)}</span>
+                                `}
+                            </div>
                         </div>
                         <div class="flex justify-between items-center ${isBulk ? 'text-emerald-400' : 'text-zinc-500'}">
                             <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-2">
@@ -1598,6 +1662,7 @@
                                             <i data-lucide="package" class="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform duration-500 text-zinc-400"></i>
                                         </div>
                                         <div class="flex flex-col items-end gap-1">
+                                            ${p.sale_price ? '<span class="bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-bold px-1.5 py-0.5 uppercase rounded-sm tracking-tight animate-pulse">SALE</span>' : ''}
                                             <span class="bg-white/5 text-zinc-400 border border-white/5 text-[8px] font-mono px-1.5 py-0.5 uppercase rounded-sm tracking-tight">${p.tag}</span>
                                             ${p.stock <= 0 ? '<span class="text-[8px] text-red-500 font-bold uppercase tracking-wide">Out of Stock</span>' : ''}
                                         </div>
@@ -1605,7 +1670,14 @@
                                     <div class="flex items-end justify-between mt-1">
                                         <div>
                                             <h3 class="text-[10px] font-bold uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors leading-tight mb-1 line-clamp-2">${p.title}</h3>
-                                            <span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>
+                                            <div class="flex items-baseline gap-1.5">
+                                                ${p.sale_price ? `
+                                                    <span class="text-xs font-bold font-mono text-emerald-400">${formatPHP(p.sale_price)}}</span>
+                                                    <span class="text-[9px] font-mono text-zinc-600 line-through">${formatPHP(p.original_price || p.price)}</span>
+                                                ` : `
+                                                    <span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>
+                                                `}
+                                            </div>
                                         </div>
                                         <div class="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-black transition-colors shrink-0">
                                             <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
@@ -1793,8 +1865,31 @@
                                     <input type="number" id="prod-stock-${p.id}" value="${p.stock}" class="bg-zinc-900 border border-zinc-700 w-full text-xs p-2 text-white focus:outline-none focus:border-emerald-500 rounded-sm" />
                                 </div>
                             </div>
+                            <div class="mb-3 p-2 bg-orange-500/5 border border-orange-500/20 rounded-sm">
+                                <label class="text-[8px] text-orange-400 uppercase font-bold block mb-2">Sale/Promotion</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[7px] text-zinc-500 uppercase font-bold block mb-1">Original Price</label>
+                                        <div class="relative">
+                                            <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-zinc-500 text-[10px]">₱</span>
+                                            <input type="number" id="prod-original-price-${p.id}" value="${p.original_price || p.price}" placeholder="${p.price}" class="bg-zinc-900 border border-zinc-700 w-full text-[10px] py-1.5 pl-5 pr-1.5 text-white focus:outline-none focus:border-orange-500 rounded-sm" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-[7px] text-orange-400 uppercase font-bold block mb-1">Sale Price</label>
+                                        <div class="relative">
+                                            <span class="absolute left-1.5 top-1/2 -translate-y-1/2 text-zinc-500 text-[10px]">₱</span>
+                                            <input type="number" id="prod-sale-price-${p.id}" value="${p.sale_price || ''}" placeholder="Leave empty to disable" class="bg-zinc-900 border border-orange-500/30 w-full text-[10px] py-1.5 pl-5 pr-1.5 text-white focus:outline-none focus:border-orange-500 rounded-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-[7px] text-zinc-500 mt-1.5">Leave sale price empty to remove sale</p>
+                            </div>
 
-                            <div class="flex justify-end pt-2 border-t border-white/5">
+                            <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                                <button onclick="window.deleteProduct('${p.id}')" class="bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide rounded-sm transition-colors flex items-center gap-1.5">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                                </button>
                                 <button onclick="window.saveProductChanges('${p.id}')" class="bg-white text-black hover:bg-zinc-200 px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide rounded-sm">Save Changes</button>
                             </div>
                         </div>
@@ -1945,6 +2040,7 @@
         window.closeAddProductModal = closeAddProductModal;
         window.submitNewProduct = submitNewProduct;
         window.saveProductChanges = saveProductChanges;
+        window.deleteProduct = deleteProduct;
         
         // Auth Expose
         window.handleLogin = handleLogin;
