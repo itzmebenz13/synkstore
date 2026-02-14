@@ -180,7 +180,8 @@
             fulfillmentText: '',
             aiLoading: false,
             aiContent: null,
-            discount: 0 
+            discount: 0,
+            isSubmitting: false // Added loading state
         };
 
         // --- Helpers ---
@@ -292,25 +293,34 @@
                 return;
             }
             
-            const baseTotal = getPrice() * state.quantity;
-            const finalTotal = baseTotal - (baseTotal * state.discount);
+            // Set loading state
+            state.isSubmitting = true;
+            render(false); // Re-render without page transition
 
-            const newOrder = {
-                id: generateOrderId(),
-                date: new Date().toISOString(),
-                product: state.selectedProduct.title,
-                quantity: state.quantity,
-                total: finalTotal,
-                refNumber: refInput.value.trim(),
-                status: 'Processing',
-                accounts: [] 
-            };
+            setTimeout(() => {
+                const baseTotal = getPrice() * state.quantity;
+                const finalTotal = baseTotal - (baseTotal * state.discount);
 
-            state.orders.unshift(newOrder);
-            state.lastOrderId = newOrder.id;
-            saveOrders();
-            setView('success');
-            showToast("Order submitted successfully", "success");
+                const newOrder = {
+                    id: generateOrderId(),
+                    date: new Date().toISOString(),
+                    product: state.selectedProduct.title,
+                    quantity: state.quantity,
+                    total: finalTotal,
+                    refNumber: refInput.value.trim(),
+                    status: 'Processing',
+                    accounts: [] 
+                };
+
+                state.orders.unshift(newOrder);
+                state.lastOrderId = newOrder.id;
+                saveOrders();
+                
+                // Reset loading state
+                state.isSubmitting = false;
+                setView('success');
+                showToast("Order submitted successfully", "success");
+            }, 3000); // 3-second delay
         }
 
         function handleTrack() {
@@ -586,7 +596,9 @@
 
         function renderProduct(animate = true) {
             const p = state.selectedProduct;
-            const total = getPrice() * state.quantity;
+            const subtotal = getPrice() * state.quantity;
+            const discountAmount = subtotal * state.discount;
+            const total = subtotal - discountAmount;
             const isBulk = state.quantity >= p.bulkThreshold;
             const animClass = animate ? 'animate-enter' : '';
 
@@ -633,6 +645,16 @@
                             <button onclick="window.updateQuantity(1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-800 text-white transition-colors">+</button>
                         </div>
                     </div>
+
+                    <!-- Discount Code (Moved Here) -->
+                    <div class="mb-10">
+                        <label class="block text-[10px] font-bold uppercase text-zinc-500 mb-2 tracking-wider">Voucher Code</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="discountInput" class="w-full bg-zinc-900 border border-white/10 py-2.5 px-3 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors uppercase placeholder-zinc-700" placeholder="ENTER CODE" value="${state.discount > 0 ? 'TEST1111' : ''}" ${state.discount > 0 ? 'disabled' : ''} />
+                            <button onclick="window.applyDiscount()" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-3 text-[9px] uppercase transition-colors" ${state.discount > 0 ? 'disabled' : ''}>Apply</button>
+                        </div>
+                        ${state.discount > 0 ? '<p class="text-emerald-500 text-[9px] mt-2 font-mono flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> 5% DISCOUNT APPLIED</p>' : ''}
+                    </div>
                 </div>
             </div>
 
@@ -640,8 +662,11 @@
             <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-4 safe-area-bottom z-20">
                 <div class="max-w-7xl mx-auto flex items-center gap-3">
                     <div class="flex-1">
-                        <span class="text-[9px] uppercase text-zinc-500 block mb-0.5 font-mono tracking-wider">Subtotal</span>
-                        <span class="text-xl font-bold font-mono text-white">${formatPHP(total)}</span>
+                        <span class="text-[9px] uppercase text-zinc-500 block mb-0.5 font-mono tracking-wider">Total</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-xl font-bold font-mono text-white">${formatPHP(total)}</span>
+                            ${state.discount > 0 ? `<span class="text-xs text-zinc-500 line-through font-mono decoration-zinc-500">${formatPHP(subtotal)}</span>` : ''}
+                        </div>
                     </div>
                     <button onclick="window.setView('checkout')" class="flex-1 bg-white text-black font-bold py-3 px-4 text-[10px] uppercase tracking-wider hover:bg-zinc-200 transition-all flex items-center justify-center gap-2">
                         Proceed to Payment <i data-lucide="arrow-right" class="w-3 h-3"></i>
@@ -656,6 +681,11 @@
             const finalTotal = subtotal - discountAmount;
             const animClass = animate ? 'animate-enter' : '';
             
+            const buttonContent = state.isSubmitting 
+                ? `<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> VERIFYING...`
+                : `Confirm Payment`;
+            const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
+
             // Added pt-14 and adjusted internal header top position
             return `
             <div class="min-h-screen bg-black pb-16 pt-14 ${animClass}">
@@ -708,15 +738,6 @@
                          </div>
                     </div>
 
-                    <!-- Discount Code -->
-                    <div class="mb-5">
-                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Discount Code</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="discountInput" class="w-full bg-zinc-900 border border-white/10 py-2.5 px-3 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors uppercase placeholder-zinc-700" placeholder="ENTER VOUCHER" />
-                            <button onclick="window.applyDiscount()" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-3 text-[9px] uppercase transition-colors">Apply</button>
-                        </div>
-                    </div>
-
                     <!-- Payment Method -->
                     <div class="mb-6">
                         <div class="flex items-center gap-2 mb-3">
@@ -744,8 +765,8 @@
                             <i data-lucide="hash" class="w-3 h-3 text-zinc-600 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
                         </div>
                         
-                        <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-black font-bold py-3 px-4 text-[10px] uppercase mt-5 hover:bg-emerald-400 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                            Confirm Payment
+                        <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-black font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ${buttonDisabled}">
+                            ${buttonContent}
                         </button>
                     </div>
                 </div>
