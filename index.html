@@ -314,6 +314,61 @@
             if (el) el.classList.toggle('hidden');
         }
 
+        function renderOrderAccountsContent(res) {
+            if (!res.accounts || res.accounts.length === 0) return '';
+            return `
+            <div class="mt-4 border-t border-dashed border-zinc-800 pt-4">
+                <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3"></i> Access Details</h4>
+                <div class="space-y-2">
+                    ${res.accounts.map((acc, idx) => {
+                        const otp = acc.otpRequest || { status: 'idle', code: null };
+                        return `
+                    <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 rounded-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] text-zinc-500 font-mono">Slot #${idx + 1}</span>
+                            <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold">
+                                ${acc.used ? 'Used' : 'Mark Used'}
+                            </button>
+                        </div>
+                        <div class="font-mono text-xs mb-3 select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${acc.creds}</div>
+                        <div class="bg-black/50 p-2 rounded border border-white/5">
+                            ${otp.status === 'sent' ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-bold text-white text-sm tracking-widest">${otp.code}</span>
+                                    <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${otp.code}')"></i>
+                                </div>
+                            </div>` : otp.status === 'pending' ? `
+                            <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-0.5">
+                                <span class="spinner spinner-sm text-yellow-500 shrink-0"></span>
+                                <span class="text-[8px] font-bold uppercase tracking-wide font-mono">Waiting for Admin...</span>
+                            </div>` : `
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-[8px] text-zinc-500 uppercase">Verify Login</span>
+                                <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
+                            </div>`}
+                            <div class="border-t border-white/5 pt-2 mt-2">
+                                ${acc.messages && acc.messages.length > 0 ? `
+                                <div class="mb-2 space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                    ${acc.messages.map(msg => `
+                                        <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono">
+                                            <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
+                                        </div>
+                                    `).join('')}
+                                </div>` : ''}
+                                <div class="flex gap-2">
+                                    <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="bg-zinc-800 border border-zinc-700 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-500 rounded-sm text-zinc-300" />
+                                    <button onclick="window.sendAccountMessage('${res.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded-sm"><i data-lucide="send" class="w-3 h-3"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
         function renderTurnstile() {
             const container = document.getElementById('captcha-container');
             if (container && window.turnstile) {
@@ -565,7 +620,7 @@
 
                 if(state.adminAuth) fetchAllOrders();
                 if(state.user) fetchUserOrders().then(() => {
-                    if (state.view === 'my-orders') render(false);
+                    if (state.view === 'my-orders' || state.view === 'my-accounts') render(false);
                 });
                 if(state.view === 'tracker' && state.trackerInput) handleTrack(true);
             })
@@ -713,6 +768,7 @@
                 state.payWithCredits = false;
             }
             if (view === 'admin' && state.adminAuth) fetchAllOrders();
+            if ((view === 'my-orders' || view === 'my-accounts') && state.user) fetchUserOrders().then(() => render(false));
             render();
         }
 
@@ -865,14 +921,17 @@
 
         async function deleteOrder(id) {
             showModal('Delete Order?', 'This will permanently remove this order from your history.', async () => {
-                const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('created_at').eq('id', id).single();
+                const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('status').eq('id', id).single();
                 if (fetchErr || !order) return showToast("Order not found", "error");
-                const timeDiff = new Date() - new Date(order.created_at);
-                if (timeDiff >= 60000) return showToast("Delete window has expired (60s)", "error");
+                if (order.status !== 'Cancelled' && order.status !== 'Refunded') return showToast("Only cancelled or refunded orders can be deleted", "error");
 
                 const { error } = await supabaseClient.from('orders').delete().eq('id', id);
                 if(error) showToast("Failed to delete", "error");
-                else showToast("Order deleted", "success");
+                else {
+                    showToast("Order deleted", "success");
+                    await fetchUserOrders();
+                    if (state.view === 'my-orders') render(false);
+                }
             }, 'danger', 'Delete');
         }
 
@@ -941,7 +1000,8 @@
             const emailsEl = document.getElementById('fulfillmentEmailsArea');
             const passwordsEl = document.getElementById('fulfillmentPasswordsArea');
             const emails = (emailsEl?.value || '').trim().split('\n').map(l => l.trim()).filter(Boolean);
-            const passwords = (passwordsEl?.value || '').trim().split('\n').map(l => l.trim()).filter(Boolean);
+            const rawPass = (passwordsEl?.value || '').trim();
+            const passwords = rawPass ? [rawPass] : [];
             if (emails.length === 0 || passwords.length === 0) return showToast("Please enter at least one email and one password", "error");
 
             // Use one password for all emails, or pair by index and reuse last password for extras
@@ -1058,7 +1118,8 @@
                                     <span>₱${formatPHP(state.userProfile?.credits || 0).replace('₱', '')}</span>
                                </div>
                                <a href="spin.html" class="text-zinc-400 hover:text-yellow-400 transition-colors animate-pulse-slow"><i data-lucide="gift" class="w-4 h-4"></i></a>
-                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('my-accounts')" class="text-zinc-400 hover:text-white transition-colors" title="Access details"><i data-lucide="key" class="w-4 h-4"></i></button>
                             `
                             : `<button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-white transition-colors">Login</button>`
                         }
@@ -1165,6 +1226,39 @@
                     ` : `
                         <div class="space-y-4">
                             ${state.userOrders.map(order => renderOrderCard(order, true)).join('')}
+                        </div>
+                    `}
+                </div>
+            </div>`;
+        }
+
+        function renderMyAccounts() {
+            const completedOrders = (state.userOrders || []).filter(o => o.status === 'Completed' && o.accounts && o.accounts.length > 0);
+            return `
+            <div class="min-h-screen bg-black font-sans pb-16 pt-14">
+                <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
+                    <button onclick="window.goHome()" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">Access Details</span>
+                </div>
+                <div class="p-4 max-w-2xl mx-auto w-full">
+                    ${completedOrders.length === 0 ? `
+                        <div class="text-center py-10 text-zinc-600">
+                            <i data-lucide="key" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                            <p class="text-[10px] uppercase tracking-widest">No access details yet</p>
+                            <p class="text-[9px] text-zinc-600 mt-1">Complete an order to see credentials here</p>
+                        </div>
+                    ` : `
+                        <div class="space-y-6">
+                            ${completedOrders.map(res => `
+                            <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                                <div class="pl-2 mb-4">
+                                    <h3 class="font-bold text-xs tracking-tight mb-0.5 text-white">${res.id}</h3>
+                                    <p class="text-[9px] text-zinc-500 font-mono">${formatDate(res.date)} · ${res.product}</p>
+                                </div>
+                                ${renderOrderAccountsContent(res)}
+                            </div>
+                            `).join('')}
                         </div>
                     `}
                 </div>
@@ -1412,7 +1506,7 @@
             const timeDiff = new Date() - new Date(res.date);
             const canCancel = isProcessing && timeDiff < 60000;
             const canRequestRefund = isProcessing && timeDiff > 3600000;
-            const canDelete = (isCancelled || res.status === 'Refunded') && timeDiff < 60000;
+            const canDelete = isCancelled || res.status === 'Refunded';
 
             let statusColor = '';
             if(isCompleted) statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -1422,58 +1516,16 @@
 
             let accountsHtml = '';
             if(isCompleted && res.accounts && res.accounts.length > 0) {
-                const content = `
-                <div class="mt-5 border-t border-dashed border-zinc-800 pt-4">
-                    <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3"></i> Access Details</h4>
-                    <div class="space-y-2">
-                        ${res.accounts.map((acc, idx) => `
-                        <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 rounded-sm">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-[9px] text-zinc-500 font-mono">Slot #${idx + 1}</span>
-                                <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold">
-                                    ${acc.used ? 'Used' : 'Mark Used'}
-                                </button>
-                            </div>
-                            <div class="font-mono text-xs mb-3 select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${acc.creds}</div>
-                            
-                            <div class="bg-black/50 p-2 rounded border border-white/5">
-                                ${acc.otpRequest.status === 'sent' ? `
-                                <div class="flex justify-between items-center">
-                                    <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-mono font-bold text-white text-sm tracking-widest">${acc.otpRequest.code}</span>
-                                        <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${acc.otpRequest.code}')"></i>
-                                    </div>
-                                </div>` : acc.otpRequest.status === 'pending' ? `
-                                <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-0.5">
-                                    <span class="spinner spinner-sm text-yellow-500 shrink-0"></span>
-                                    <span class="text-[8px] font-bold uppercase tracking-wide font-mono">Waiting for Admin...</span>
-                                </div>` : `
-                                <div class="flex items-center justify-between w-full">
-                                    <span class="text-[8px] text-zinc-500 uppercase">Verify Login</span>
-                                    <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
-                                </div>`}
-
-                                <div class="border-t border-white/5 pt-2 mt-2">
-                                    ${acc.messages && acc.messages.length > 0 ? `
-                                    <div class="mb-2 space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
-                                        ${acc.messages.map(msg => `
-                                            <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono">
-                                                <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
-                                            </div>
-                                        `).join('')}
-                                    </div>` : ''}
-                                    <div class="flex gap-2">
-                                        <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="bg-zinc-800 border border-zinc-700 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-500 rounded-sm text-zinc-300" />
-                                        <button onclick="window.sendAccountMessage('${res.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded-sm"><i data-lucide="send" class="w-3 h-3"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`).join('')}
-                    </div>
-                </div>`;
-                
-                accountsHtml = `
+                if (isMyOrders && state.view === 'my-orders') {
+                    accountsHtml = `
+                    <div class="mt-4 pt-3 border-t border-white/5">
+                        <button onclick="window.setView('my-accounts')" class="w-full text-center text-[9px] font-bold uppercase text-emerald-400 hover:text-emerald-300 transition-colors py-2 flex items-center justify-center gap-2">
+                            <i data-lucide="key" class="w-3 h-3"></i> View access details
+                        </button>
+                    </div>`;
+                } else {
+                    const content = renderOrderAccountsContent(res);
+                    accountsHtml = `
                     <div class="mt-4 pt-3 border-t border-white/5">
                         <button onclick="window.toggleOrderDetails('${res.id}')" class="w-full text-center text-[9px] font-bold uppercase text-zinc-500 hover:text-white transition-colors py-2 flex items-center justify-center gap-2">
                             <span>View</span> <i data-lucide="chevron-down" class="w-3 h-3"></i>
@@ -1482,6 +1534,7 @@
                             ${content}
                         </div>
                     </div>`;
+                }
             }
 
             return `
@@ -1510,7 +1563,6 @@
                     <button onclick="window.deleteOrder('${res.id}')" class="w-full bg-red-600/10 hover:bg-red-600/20 text-red-500 border border-red-500/20 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2">
                         <i data-lucide="trash-2" class="w-3 h-3"></i> Delete from History
                     </button>
-                    <p class="text-[8px] text-zinc-600 text-center mt-1 font-mono">Available for &lt; 60s</p>
                 </div>
                 ` : ''}
 
@@ -1744,7 +1796,7 @@
                                             </div>
                                             <div>
                                                 <label class="block text-[8px] font-bold uppercase text-zinc-500 mb-1 tracking-wider">Password</label>
-                                                <textarea id="fulfillmentPasswordsArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono h-16 focus:border-emerald-500/50 focus:outline-none text-white resize-none" placeholder="pass1&#10;pass2"></textarea>
+                                                <input type="password" id="fulfillmentPasswordsArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono focus:border-emerald-500/50 focus:outline-none text-white" placeholder="One password for all accounts" />
                                             </div>
                                         </div>
                                         <div class="flex justify-end gap-2">
@@ -1879,6 +1931,8 @@
                 html = renderForgotPassword();
             } else if (state.view === 'my-orders') {
                 html = renderHeader() + renderUserOrders();
+            } else if (state.view === 'my-accounts') {
+                html = renderHeader() + renderMyAccounts();
             } else {
                 html = renderHeader();
                 if (state.view === 'home') html += renderHome(animate);
