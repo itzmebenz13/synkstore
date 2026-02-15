@@ -108,6 +108,41 @@
         /* Green/emerald buttons: white text in light mode */
         #html-root:not(.dark) .btn-green-light { color: #ffffff !important; }
 
+        /* Use Wallet toggle switch */
+        .wallet-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .wallet-toggle-track {
+            display: block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+            border-radius: 9999px;
+            background-color: #3f3f46;
+            transition: background-color 0.2s ease;
+            position: relative;
+        }
+        .wallet-toggle-track::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 9999px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease;
+        }
+        .wallet-toggle-input:checked + .wallet-toggle-track {
+            background-color: #10b981;
+        }
+        .wallet-toggle-input:checked + .wallet-toggle-track::after {
+            transform: translateX(20px);
+        }
+        .wallet-toggle-input:disabled + .wallet-toggle-track {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
         /* Toast Container */
@@ -1806,15 +1841,15 @@
                     </div>
 
                     ${state.user ? `
-                    <div class="mb-4 bg-zinc-900 border border-white/10 p-3 rounded-sm ${(state.userProfile?.credits || 0) <= 0 ? 'opacity-60' : ''}">
-                        <label class="flex items-center gap-3 ${(state.userProfile?.credits || 0) <= 0 ? 'cursor-not-allowed' : 'cursor-pointer'}">
-                            <div class="relative">
-                                <input type="checkbox" onchange="window.togglePayWithCredits()" ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? 'checked' : ''} ${(state.userProfile?.credits || 0) <= 0 ? 'disabled' : ''} class="sr-only peer" />
-                                <div class="w-8 h-4 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600 peer-disabled:opacity-50"></div>
+                    <div class="mb-4 bg-zinc-900 border border-white/10 p-4 rounded-lg ${(state.userProfile?.credits || 0) <= 0 ? 'opacity-60' : ''}">
+                        <label class="flex items-center justify-between gap-4 ${(state.userProfile?.credits || 0) <= 0 ? 'cursor-not-allowed' : 'cursor-pointer'}">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-white">Use Wallet</p>
+                                <p class="text-[10px] text-zinc-500 mt-0.5">Balance: ${formatPHP(state.userProfile?.credits || 0)} ${(state.userProfile?.credits || 0) <= 0 ? '• Spin daily to earn' : '• Applied as discount'}</p>
                             </div>
-                            <div>
-                                <span class="text-[10px] font-bold text-white uppercase tracking-wide">Use Wallet</span>
-                                <p class="text-[9px] text-zinc-500">Balance: ${formatPHP(state.userProfile?.credits || 0)} ${(state.userProfile?.credits || 0) <= 0 ? '• Spin daily to earn' : '• Applied as discount'}</p>
+                            <div class="flex-shrink-0">
+                                <input type="checkbox" onchange="window.togglePayWithCredits()" ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? 'checked' : ''} ${(state.userProfile?.credits || 0) <= 0 ? 'disabled' : ''} class="wallet-toggle-input" id="pay-with-credits-toggle" />
+                                <span class="wallet-toggle-track" aria-hidden="true"></span>
                             </div>
                         </label>
                         ${state.payWithCredits && (state.userProfile?.credits || 0) > 0 ? `
