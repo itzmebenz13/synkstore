@@ -107,6 +107,8 @@
         #html-root:not(.dark) .voucher-apply-btn { color: #ffffff !important; }
         /* Green/emerald buttons: white text in light mode */
         #html-root:not(.dark) .btn-green-light { color: #ffffff !important; }
+        /* Admin Stocks Save Changes: keep white text on dark button in light mode */
+        #html-root:not(.dark) .admin-save-btn { color: #ffffff !important; }
 
         /* Use Wallet toggle switch */
         .wallet-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -2132,46 +2134,46 @@
                             </tr>
                             ${state.activeFulfillmentId === order.id ? `
                             <tr>
-                                <td colspan="3" class="bg-zinc-800/50 p-4 border-y border-white/5 animate-enter">
+                                <td colspan="3" class="${isDark ? 'bg-zinc-800/50' : 'bg-gray-100'} p-4 border-y ${adminBorder} animate-enter">
                                     ${order.status === 'Completed' ? `
                                         <div class="mb-4">
-                                            <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Account Details</h4>
+                                            <h4 class="text-[9px] font-bold uppercase mb-2 ${adminTextMuted} tracking-wider">Account Details</h4>
                                             ${order.accounts.map(acc => `
-                                                <div class="bg-black/50 p-2 mb-2 border border-white/5 rounded-md">
+                                                <div class="${isDark ? 'bg-black/50 border-white/5' : 'bg-white border-gray-200'} p-3 mb-2 border rounded-lg shadow-sm">
                                                     <div class="flex justify-between items-center mb-1">
-                                                        <span class="text-emerald-500 font-mono text-[10px]">${acc.creds}</span>
-                                                        <span class="text-[8px] text-zinc-500">${acc.otpRequest.status === 'sent' ? 'OTP Sent' : 'No OTP'}</span>
+                                                        <span class="text-emerald-600 font-mono text-[10px]">${acc.creds}</span>
+                                                        <span class="text-[8px] ${adminTextMuted}">${acc.otpRequest.status === 'sent' ? 'OTP Sent' : 'No OTP'}</span>
                                                     </div>
                                                     ${acc.messages && acc.messages.length > 0 ? `
-                                                    <div class="border-t border-white/5 mt-2 pt-2">
+                                                    <div class="border-t ${adminBorder} mt-2 pt-2">
                                                         ${acc.messages.map(msg => `
-                                                            <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono mb-0.5">
+                                                            <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-600' : adminTextMuted} font-mono mb-0.5">
                                                                 <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
                                                             </div>
                                                         `).join('')}
                                                     </div>
                                                     ` : ''}
                                                     <div class="flex gap-2 mt-2">
-                                                        <input type="text" id="admin-msg-${acc.id}" placeholder="Reply to user..." class="bg-zinc-900 border border-zinc-700 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-500 text-white" />
-                                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('admin-msg-${acc.id}').value, 'admin')" class="bg-zinc-700 hover:bg-zinc-600 text-white px-2 rounded-sm text-[9px] uppercase font-bold">Send</button>
+                                                        <input type="text" id="admin-msg-${acc.id}" placeholder="Reply to user..." class="${adminInput} text-[9px] px-2 py-1.5 w-full focus:outline-none focus:border-emerald-500 rounded-sm border" />
+                                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('admin-msg-${acc.id}').value, 'admin')" class="${isDark ? 'bg-zinc-700 hover:bg-zinc-600 text-white' : 'bg-gray-800 hover:bg-gray-700 text-white'} px-2 rounded-sm text-[9px] uppercase font-bold">Send</button>
                                                     </div>
                                                 </div>
                                             `).join('')}
                                         </div>
                                     ` : `
-                                        <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Add Accounts (one per line)</h4>
+                                        <h4 class="text-[9px] font-bold uppercase mb-2 ${adminTextMuted} tracking-wider">Add Accounts (one per line)</h4>
                                         <div class="space-y-3 mb-3">
                                             <div>
-                                                <label class="block text-[8px] font-bold uppercase text-zinc-500 mb-1 tracking-wider">Email / Username</label>
-                                                <textarea id="fulfillmentEmailsArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono h-16 focus:border-emerald-500/50 focus:outline-none text-white resize-none" placeholder="user1@email.com&#10;user2@email.com"></textarea>
+                                                <label class="block text-[8px] font-bold uppercase ${adminTextMuted} mb-1 tracking-wider">Email / Username</label>
+                                                <textarea id="fulfillmentEmailsArea" class="${adminInput} w-full border p-2 text-[10px] font-mono h-16 focus:border-emerald-500 focus:outline-none rounded-sm resize-none" placeholder="user1@email.com&#10;user2@email.com"></textarea>
                                             </div>
                                             <div>
-                                                <label class="block text-[8px] font-bold uppercase text-zinc-500 mb-1 tracking-wider">Password</label>
-                                                <input type="password" id="fulfillmentPasswordsArea" class="w-full bg-black border border-white/10 p-2 text-[10px] font-mono focus:border-emerald-500/50 focus:outline-none text-white" placeholder="One password for all accounts" />
+                                                <label class="block text-[8px] font-bold uppercase ${adminTextMuted} mb-1 tracking-wider">Password</label>
+                                                <input type="password" id="fulfillmentPasswordsArea" class="${adminInput} w-full border p-2 text-[10px] font-mono focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="One password for all accounts" />
                                             </div>
                                         </div>
                                         <div class="flex justify-end gap-2">
-                                            <button onclick="state.activeFulfillmentId = null; render()" class="text-zinc-500 hover:text-white text-[10px] font-bold uppercase transition-colors">Cancel</button>
+                                            <button onclick="state.activeFulfillmentId = null; render()" class="${adminTextMuted} hover:${isDark ? 'text-white' : 'text-gray-900'} text-[10px] font-bold uppercase transition-colors">Cancel</button>
                                             <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
                                         </div>
                                     `}
@@ -2213,7 +2215,7 @@
                             </div>
 
                             <div class="flex justify-end pt-2 ${cardBorderT}">
-                                <button onclick="window.saveProductChanges('${p.id}')" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800'} px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide rounded-sm">Save Changes</button>
+                                <button onclick="window.saveProductChanges('${p.id}')" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-save-btn'} px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide rounded-sm">Save Changes</button>
                             </div>
                         </div>
                         `).join('')}
