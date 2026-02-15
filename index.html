@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -55,15 +55,21 @@
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
         
         body { 
-            background-color: #000000; 
-            color: #f4f4f5; 
+            background-color: #fafafa;
+            color: #18181b;
             -webkit-font-smoothing: antialiased;
+        }
+        #html-root.dark body {
+            background-color: #000000;
+            color: #f4f4f5;
         }
         
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 2px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #27272a; }
+        ::-webkit-scrollbar-track { background: #e4e4e7; }
+        ::-webkit-scrollbar-thumb { background: #a1a1aa; }
+        #html-root.dark ::-webkit-scrollbar-track { background: #09090b; }
+        #html-root.dark ::-webkit-scrollbar-thumb { background: #27272a; }
 
         /* Animations */
         .animate-enter { animation: enter 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -73,11 +79,23 @@
         }
 
         .glass {
-            background: rgba(24, 24, 27, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
+        #html-root.dark .glass {
+            background: rgba(24, 24, 27, 0.85);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+        }
+        /* Light mode overrides for common dark backgrounds */
+        #html-root:not(.dark) .bg-black { background-color: #ffffff !important; }
+        #html-root:not(.dark) [class*="bg-zinc-900"] { background-color: #f4f4f5 !important; }
+        #html-root:not(.dark) [class*="border-white/"] { border-color: rgba(0,0,0,0.08) !important; }
+        #html-root:not(.dark) .text-white { color: #18181b !important; }
+        #html-root:not(.dark) .text-zinc-400,
+        #html-root:not(.dark) .text-zinc-500 { color: #52525b !important; }
+        #html-root:not(.dark) .text-zinc-600 { color: #3f3f46 !important; }
 
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
@@ -94,10 +112,10 @@
         }
         .toast {
             pointer-events: auto;
-            background: rgba(20, 20, 20, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #18181b;
             padding: 10px 14px;
             margin-bottom: 8px;
             border-radius: 6px;
@@ -105,8 +123,14 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
             animation: slideDown 0.3s ease-out forwards;
+        }
+        #html-root.dark .toast {
+            background: rgba(20, 20, 20, 0.9);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8);
         }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
@@ -128,6 +152,14 @@
             to { transform: rotate(360deg); }
         }
     </style>
+    <script>
+        (function() {
+            const stored = localStorage.getItem('stakz_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = stored !== null ? stored === 'dark' : prefersDark;
+            document.documentElement.classList.toggle('dark', isDark);
+        })();
+    </script>
 </head>
 <body>
 
@@ -197,7 +229,7 @@
         </div>
     </div>
 
-    <div id="app" class="w-full min-h-screen bg-black overflow-x-hidden relative text-zinc-100 flex flex-col text-sm">
+    <div id="app" class="w-full min-h-screen bg-zinc-50 dark:bg-black overflow-x-hidden relative text-zinc-900 dark:text-zinc-100 flex flex-col text-sm">
         <div class="flex items-center justify-center min-h-screen w-full">
             <div class="flex flex-col items-center gap-4 px-6">
                 <div class="spinner spinner-lg text-emerald-500" aria-hidden="true"></div>
@@ -260,6 +292,12 @@
         };
 
         // --- Helpers ---
+        function toggleTheme() {
+            const root = document.documentElement;
+            const isDark = root.classList.toggle('dark');
+            localStorage.setItem('stakz_theme', isDark ? 'dark' : 'light');
+            render(false);
+        }
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
         const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -1248,7 +1286,7 @@
             <div class="fixed top-0 left-0 w-full z-50 glass">
                 <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
                     <div class="flex items-center gap-3">
-                        <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500 pr-2 pb-1">${SITE_NAME}</button>
+                        <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-500 pr-2 pb-1">${SITE_NAME}</button>
                     </div>
                     <div class="flex items-center gap-4">
                         ${state.user 
@@ -1265,6 +1303,7 @@
                             `
                         }
                         ${state.user ? `<button onclick="window.handleUserLogout()" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
+                        <button onclick="window.toggleTheme()" class="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors" title="Toggle theme">${document.documentElement.classList.contains('dark') ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>'}</button>
                         <button onclick="window.setView('admin')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="hexagon" class="w-4 h-4"></i></button>
                     </div>
                 </div>
@@ -2126,6 +2165,7 @@
         // Functions to Expose
         window.goHome = goHome;
         window.setView = setView;
+        window.toggleTheme = toggleTheme;
         window.showOrderAccounts = showOrderAccounts;
         window.clearOrderSelection = clearOrderSelection;
         window.selectProduct = selectProduct;
