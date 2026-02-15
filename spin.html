@@ -6,6 +6,7 @@
     <title>StakzSpin | Daily Rewards</title>
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoadSpin&render=explicit" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -175,6 +176,7 @@
                     <input type="password" id="login-modal-pass" placeholder="Password" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" required />
                     <button type="button" id="login-modal-toggle-pass" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
                 </div>
+                <div id="spin-recaptcha-container" class="flex justify-center min-h-[78px]"></div>
                 <button type="submit" id="login-modal-submit" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
                     Sign In
                 </button>
@@ -280,6 +282,24 @@
 
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
+        const RECAPTCHA_SITE_KEY = '6LcMHmwsAAAAAFu2VXOqspB0JuzGLyHM-oWjTcoX';
+
+        let spinRecaptchaToken = '';
+        let spinRecaptchaWidgetId = null;
+        window.onRecaptchaLoadSpin = function() { window.recaptchaReadySpin = true; };
+
+        function renderSpinRecaptcha() {
+            const container = $('#spin-recaptcha-container');
+            if (!container || !window.grecaptcha || !window.recaptchaReadySpin) return;
+            if (spinRecaptchaWidgetId != null) try { window.grecaptcha.reset(spinRecaptchaWidgetId); } catch(e) {}
+            spinRecaptchaToken = '';
+            container.innerHTML = '';
+            spinRecaptchaWidgetId = window.grecaptcha.render(container, {
+                sitekey: RECAPTCHA_SITE_KEY,
+                theme: 'dark',
+                callback: function(token) { spinRecaptchaToken = token; },
+            });
+        }
 
         const $ = (s) => document.querySelector(s);
         const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -424,6 +444,8 @@
                         if (content) content.classList.remove('scale-95');
                     });
                     document.body.style.overflow = 'hidden';
+                    if (window.recaptchaReadySpin && window.grecaptcha) renderSpinRecaptcha();
+                    else setTimeout(renderSpinRecaptcha, 400);
                 };
                 const closeModal = () => {
                     modal.classList.add('opacity-0');
@@ -443,6 +465,7 @@
                     const email = $('#login-modal-email').value.trim();
                     const pass = passInput.value;
                     if (!email || !pass) return showToast('Please fill all fields', 'error');
+                    if (!spinRecaptchaToken) return showToast('Please complete the captcha', 'error');
                     const submitBtn = $('#login-modal-submit');
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<span class="spinner-loader !w-4 !h-4 mr-1"></span> Signing In...';
@@ -450,6 +473,8 @@
                         const { data, error } = await this.supabase.auth.signInWithPassword({ email, password: pass });
                         if (error) throw error;
                         showToast('Welcome back!', 'success');
+                        spinRecaptchaToken = '';
+                        if (window.grecaptcha && spinRecaptchaWidgetId != null) try { window.grecaptcha.reset(spinRecaptchaWidgetId); } catch(err) {}
                         closeModal();
                         location.reload();
                     } catch (err) {
