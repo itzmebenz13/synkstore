@@ -261,6 +261,7 @@
 
         // --- Helpers ---
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+        const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         const formatDate = (dateStr) => new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         
@@ -335,7 +336,23 @@
                                 ${acc.used ? 'Used' : 'Mark Used'}
                             </button>
                         </div>
-                        <div class="font-mono text-xs mb-3 select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${acc.creds}</div>
+                        ${(() => {
+                            const sep = (acc.creds || '').indexOf(':');
+                            const email = sep >= 0 ? acc.creds.slice(0, sep) : acc.creds;
+                            const pass = sep >= 0 ? acc.creds.slice(sep + 1) : '';
+                            return `
+                        <div class="space-y-1.5 mb-3">
+                            <div>
+                                <span class="text-[8px] text-zinc-500 uppercase font-bold block mb-0.5">Email</span>
+                                <span class="font-mono text-xs select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-white'}">${escapeHtml(email)}</span>
+                            </div>
+                            ${pass ? `
+                            <div>
+                                <span class="text-[8px] text-zinc-500 uppercase font-bold block mb-0.5">Password</span>
+                                <span class="font-mono text-xs select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${escapeHtml(pass)}</span>
+                            </div>` : ''}
+                        </div>`;
+                        })()}
                         <div class="bg-black/50 p-2 rounded border border-white/5">
                             ${otp.status === 'sent' ? `
                             <div class="flex justify-between items-center">
