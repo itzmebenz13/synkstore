@@ -7,6 +7,7 @@
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoadSpin&render=explicit" async defer></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -176,7 +177,7 @@
                     <input type="password" id="login-modal-pass" placeholder="Password" class="w-full bg-zinc-950 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" required />
                     <button type="button" id="login-modal-toggle-pass" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
                 </div>
-                <div id="spin-recaptcha-container" class="flex justify-center min-h-[78px]"></div>
+                <div id="spin-recaptcha-container" class="w-full min-h-[78px]"></div>
                 <button type="submit" id="login-modal-submit" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2">
                     Sign In
                 </button>
@@ -283,10 +284,21 @@
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
         const RECAPTCHA_SITE_KEY = '6LcMHmwsAAAAAFu2VXOqspB0JuzGLyHM-oWjTcoX';
+        const TURNSTILE_SITE_KEY = '0x4AAAAAACcm7IGyb3q3w9nr';
 
         let spinRecaptchaToken = '';
         let spinRecaptchaWidgetId = null;
+        let spinCaptchaProvider = 'recaptcha';
         window.onRecaptchaLoadSpin = function() { window.recaptchaReadySpin = true; };
+
+        async function fetchSpinCaptchaProvider() {
+            try {
+                const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                const { data } = await client.from('settings').select('value').eq('key', 'captcha_provider').maybeSingle();
+                if (data && data.value && String(data.value).toLowerCase() === 'turnstile') spinCaptchaProvider = 'turnstile';
+                else spinCaptchaProvider = 'recaptcha';
+            } catch (e) { spinCaptchaProvider = 'recaptcha'; }
+        }
 
         function renderSpinRecaptcha() {
             const container = $('#spin-recaptcha-container');
@@ -299,6 +311,28 @@
                 theme: 'dark',
                 callback: function(token) { spinRecaptchaToken = token; },
             });
+        }
+
+        function renderSpinTurnstile() {
+            const container = $('#spin-recaptcha-container');
+            if (!container || !window.turnstile) return;
+            spinRecaptchaToken = '';
+            container.innerHTML = '';
+            window.turnstile.render(container, {
+                sitekey: TURNSTILE_SITE_KEY,
+                theme: 'dark',
+                callback: function(token) { spinRecaptchaToken = token; },
+            });
+        }
+
+        function renderSpinCaptcha() {
+            if (spinCaptchaProvider === 'turnstile') {
+                if (window.turnstile) renderSpinTurnstile();
+                else setTimeout(renderSpinCaptcha, 200);
+            } else {
+                if (window.recaptchaReadySpin && window.grecaptcha) renderSpinRecaptcha();
+                else setTimeout(renderSpinCaptcha, 400);
+            }
         }
 
         const $ = (s) => document.querySelector(s);
@@ -332,6 +366,7 @@
 
             init: async function() {
                 try {
+                    await fetchSpinCaptchaProvider();
                     this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     const { data: { session } } = await this.supabase.auth.getSession();
                     this.user = session?.user ?? null;
@@ -444,8 +479,7 @@
                         if (content) content.classList.remove('scale-95');
                     });
                     document.body.style.overflow = 'hidden';
-                    if (window.recaptchaReadySpin && window.grecaptcha) renderSpinRecaptcha();
-                    else setTimeout(renderSpinRecaptcha, 400);
+                    renderSpinCaptcha();
                 };
                 const closeModal = () => {
                     modal.classList.add('opacity-0');
@@ -474,7 +508,7 @@
                         if (error) throw error;
                         showToast('Welcome back!', 'success');
                         spinRecaptchaToken = '';
-                        if (window.grecaptcha && spinRecaptchaWidgetId != null) try { window.grecaptcha.reset(spinRecaptchaWidgetId); } catch(err) {}
+                        if (spinCaptchaProvider === 'recaptcha' && window.grecaptcha && spinRecaptchaWidgetId != null) try { window.grecaptcha.reset(spinRecaptchaWidgetId); } catch(err) {}
                         closeModal();
                         location.reload();
                     } catch (err) {
