@@ -102,6 +102,8 @@
         #html-root:not(.dark) .text-zinc-400,
         #html-root:not(.dark) .text-zinc-500 { color: #52525b !important; }
         #html-root:not(.dark) .text-zinc-600 { color: #3f3f46 !important; }
+        /* Keep white text on primary buttons in light mode */
+        #html-root:not(.dark) .btn-primary-light { color: #ffffff !important; }
 
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
@@ -1728,7 +1730,7 @@
                             ${state.discount > 0 ? `<span class="text-xs text-zinc-500 line-through ${isV2 ? 'price-poppins' : 'font-mono'} decoration-zinc-500">${formatPHP(subtotal)}</span>` : ''}
                         </div>
                     </div>
-                    <button onclick="window.setView('checkout')" class="flex-1 ${isV2 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-white hover:bg-zinc-200 text-black'} font-bold py-2.5 px-4 text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2">
+                    <button onclick="window.setView('checkout')" class="flex-1 ${isV2 ? 'bg-blue-600 hover:bg-blue-700 text-white btn-primary-light' : 'bg-white hover:bg-zinc-200 text-black'} font-bold py-2.5 px-4 text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2">
                         Proceed to Payment <i data-lucide="arrow-right" class="w-3 h-3"></i>
                     </button>
                 </div>
@@ -1747,11 +1749,12 @@
                 : `Confirm Payment`;
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
 
+            const isDark = document.documentElement.classList.contains('dark');
             return `
-            <div class="min-h-screen bg-black pb-16 pt-14 ${animClass}">
-                <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
-                    <button onclick="window.setView('product')" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
-                    <h2 class="font-mono text-[10px] uppercase tracking-widest text-white">Secure Checkout</h2>
+            <div class="min-h-screen ${isDark ? 'bg-black' : 'bg-gray-50'} pb-16 pt-14 ${animClass}">
+                <div class="p-4 border-b ${isDark ? 'border-white/5 bg-black/80' : 'border-gray-200 bg-white'} flex items-center gap-3 sticky top-14 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
+                    <button onclick="window.setView('product')" class="${isDark ? 'hover:text-white text-zinc-400' : 'hover:text-gray-900 text-gray-600'} transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+                    <h2 class="font-mono text-[10px] uppercase tracking-widest ${isDark ? 'text-white' : 'text-gray-900'}">Secure Checkout</h2>
                 </div>
 
                 <div class="p-5 max-w-2xl mx-auto w-full">
