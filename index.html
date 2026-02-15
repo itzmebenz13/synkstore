@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StakzShop</title>
+    <title>StakzShop | Digital Asset Vault</title>
     
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- Cloudflare Turnstile -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+    <!-- Google reCAPTCHA v2 (Site key only; use Secret key server-side to verify token) -->
+    <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -212,7 +212,7 @@
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
-        const SITE_KEY = "0x4AAAAAACcm7IGyb3q3w9nr";
+        const RECAPTCHA_SITE_KEY = "6LcMHmwsAAAAAFu2VXOqspB0JuzGLyHM-oWjTcoX";
 
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
@@ -371,15 +371,18 @@
             </div>`;
         }
 
-        function renderTurnstile() {
+        window.onRecaptchaLoad = function() { window.recaptchaReady = true; };
+
+        function renderRecaptcha() {
             const container = document.getElementById('captcha-container');
-            if (container && window.turnstile) {
-                container.innerHTML = ''; 
-                window.turnstile.render('#captcha-container', {
-                    sitekey: SITE_KEY,
-                    callback: function(token) { state.captchaToken = token; },
-                });
-            }
+            if (!container || !window.grecaptcha || !window.recaptchaReady) return;
+            if (window.recaptchaWidgetId != null) try { window.grecaptcha.reset(window.recaptchaWidgetId); } catch(e) {}
+            container.innerHTML = '';
+            window.recaptchaWidgetId = window.grecaptcha.render(container, {
+                sitekey: RECAPTCHA_SITE_KEY,
+                theme: 'dark',
+                callback: function(token) { state.captchaToken = token; },
+            });
         }
 
         // --- Modal Logic ---
@@ -1992,9 +1995,10 @@
             app.innerHTML = html;
             lucide.createIcons();
             
-            // Re-render captcha if on relevant screens
+            // Re-render reCAPTCHA if on relevant screens
             if (state.view === 'checkout' || state.view === 'register') {
-                renderTurnstile();
+                if (window.recaptchaReady && window.grecaptcha) renderRecaptcha();
+                else setTimeout(renderRecaptcha, 300);
             }
 
             if (animate) {
