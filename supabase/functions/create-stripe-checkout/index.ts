@@ -1,8 +1,12 @@
 // Create a Stripe Checkout Session and return the redirect URL.
 // Set STRIPE_SECRET_KEY in Supabase Edge Function secrets.
+// Runs in Supabase Edge Runtime (Deno).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// @ts-ignore - ESM URL import (Deno); valid at deploy time
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+
+declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (r: Request) => Response | Promise<Response>) => void };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,9 +55,11 @@ Deno.serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeSecret, { apiVersion: "2024-11-20.acacia" });
-    // PHP is zero-decimal: unit_amount and quantity must multiply to total (whole pesos)
-    const unitAmount = Math.max(1, Math.floor(amount / qty));
-    const adjustedTotal = unitAmount * qty;
+    // Stripe expects PHP in centavos (smallest unit): 18 pesos = 1800
+    const amountCentavos = Math.round(amount * 100);
+    const unitAmountCentavos = Math.max(100, Math.floor(amountCentavos / qty));
+    const adjustedTotalCentavos = unitAmountCentavos * qty;
+    const adjustedTotalPesos = adjustedTotalCentavos / 100;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -67,7 +73,7 @@ Deno.serve(async (req) => {
               name: String(product_title),
               description: qty > 1 ? `Quantity: ${qty}` : undefined,
             },
-            unit_amount: unitAmount,
+            unit_amount: unitAmountCentavos,
           },
           quantity: qty,
         },
@@ -75,7 +81,7 @@ Deno.serve(async (req) => {
       metadata: {
         product_title: String(product_title),
         quantity: String(qty),
-        total_php: String(adjustedTotal),
+        total_php: String(adjustedTotalPesos),
         user_id: user_id ? String(user_id) : "",
         credits_used: credits_used != null ? String(credits_used) : "0",
       },
