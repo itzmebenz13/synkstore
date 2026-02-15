@@ -107,8 +107,33 @@
         #html-root:not(.dark) .voucher-apply-btn { color: #ffffff !important; }
         /* Green/emerald buttons: white text in light mode */
         #html-root:not(.dark) .btn-green-light { color: #ffffff !important; }
+        /* Stripe button: keep white text in light mode */
+        #html-root:not(.dark) .btn-stripe-light { color: #ffffff !important; }
         /* Admin Stocks Save Changes: keep white text on dark button in light mode */
         #html-root:not(.dark) .admin-save-btn { color: #ffffff !important; }
+        /* Admin Orders Send message: keep white text on dark button in light mode */
+        #html-root:not(.dark) .admin-send-btn { color: #ffffff !important; }
+        /* Admin Orders Fulfill button: keep white text on dark button in light mode */
+        #html-root:not(.dark) .admin-fulfill-btn { color: #ffffff !important; }
+        /* Buyer Request OTP button: keep white text on dark button in light mode */
+        #html-root:not(.dark) .request-otp-btn { color: #ffffff !important; }
+        /* Buyer send message button: keep white icon on dark button in light mode */
+        #html-root:not(.dark) .buyer-send-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .buyer-send-btn i { color: #ffffff !important; }
+        /* Admin login Authenticate button: keep white text on dark button in light mode */
+        #html-root:not(.dark) .admin-auth-btn { color: #ffffff !important; background-color: #111827 !important; }
+        #html-root:not(.dark) .admin-auth-btn:hover { background-color: #1f2937 !important; }
+        /* Admin settings buttons: keep white text on dark button in light mode */
+        #html-root:not(.dark) .admin-settings-btn { color: #ffffff !important; background-color: #111827 !important; }
+        #html-root:not(.dark) .admin-settings-btn:hover { background-color: #1f2937 !important; }
+        /* Success page Check Status button: black/dark with white text (all themes) */
+        .success-check-status-btn,
+        .success-check-status-btn:hover,
+        .success-check-status-btn:focus,
+        button.success-check-status-btn,
+        #html-root .success-check-status-btn,
+        #html-root:not(.dark) .success-check-status-btn { color: #ffffff !important; background-color: #111827 !important; }
+        .success-check-status-btn:hover { background-color: #1f2937 !important; }
 
         /* Use Wallet toggle switch */
         .wallet-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -198,6 +223,29 @@
         .spinner-lg { width: 32px; height: 32px; border-width: 3px; }
         @keyframes spinner-rotate {
             to { transform: rotate(360deg); }
+        }
+
+        /* Confirm Payment: advanced white preloader (visible on green in light & dark) */
+        .confirm-preloader {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #ffffff;
+        }
+        .confirm-preloader .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ffffff;
+            animation: confirm-preloader-bounce 0.6s ease-in-out infinite both;
+        }
+        .confirm-preloader .dot:nth-child(1) { animation-delay: 0s; }
+        .confirm-preloader .dot:nth-child(2) { animation-delay: 0.15s; }
+        .confirm-preloader .dot:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes confirm-preloader-bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
         /* V2 Specific Styles */
@@ -320,6 +368,9 @@
             console.error("Supabase failed to init:", e);
         }
 
+        // Stripe: base URL for Supabase Edge Functions (same project as SUPABASE_URL)
+        const STRIPE_FUNCTIONS_BASE = SUPABASE_URL.replace(/\/$/, '') + '/functions/v1';
+
         // --- State Management ---
         const state = {
             view: 'home',
@@ -332,6 +383,7 @@
             selectedProduct: null,
             quantity: 1,
             refNumber: '',
+            paymentMethod: 'gcash', // 'gcash' | 'stripe'
             lastOrderId: null,
             trackerInput: '',
             searchResult: null,
@@ -371,7 +423,7 @@
         /* Use "PHP" instead of ₱ so the whole price renders in Poppins (₱ often falls back to serif) */
         const formatPHPPoppins = (amount) => 'PHP ' + new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
         const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        const generateOrderId = () => 'STKZ-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         const GUEST_ORDERS_KEY = 'stakz_guest_order_ids';
         const getGuestOrderIds = () => { try { return JSON.parse(localStorage.getItem(GUEST_ORDERS_KEY) || '[]'); } catch(e) { return []; } };
         const addGuestOrderId = (id) => { const ids = getGuestOrderIds(); if(!ids.includes(id)) { ids.unshift(id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); } };
@@ -435,17 +487,31 @@
 
         function renderOrderAccountsContent(res) {
             if (!res.accounts || res.accounts.length === 0) return '';
+            const isDark = document.documentElement.classList.contains('dark');
             return `
-            <div class="mt-4 border-t border-dashed border-zinc-800 pt-4">
-                <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3"></i> Access Details</h4>
+            <div class="mt-4 border-t border-dashed ${isDark ? 'border-zinc-800' : 'border-gray-300'} pt-4">
+                <h4 class="text-[9px] font-bold uppercase mb-2 ${isDark ? 'text-zinc-400' : 'text-gray-600'} tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3 ${isDark ? 'text-zinc-400' : 'text-gray-600'}"></i> Access Details</h4>
                 <div class="space-y-2">
                     ${res.accounts.map((acc, idx) => {
                         const otp = acc.otpRequest || { status: 'idle', code: null };
+                        // Check if on cooldown (applies to all statuses)
+                        let isOnCooldown = false;
+                        let cooldownSeconds = 0;
+                        if(otp.requestedAt) {
+                            const lastRequestTime = new Date(otp.requestedAt).getTime();
+                            const now = new Date().getTime();
+                            const timeSinceLastRequest = (now - lastRequestTime) / 1000; // seconds
+                            const cooldownDuration = 2 * 60; // 2 minutes in seconds
+                            if(timeSinceLastRequest < cooldownDuration) {
+                                isOnCooldown = true;
+                                cooldownSeconds = Math.ceil(cooldownDuration - timeSinceLastRequest);
+                            }
+                        }
                         return `
-                    <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 rounded-md">
+                    <div class="${isDark ? 'bg-zinc-800/30' : 'bg-gray-50'} border ${acc.used ? (isDark ? 'border-zinc-700/50 opacity-50' : 'border-gray-300 opacity-50') : (isDark ? 'border-emerald-500/20' : 'border-emerald-500/40')} p-3 rounded-md">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-[9px] text-zinc-500 font-mono">Slot #${idx + 1}</span>
-                            <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold">
+                            <span class="text-[9px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} font-mono">Slot #${idx + 1}</span>
+                            <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? (isDark ? 'text-zinc-500' : 'text-gray-500') : (isDark ? 'text-zinc-400 hover:text-white' : 'text-gray-600 hover:text-gray-900')} uppercase font-bold">
                                 ${acc.used ? 'Used' : 'Mark Used'}
                             </button>
                         </div>
@@ -456,45 +522,59 @@
                             return `
                         <div class="space-y-1.5 mb-3">
                             <div>
-                                <span class="text-[8px] text-zinc-500 uppercase font-bold block mb-0.5">Email</span>
-                                <span class="font-mono text-xs select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-white'}">${escapeHtml(email)}</span>
+                                <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase font-bold block mb-0.5">Email</span>
+                                <span class="font-mono text-xs select-all break-all ${acc.used ? (isDark ? 'line-through text-zinc-600' : 'line-through text-gray-400') : (isDark ? 'text-white' : 'text-gray-900')}">${escapeHtml(email)}</span>
                             </div>
                             ${pass ? `
                             <div>
-                                <span class="text-[8px] text-zinc-500 uppercase font-bold block mb-0.5">Password</span>
-                                <span class="font-mono text-xs select-all break-all ${acc.used ? 'line-through text-zinc-600' : 'text-emerald-500'}">${escapeHtml(pass)}</span>
+                                <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase font-bold block mb-0.5">Password</span>
+                                <span class="font-mono text-xs select-all break-all ${acc.used ? (isDark ? 'line-through text-zinc-600' : 'line-through text-gray-400') : 'text-emerald-500'}">${escapeHtml(pass)}</span>
                             </div>` : ''}
                         </div>`;
                         })()}
-                        <div class="bg-black/50 p-2 rounded border border-white/5">
+                        <div class="${isDark ? 'bg-zinc-800/20 border-white/5' : 'bg-gray-100 border-gray-300'} p-2 rounded border">
                             ${otp.status === 'sent' ? `
-                            <div class="flex justify-between items-center">
-                                <span class="text-[9px] font-bold text-zinc-500 uppercase">2FA CODE:</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold text-white text-sm tracking-widest">${otp.code}</span>
-                                    <i data-lucide="copy" class="w-3 h-3 text-zinc-500 cursor-pointer hover:text-white" onclick="window.copyToClipboard('${otp.code}')"></i>
+                            <div class="mb-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase">2FA CODE:</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono font-bold ${isDark ? 'text-white' : 'text-gray-900'} text-sm tracking-widest">${otp.code}</span>
+                                        <i data-lucide="copy" class="w-3 h-3 ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-600 hover:text-gray-900'} cursor-pointer" onclick="window.copyToClipboard('${otp.code}')"></i>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full pt-2 border-t ${isDark ? 'border-white/5' : 'border-gray-300'}">
+                                <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase">Need a new code?</span>
+                                ${isOnCooldown ? `
+                                <button disabled class="${isDark ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} text-[8px] font-bold px-2 py-0.5 uppercase rounded-sm tracking-wide">Wait ${cooldownSeconds}s</button>
+                                ` : `
+                                <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-800 hover:bg-gray-700 text-white request-otp-btn'} text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request New OTP</button>
+                                `}
                             </div>` : otp.status === 'pending' ? `
                             <div class="flex items-center gap-2 w-full text-yellow-500/80 justify-center py-0.5">
                                 <span class="spinner spinner-sm text-yellow-500 shrink-0"></span>
                                 <span class="text-[8px] font-bold uppercase tracking-wide font-mono">Waiting for Admin...</span>
+                            </div>` : isOnCooldown ? `
+                            <div class="flex items-center justify-between w-full">
+                                <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase">Verify Login</span>
+                                <button disabled class="${isDark ? 'bg-zinc-800/50 text-zinc-500 cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} text-[8px] font-bold px-2 py-0.5 uppercase rounded-sm tracking-wide">Wait ${cooldownSeconds}s</button>
                             </div>` : `
                             <div class="flex items-center justify-between w-full">
-                                <span class="text-[8px] text-zinc-500 uppercase">Verify Login</span>
-                                <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="bg-white/10 hover:bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
+                                <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase">Verify Login</span>
+                                <button onclick="window.requestOtp('${res.id}', '${acc.id}')" class="${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-800 hover:bg-gray-700 text-white request-otp-btn'} text-[8px] font-bold px-2 py-0.5 uppercase transition-colors rounded-sm tracking-wide">Request OTP</button>
                             </div>`}
-                            <div class="border-t border-white/5 pt-2 mt-2">
+                            <div class="border-t ${isDark ? 'border-white/5' : 'border-gray-300'} pt-2 mt-2">
                                 ${acc.messages && acc.messages.length > 0 ? `
                                 <div class="mb-2 space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
                                     ${acc.messages.map(msg => `
-                                        <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : 'text-zinc-400'} font-mono">
+                                        <div class="text-[8px] ${msg.sender === 'admin' ? 'text-emerald-400' : (isDark ? 'text-zinc-400' : 'text-gray-600')} font-mono">
                                             <span class="uppercase font-bold">${msg.sender}:</span> ${msg.text}
                                         </div>
                                     `).join('')}
                                 </div>` : ''}
                                 <div class="flex gap-2">
-                                    <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="bg-zinc-800 border border-zinc-700 text-[9px] px-2 py-1 w-full focus:outline-none focus:border-zinc-500 rounded-sm text-zinc-300" />
-                                    <button onclick="window.sendAccountMessage('${res.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded-sm"><i data-lucide="send" class="w-3 h-3"></i></button>
+                                    <input type="text" id="msg-${acc.id}" placeholder="Report issue..." class="${isDark ? 'bg-zinc-800 border-zinc-700 text-zinc-300 focus:border-zinc-500' : 'bg-white border-gray-300 text-gray-900 focus:border-gray-500'} border text-[9px] px-2 py-1 w-full focus:outline-none rounded-sm" />
+                                    <button onclick="window.sendAccountMessage('${res.id}', '${acc.id}', document.getElementById('msg-${acc.id}').value, 'user')" class="${isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white' : 'bg-gray-800 hover:bg-gray-700 text-white buyer-send-btn'} px-2 rounded-sm"><i data-lucide="send" class="w-3 h-3"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1021,6 +1101,98 @@
             render(false);
         }
 
+        function setPaymentMethod(method) {
+            state.paymentMethod = method === 'stripe' ? 'stripe' : 'gcash';
+        }
+
+        async function createStripeCheckoutAndRedirect() {
+            if (!state.selectedProduct) return showToast("No product selected", "error");
+            const baseTotal = getPrice() * state.quantity;
+            const finalTotal = baseTotal - (baseTotal * state.discount);
+            const credits = parseFloat(state.userProfile?.credits || 0);
+            const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
+            const amountToCharge = finalTotal - creditsUsed;
+            if (amountToCharge <= 0) return showToast("Use Confirm Payment for credits-only orders", "info");
+
+            state.isSubmitting = true;
+            render(false);
+
+            if (creditsUsed > 0) {
+                const newCredits = credits - creditsUsed;
+                const { error: credErr } = await supabaseClient.from('profiles').update({ credits: newCredits }).eq('id', state.user.id);
+                if (credErr) {
+                    state.isSubmitting = false;
+                    render(false);
+                    return showToast("Payment failed", "error");
+                }
+                if (state.userProfile) state.userProfile = { ...state.userProfile, credits: newCredits };
+            }
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            const successUrl = baseUrl + '?stripe=success&session_id={CHECKOUT_SESSION_ID}';
+            const cancelUrl = baseUrl + (window.location.hash || '#checkout');
+
+            try {
+                const res = await fetch(STRIPE_FUNCTIONS_BASE + '/create-stripe-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                    body: JSON.stringify({
+                        product_title: state.selectedProduct.title,
+                        quantity: state.quantity,
+                        total_php: Math.round(amountToCharge),
+                        user_id: state.user ? state.user.id : null,
+                        credits_used: creditsUsed,
+                        success_url: successUrl,
+                        cancel_url: cancelUrl
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    state.isSubmitting = false;
+                    render(false);
+                    return showToast(data.message || "Stripe checkout failed", "error");
+                }
+                if (data.url) {
+                    window.location.href = data.url;
+                    return;
+                }
+            } catch (e) {
+                console.error("Stripe checkout error:", e);
+                const msg = (e && e.message) ? e.message : "Network error. Try again.";
+                if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+                    showToast("Cannot reach payment server. Deploy the Supabase Edge Functions (see STRIPE_SETUP.md) and open this page from a web URL (not file://).", "error");
+                } else {
+                    showToast(msg, "error");
+                }
+            }
+            state.isSubmitting = false;
+            render(false);
+        }
+
+        async function confirmStripeOrder(sessionId) {
+            if (!sessionId) return;
+            try {
+                const res = await fetch(STRIPE_FUNCTIONS_BASE + '/confirm-stripe-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.order_id) {
+                    state.lastOrderId = data.order_id;
+                    if (state.user) fetchUserOrders();
+                    else addGuestOrderId(data.order_id);
+                    setView('success');
+                    showToast("Order submitted successfully", "success");
+                } else {
+                    showToast(data.message || "Could not confirm order", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Could not confirm order", "error");
+            }
+        }
+
         async function submitOrder() {
             const refInput = document.getElementById('refNumberInput');
             const baseTotal = getPrice() * state.quantity;
@@ -1029,7 +1201,9 @@
             const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
             const remainingToPay = finalTotal - creditsUsed;
 
-            if (remainingToPay > 0 && (!refInput || !refInput.value.trim())) return showToast("Please enter the payment reference number.", "error");
+            const refRaw = refInput ? refInput.value.trim() : '';
+            const refDigits = (refRaw || '').replace(/\D/g, '');
+            if (remainingToPay > 0 && refDigits.length < 4) return showToast("Please enter at least the last 4 digits of your payment reference.", "error");
             if (state.sessionOrderCount >= 3 && !state.captchaToken) return showToast("Please complete the captcha", "error");
 
             state.isSubmitting = true;
@@ -1052,7 +1226,7 @@
             }
 
             const newOrderId = generateOrderId();
-            const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : refInput.value.trim();
+            const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : (refInput ? refInput.value.trim() : '');
             const dbPayload = {
                 id: newOrderId,
                 product_title: state.selectedProduct.title,
@@ -1320,9 +1494,24 @@
         async function requestOtp(orderId, accId) {
             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(!data) return;
-            const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc);
+            
+            const account = data.accounts_data.find(acc => acc.id === accId);
+            if(account && account.otpRequest && account.otpRequest.requestedAt) {
+                const lastRequestTime = new Date(account.otpRequest.requestedAt).getTime();
+                const now = new Date().getTime();
+                const timeSinceLastRequest = (now - lastRequestTime) / 1000 / 60; // minutes
+                
+                if(timeSinceLastRequest < 2) {
+                    const remainingSeconds = Math.ceil((2 - timeSinceLastRequest) * 60);
+                    showToast(`Please wait ${remainingSeconds} seconds before requesting again`, "error");
+                    return;
+                }
+            }
+            
+            const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc);
             await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
             showToast("OTP Requested", "info");
+            render(false);
         }
 
         async function toggleAccountUsed(orderId, accId) {
@@ -1385,7 +1574,7 @@
                 <div class="max-w-2xl mx-auto flex items-center gap-2">
                     <div class="flex-1 relative">
                         <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                        <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. ORD-XXXXXXXX)" class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono" onkeydown="if(event.key==='Enter')window.handleTrack()" />
+                        <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. STKZ-XXXXXXXX)" class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono" onkeydown="if(event.key==='Enter')window.handleTrack()" />
                     </div>
                     <button onclick="window.handleTrack()" class="bg-white text-black hover:bg-zinc-200 p-2.5 rounded-lg transition-colors shrink-0 flex items-center justify-center" title="Track order"><i data-lucide="package-search" class="w-5 h-5"></i></button>
                 </div>
@@ -1479,7 +1668,7 @@
                     <div class="relative w-full max-w-lg mx-auto">
                         <div class="relative flex items-center">
                             <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none"></i>
-                            <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. ORD-XXXXX)" 
+                            <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. STKZ-XXXXX)" 
                                    class="w-full h-10 pl-10 pr-12 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-lg text-xs text-gray-700 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
                                    onkeydown="if(event.key==='Enter')window.handleTrack()" />
                             <button onclick="window.handleTrack()" class="absolute right-1 top-1 h-8 w-8 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center justify-center text-white btn-primary-light transition-colors shadow-sm">
@@ -1662,12 +1851,13 @@
             const selected = state.selectedOrderId ? state.userOrders.find(o => o.id === state.selectedOrderId) : null;
             const showingAccounts = selected && selected.status === 'Completed' && selected.accounts && selected.accounts.length > 0;
             const isGuest = !state.user;
+            const isDark = document.documentElement.classList.contains('dark');
 
             return `
-            <div class="min-h-screen bg-black font-sans pb-16 pt-14">
-                <div class="p-4 border-b border-white/5 flex items-center gap-3 sticky top-14 bg-black/80 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
-                    <button onclick="${showingAccounts ? "window.clearOrderSelection()" : "window.goHome()"}" class="hover:text-white text-zinc-400 transition-colors"><i data-lucide="${showingAccounts ? 'arrow-left' : 'arrow-left'}" class="w-4 h-4"></i></button>
-                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">${showingAccounts ? 'Access details' : 'My Order History'}</span>
+            <div class="min-h-screen ${isDark ? 'bg-black' : 'bg-gray-50'} font-sans pb-16 pt-14">
+                <div class="p-4 border-b ${isDark ? 'border-white/5 bg-black/80' : 'border-gray-200 bg-white/80'} flex items-center gap-3 sticky top-14 backdrop-blur-md z-10 max-w-7xl mx-auto w-full">
+                    <button onclick="${showingAccounts ? "window.clearOrderSelection()" : "window.goHome()"}" class="${isDark ? 'hover:text-white text-zinc-400' : 'hover:text-gray-900 text-gray-600'} transition-colors"><i data-lucide="${showingAccounts ? 'arrow-left' : 'arrow-left'}" class="w-4 h-4"></i></button>
+                    <span class="text-xs font-bold uppercase tracking-[0.2em] ${isDark ? 'text-zinc-300' : 'text-gray-700'}">${showingAccounts ? 'Access details' : 'My Order History'}</span>
                 </div>
                 <div class="p-4 max-w-2xl mx-auto w-full">
                     ${isGuest ? `
@@ -1677,15 +1867,15 @@
                     </div>
                     ` : ''}
                     ${showingAccounts ? `
-                        <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm mb-4">
+                        <div class="${isDark ? 'bg-zinc-900/50 border-white/5' : 'bg-white border-gray-200'} border p-5 relative overflow-hidden backdrop-blur-sm mb-4">
                             <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
                             <div class="pl-2 mb-2">
-                                <h3 class="font-bold text-xs tracking-tight mb-0.5 text-white">${selected.id}</h3>
-                                <p class="text-[9px] text-zinc-500 font-mono">${formatDate(selected.date)} · ${selected.product}</p>
+                                <h3 class="font-bold text-xs tracking-tight mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}">${selected.id}</h3>
+                                <p class="text-[9px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} font-mono">${formatDate(selected.date)} · ${selected.product}</p>
                             </div>
                             ${renderOrderAccountsContent(selected)}
                         </div>
-                        <button onclick="window.clearOrderSelection()" class="w-full text-center text-[9px] font-bold uppercase text-zinc-500 hover:text-white py-2 border border-white/10 rounded-sm transition-colors">Back to order list</button>
+                        <button onclick="window.clearOrderSelection()" class="w-full text-center text-[9px] font-bold uppercase ${isDark ? 'text-zinc-500 hover:text-white border-white/10' : 'text-gray-600 hover:text-gray-900 border-gray-300'} py-2 border rounded-sm transition-colors">Back to order list</button>
                     ` : state.userOrders.length === 0 ? `
                         <div class="text-center py-10 text-zinc-600">
                             <i data-lucide="package-open" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
@@ -1788,7 +1978,7 @@
             const showCaptcha = state.sessionOrderCount >= 3;
             
             const buttonContent = state.isSubmitting 
-                ? `<span class="spinner spinner-sm shrink-0 border-zinc-800 border-t-transparent"></span> VERIFYING...`
+                ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> VERIFYING...`
                 : `Confirm Payment`;
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
 
@@ -1868,38 +2058,30 @@
                     </div>` : ''}
 
                     ${!(state.payWithCredits && (state.userProfile?.credits || 0) >= finalTotal) ? `
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <div class="flex items-center gap-2 mb-3">
                             <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Gateway</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Method</span>
                         </div>
-                        
-                        <div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
-                             <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-10"></div>
-                             <img src="${getPaymentQrUrl()}" alt="QR" class="w-48 h-48 object-contain" onerror="this.src='${GCASH_QR_URL}'" />
-                             <div class="text-center relative z-10">
-                                <p class="font-mono text-sm font-bold text-white tracking-widest">${getPaymentNumber()}</p>
-                                <p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p>
-                             </div>
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <button type="button" onclick="window.setPaymentMethod('gcash'); render(false);" class="py-2.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${state.paymentMethod === 'gcash' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-white/10 text-zinc-400 hover:border-white/20'}">
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5 inline-block mr-1.5 align-middle"></i> Manual Transfer
+                            </button>
+                            <button type="button" onclick="window.setPaymentMethod('stripe'); render(false);" class="py-2.5 px-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${state.paymentMethod === 'stripe' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-zinc-900 border-white/10 text-zinc-400 hover:border-white/20'}">
+                                <i data-lucide="credit-card" class="w-3.5 h-3.5 inline-block mr-1.5 align-middle"></i> Card (Stripe)
+                            </button>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Reference Number</label>
-                        <div class="relative">
-                            <input type="text" id="refNumberInput" placeholder="0000 0000 0000" class="w-full bg-zinc-900 border border-white/10 py-3 px-3 pl-10 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-700" />
-                            <i data-lucide="hash" class="w-3 h-3 text-zinc-600 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                        </div>
-                    ` : ''}
+                    ${state.paymentMethod === 'gcash' ? '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><div class="w-1.5 h-1.5 bg-white rounded-full"></div><span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Gateway</span></div><div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden"><div class="absolute inset-0 bg-[url(\'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+\')] opacity-10"></div><img src="' + getPaymentQrUrl() + '" alt="QR" class="w-48 h-48 object-contain" onerror="this.src=\'' + GCASH_QR_URL + '\'" /><div class="text-center relative z-10"><p class="font-mono text-sm font-bold text-white tracking-widest">' + getPaymentNumber() + '</p><p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p></div></div><div class="mt-4"><label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Reference Number</label><div class="relative"><input type="text" id="refNumberInput" placeholder="Last 4 digits or full reference" class="w-full bg-zinc-900 border border-white/10 py-3 px-3 pl-10 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-700" /><i data-lucide="hash" class="w-3 h-3 text-zinc-600 absolute left-3.5 top-1/2 -translate-y-1/2"></i></div></div></div>' : '<div class="mb-6 bg-zinc-900 border border-white/10 p-4 rounded-lg"><p class="text-[10px] text-zinc-400 mb-3">You will be redirected to Stripe to pay securely with card.</p><p class="text-xs font-mono font-bold text-white">' + formatPHP(finalTotal) + '</p></div>'}
                         
-                        ${showCaptcha ? '<div id="captcha-container" class="w-full my-4 min-h-[78px]"></div>' : ''}
+                        ${state.paymentMethod === 'gcash' ? showCaptcha ? '<div id="captcha-container" class="w-full my-4 min-h-[78px]"></div>' : '' : ''}
 
-                        <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-white btn-green-light font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ${buttonDisabled}">
-                            ${buttonContent}
-                        </button>
+                        ${state.paymentMethod === 'stripe' ? '<button onclick="window.createStripeCheckoutAndRedirect()" class="w-full bg-[#635BFF] hover:bg-[#5449e0] text-white btn-stripe-light font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider flex items-center justify-center gap-2" ' + (state.isSubmitting ? 'disabled' : '') + '>' + (state.isSubmitting ? '<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> REDIRECTING...' : '<i data-lucide="credit-card" class="w-4 h-4"></i> Pay with Stripe') + '</button>' : '<button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-white btn-green-light font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ' + buttonDisabled + '">' + buttonContent + '</button>'}
                     </div>
                 </div>
-            </div>`;
+            </div>` : ''}
+            `;
         }
 
         function renderSuccess(animate = true) {
@@ -1926,7 +2108,7 @@
                 </div>
 
                 <div class="space-y-2 w-full max-w-xs relative z-10">
-                    <button onclick="window.setView('tracker')" class="w-full bg-white text-black font-bold py-2.5 px-4 text-[10px] uppercase hover:bg-zinc-200 transition-colors tracking-wider">
+                    <button onclick="window.setView('my-orders')" class="w-full bg-gray-900 text-white font-bold py-2.5 px-4 text-[10px] uppercase hover:bg-gray-800 transition-colors tracking-wider success-check-status-btn">
                         Check Status
                     </button>
                     <button onclick="window.goHome()" class="w-full text-zinc-500 font-bold py-2.5 px-4 text-[10px] uppercase hover:text-white transition-colors tracking-wider">
@@ -2058,20 +2240,22 @@
         }
 
         function renderAdmin() {
+            const isDark = document.documentElement.classList.contains('dark');
+            
             if (!state.adminAuth) {
                 return `
-                <div class="min-h-screen bg-black text-white font-sans flex items-center justify-center p-6 fixed top-0 left-0 w-full z-50">
-                    <div class="bg-zinc-900 border border-white/10 p-6 max-w-xs w-full relative overflow-hidden">
+                <div class="min-h-screen ${isDark ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'} font-sans flex items-center justify-center p-6 fixed top-0 left-0 w-full z-50">
+                    <div class="${isDark ? 'bg-zinc-900 border-white/10' : 'bg-white border-gray-200'} border p-6 max-w-xs w-full relative overflow-hidden">
                          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50"></div>
                          <div class="flex justify-between items-center mb-6">
                             <h3 class="font-bold text-center uppercase tracking-[0.2em] text-xs">Administration</h3>
-                            <button onclick="window.goHome()" class="text-[9px] text-zinc-500 hover:text-white uppercase">Exit</button>
+                            <button onclick="window.goHome()" class="text-[9px] ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-600 hover:text-gray-900'} uppercase">Exit</button>
                          </div>
                         <div class="mb-5">
-                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Password</label>
-                            <input type="password" id="adminPassInput" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
+                            <label class="block text-[9px] font-bold uppercase ${isDark ? 'text-zinc-500' : 'text-gray-600'} mb-1.5 tracking-wider">Password</label>
+                            <input type="password" id="adminPassInput" class="w-full ${isDark ? 'bg-black border-white/10 text-white focus:border-emerald-500/50' : 'bg-gray-50 border-gray-300 text-gray-900 focus:border-emerald-500'} border py-2.5 px-3 text-xs font-mono focus:outline-none transition-colors" />
                         </div>
-                        <button onclick="window.handleAdminLogin()" class="w-full bg-white text-black font-bold py-2.5 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Authenticate</button>
+                        <button onclick="window.handleAdminLogin()" class="w-full ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-auth-btn'} font-bold py-2.5 px-4 text-[10px] uppercase tracking-wider transition-colors">Authenticate</button>
                     </div>
                 </div>`;
             }
@@ -2083,7 +2267,6 @@
                 .reduce((acc, cur) => acc + cur.total, 0);
             
             const pendingOtp = getPendingOtpCount();
-            const isDark = document.documentElement.classList.contains('dark');
             const adminBg = isDark ? 'bg-black' : 'bg-gray-50';
             const adminHeaderBg = isDark ? 'bg-black border-white/10' : 'bg-white border-gray-200';
             const adminText = isDark ? 'text-white' : 'text-gray-900';
@@ -2120,7 +2303,7 @@
                                 <td class="p-3 text-right">
                                     ${order.status === 'Processing' || order.status === 'Refund Pending' ? `
                                         <div class="flex gap-1 justify-end">
-                                            <button onclick="state.activeFulfillmentId = '${order.id}'; render()" class="bg-white text-black hover:bg-zinc-200 px-2 py-1 text-[9px] uppercase font-bold tracking-wide">Fulfill</button>
+                                            <button onclick="state.activeFulfillmentId = '${order.id}'; render()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-800 text-white hover:bg-gray-700 admin-fulfill-btn'} px-2 py-1 text-[9px] uppercase font-bold tracking-wide">Fulfill</button>
                                             <button onclick="window.adminAction('${order.id}', 'cancel')" class="border border-white/10 text-zinc-400 hover:text-white px-2 py-1 text-[9px] uppercase font-bold"><i data-lucide="x" class="w-3 h-3"></i></button>
                                             <button onclick="window.adminAction('${order.id}', 'refund')" class="border border-white/10 text-zinc-400 hover:text-white px-2 py-1 text-[9px] uppercase font-bold"><i data-lucide="refresh-ccw" class="w-3 h-3"></i></button>
                                         </div>
@@ -2155,7 +2338,7 @@
                                                     ` : ''}
                                                     <div class="flex gap-2 mt-2">
                                                         <input type="text" id="admin-msg-${acc.id}" placeholder="Reply to user..." class="${adminInput} text-[9px] px-2 py-1.5 w-full focus:outline-none focus:border-emerald-500 rounded-sm border" />
-                                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('admin-msg-${acc.id}').value, 'admin')" class="${isDark ? 'bg-zinc-700 hover:bg-zinc-600 text-white' : 'bg-gray-800 hover:bg-gray-700 text-white'} px-2 rounded-sm text-[9px] uppercase font-bold">Send</button>
+                                                        <button onclick="window.sendAccountMessage('${order.id}', '${acc.id}', document.getElementById('admin-msg-${acc.id}').value, 'admin')" class="${isDark ? 'bg-zinc-700 hover:bg-zinc-600 text-white' : 'bg-gray-800 hover:bg-gray-700 text-white admin-send-btn'} px-2 rounded-sm text-[9px] uppercase font-bold">Send</button>
                                                     </div>
                                                 </div>
                                             `).join('')}
@@ -2258,37 +2441,37 @@
                 const captchaProvider = (state.paymentSettings?.captcha_provider || 'recaptcha');
                 tabContent = `
                 <div class="space-y-6 max-w-md">
-                    <div class="bg-zinc-900 border border-white/5 p-6">
-                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Captcha Provider</h3>
+                    <div class="${adminCard} border ${adminBorder} p-6">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-4 tracking-widest">Captcha Provider</h3>
                         <div class="mb-4">
-                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Use on register & checkout</label>
-                            <select id="settingsCaptchaProvider" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white">
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">Use on register & checkout</label>
+                            <select id="settingsCaptchaProvider" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50">
                                 <option value="recaptcha" ${captchaProvider === 'recaptcha' ? 'selected' : ''}>Google reCAPTCHA</option>
                                 <option value="turnstile" ${captchaProvider === 'turnstile' ? 'selected' : ''}>Cloudflare Turnstile</option>
                             </select>
                         </div>
-                        <button onclick="window.savePaymentSettings()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider mb-6">Save captcha setting</button>
+                        <button onclick="window.savePaymentSettings()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider mb-6 transition-colors">Save captcha setting</button>
                     </div>
-                    <div class="bg-zinc-900 border border-white/5 p-6">
-                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Payment (QR + Number)</h3>
-                        <p class="text-[9px] text-zinc-500 mb-3">Upload your QR image in Supabase Storage (Storage → New bucket "payment", Public ON → Upload file), then paste the Public URL below.</p>
+                    <div class="${adminCard} border ${adminBorder} p-6">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-4 tracking-widest">Payment (QR + Number)</h3>
+                        <p class="text-[9px] ${adminTextMuted} mb-3">Upload your QR image in Supabase Storage (Storage → New bucket "payment", Public ON → Upload file), then paste the Public URL below.</p>
                         <div class="mb-4">
-                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Payment QR image URL</label>
-                            <input type="url" id="settingsPaymentQrUrl" placeholder="https://...supabase.co/storage/v1/object/public/payment/qr.png" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white placeholder-zinc-600" value="${qrUrl.replace(/"/g, '&quot;')}" />
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">Payment QR image URL</label>
+                            <input type="url" id="settingsPaymentQrUrl" placeholder="https://...supabase.co/storage/v1/object/public/payment/qr.png" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50" value="${qrUrl.replace(/"/g, '&quot;')}" />
                         </div>
                         <div class="mb-4">
-                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">GCash / payment number</label>
-                            <input type="text" id="settingsPaymentNumber" placeholder="0917 123 4567" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white placeholder-zinc-600" value="${payNum.replace(/"/g, '&quot;')}" />
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">GCash / payment number</label>
+                            <input type="text" id="settingsPaymentNumber" placeholder="0917 123 4567" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50" value="${payNum.replace(/"/g, '&quot;')}" />
                         </div>
-                        <button onclick="window.savePaymentSettings()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Save payment settings</button>
+                        <button onclick="window.savePaymentSettings()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save payment settings</button>
                     </div>
-                    <div class="bg-zinc-900 border border-white/5 p-6">
-                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Security Settings</h3>
+                    <div class="${adminCard} border ${adminBorder} p-6">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-4 tracking-widest">Security Settings</h3>
                         <div class="mb-4">
-                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">New Password</label>
-                            <input type="password" id="newAdminPass" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors text-white" />
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">New Password</label>
+                            <input type="password" id="newAdminPass" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors" />
                         </div>
-                        <button onclick="window.updateAdminPassword()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider">Update Password</button>
+                        <button onclick="window.updateAdminPassword()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Update Password</button>
                     </div>
                 </div>`;
             }
@@ -2352,6 +2535,53 @@
             // Re-render captcha (reCAPTCHA or Turnstile per admin setting)
             if (state.view === 'checkout' || state.view === 'register') setTimeout(renderCaptcha, 100);
 
+            // Clear existing cooldown timer
+            if (window.otpCooldownTimer) {
+                clearInterval(window.otpCooldownTimer);
+                window.otpCooldownTimer = null;
+            }
+
+            // Set up cooldown timer for OTP requests
+            if (state.view === 'my-orders' && state.userOrders && state.userOrders.length > 0) {
+                const hasActiveCooldown = state.userOrders.some(order => 
+                    order.accounts && order.accounts.some(acc => {
+                        const otp = acc.otpRequest || {};
+                        if(otp.requestedAt) {
+                            const lastRequestTime = new Date(otp.requestedAt).getTime();
+                            const now = new Date().getTime();
+                            const timeSinceLastRequest = (now - lastRequestTime) / 1000;
+                            return timeSinceLastRequest < 120; // 2 minutes
+                        }
+                        return false;
+                    })
+                );
+
+                if (hasActiveCooldown) {
+                    window.otpCooldownTimer = setInterval(() => {
+                        const stillHasCooldown = state.userOrders.some(order => 
+                            order.accounts && order.accounts.some(acc => {
+                                const otp = acc.otpRequest || {};
+                                if(otp.requestedAt) {
+                                    const lastRequestTime = new Date(otp.requestedAt).getTime();
+                                    const now = new Date().getTime();
+                                    const timeSinceLastRequest = (now - lastRequestTime) / 1000;
+                                    return timeSinceLastRequest < 120;
+                                }
+                                return false;
+                            })
+                        );
+                        if (stillHasCooldown && state.view === 'my-orders') {
+                            render(false);
+                        } else {
+                            if (window.otpCooldownTimer) {
+                                clearInterval(window.otpCooldownTimer);
+                                window.otpCooldownTimer = null;
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+
             if (animate) {
                 window.scrollTo(0, 0);
             }
@@ -2392,6 +2622,8 @@
         window.toggleOrderDetails = toggleOrderDetails;
         window.markMessagesRead = markMessagesRead;
         window.togglePayWithCredits = togglePayWithCredits;
+        window.setPaymentMethod = setPaymentMethod;
+        window.createStripeCheckoutAndRedirect = createStripeCheckoutAndRedirect;
         
         // New Expose Functions
         window.openAddProductModal = openAddProductModal;
@@ -2407,6 +2639,20 @@
 
         // Init
         async function init() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('stripe') === 'success' && params.get('session_id')) {
+                const sessionId = params.get('session_id');
+                window.history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+                await initAuth();
+                if (!supabaseClient) {
+                    showToast("Database connection failed", "error");
+                    return;
+                }
+                await confirmStripeOrder(sessionId);
+                render();
+                return;
+            }
+
             if (!supabaseClient) {
                 showToast("Database connection failed", "error");
                 return;
