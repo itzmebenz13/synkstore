@@ -263,8 +263,7 @@
     <script>
         (function() {
             const stored = localStorage.getItem('stakz_theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const isDark = stored !== null ? stored === 'dark' : prefersDark;
+            const isDark = stored !== null ? stored === 'dark' : false;
             document.documentElement.classList.toggle('dark', isDark);
         })();
     </script>
@@ -1113,6 +1112,9 @@
             const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
             const amountToCharge = finalTotal - creditsUsed;
             if (amountToCharge <= 0) return showToast("Use Confirm Payment for credits-only orders", "info");
+            // Stripe requires total to be at least ~$0.50 USD (~₱30)
+            const STRIPE_MIN_PHP = 30;
+            if (amountToCharge < STRIPE_MIN_PHP) return showToast("Stripe minimum is ₱" + STRIPE_MIN_PHP + " (~$0.50). Use Manual Transfer for smaller amounts.", "error");
 
             state.isSubmitting = true;
             render(false);
