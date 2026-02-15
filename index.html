@@ -105,6 +105,8 @@
         /* Keep white text on primary buttons in light mode */
         #html-root:not(.dark) .btn-primary-light { color: #ffffff !important; }
         #html-root:not(.dark) .voucher-apply-btn { color: #ffffff !important; }
+        /* Green/emerald buttons: white text in light mode */
+        #html-root:not(.dark) .btn-green-light { color: #ffffff !important; }
 
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
@@ -243,7 +245,7 @@
                     <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Description</label>
                     <textarea id="new-prod-desc" rows="3" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="Product details..."></textarea>
                 </div>
-                <button onclick="window.submitNewProduct()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors mt-2">
+                <button onclick="window.submitNewProduct()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors mt-2">
                     Create Product
                 </button>
             </div>
@@ -1528,28 +1530,29 @@
         }
 
         function renderLogin() {
+            const isDark = document.documentElement.classList.contains('dark');
             return `
-            <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
+            <div class="h-screen overflow-hidden ${isDark ? 'bg-black' : 'bg-gray-50'} flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
                     <div class="text-center mb-8">
-                        <h2 class="text-xl font-bold text-white tracking-tighter mb-1">Welcome Back</h2>
-                        <p class="text-zinc-500 text-[10px] font-mono">Sign in to manage your orders</p>
+                        <h2 class="text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} tracking-tighter mb-1">Welcome Back</h2>
+                        <p class="${isDark ? 'text-zinc-500' : 'text-gray-500'} text-[10px] font-mono">Sign in to manage your orders</p>
                     </div>
                     <div class="space-y-3">
-                        <input type="email" id="loginEmail" placeholder="Email" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none" />
+                        <input type="email" id="loginEmail" placeholder="Email" class="w-full ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-gray-200 text-gray-900'} border p-3 text-xs rounded-sm focus:border-emerald-500 focus:outline-none" />
                         <div class="relative">
-                            <input type="password" id="loginPass" placeholder="Password" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" />
-                            <button onclick="window.togglePassword('loginPass')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <input type="password" id="loginPass" placeholder="Password" class="w-full ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-gray-200 text-gray-900'} border p-3 text-xs rounded-sm focus:border-emerald-500 focus:outline-none pr-10" />
+                            <button onclick="window.togglePassword('loginPass')" class="absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}"><i data-lucide="eye" class="w-4 h-4"></i></button>
                         </div>
-                        <button onclick="window.handleLogin()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
-                            ${state.authLoading ? '<span class="spinner spinner-sm shrink-0 border-zinc-500 border-t-transparent"></span> Signing In...' : 'Sign In'}
+                        <button onclick="window.handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
+                            ${state.authLoading ? '<span class="spinner spinner-sm shrink-0 border-white/40 border-t-transparent"></span> Signing In...' : 'Sign In'}
                         </button>
                     </div>
                     <div class="mt-4 flex justify-between items-center px-1">
-                        <button onclick="window.setView('forgot-password')" class="text-[10px] text-zinc-500 hover:text-zinc-300">Forgot Password?</button>
-                        <button onclick="window.setView('register')" class="text-[10px] font-bold text-white hover:text-emerald-400 uppercase">Create Account</button>
+                        <button onclick="window.setView('forgot-password')" class="text-[10px] ${isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-gray-500 hover:text-gray-700'}">Forgot Password?</button>
+                        <button onclick="window.setView('register')" class="text-[10px] font-bold ${isDark ? 'text-white hover:text-emerald-400' : 'text-gray-900 hover:text-emerald-600'} uppercase">Create Account</button>
                     </div>
-                    <button onclick="window.goHome()" class="w-full text-zinc-600 hover:text-zinc-400 text-[9px] uppercase mt-8">Back to Store</button>
+                    <button onclick="window.goHome()" class="w-full ${isDark ? 'text-zinc-600 hover:text-zinc-400' : 'text-gray-500 hover:text-gray-700'} text-[9px] uppercase mt-8">Back to Store</button>
                 </div>
             </div>`;
         }
@@ -1557,51 +1560,53 @@
         function renderRegister() {
             const acctCount = parseInt(localStorage.getItem('stakz_acct_count') || '0');
             const showCaptcha = acctCount >= 1;
+            const isDark = document.documentElement.classList.contains('dark');
 
             return `
-            <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
+            <div class="h-screen overflow-hidden ${isDark ? 'bg-black' : 'bg-gray-50'} flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
                     <div class="text-center mb-8">
-                        <h2 class="text-xl font-bold text-white tracking-tighter mb-1">Create Account</h2>
-                        <p class="text-zinc-500 text-[10px] font-mono">Join StakzShop to save your history</p>
+                        <h2 class="text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} tracking-tighter mb-1">Create Account</h2>
+                        <p class="${isDark ? 'text-zinc-500' : 'text-gray-500'} text-[10px] font-mono">Join StakzShop to save your history</p>
                     </div>
                     <div class="space-y-3">
-                        <input type="email" id="regEmail" placeholder="Email" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none" />
+                        <input type="email" id="regEmail" placeholder="Email" class="w-full ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-gray-200 text-gray-900'} border p-3 text-xs rounded-sm focus:border-emerald-500 focus:outline-none" />
                         <div class="relative">
-                            <input type="password" id="regPass" placeholder="Password (Min 6 chars)" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none pr-10" />
-                            <button onclick="window.togglePassword('regPass')" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <input type="password" id="regPass" placeholder="Password (Min 6 chars)" class="w-full ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-gray-200 text-gray-900'} border p-3 text-xs rounded-sm focus:border-emerald-500 focus:outline-none pr-10" />
+                            <button onclick="window.togglePassword('regPass')" class="absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}"><i data-lucide="eye" class="w-4 h-4"></i></button>
                         </div>
                         
                         ${showCaptcha ? '<div id="captcha-container" class="w-full my-2 min-h-[78px]"></div>' : ''}
 
-                        <button onclick="window.handleRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
+                        <button onclick="window.handleRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
                             ${state.authLoading ? '<span class="spinner spinner-sm shrink-0 border-white/40 border-t-transparent"></span> Creating...' : 'Register'}
                         </button>
                     </div>
                     <div class="mt-6 text-center">
-                        <p class="text-[10px] text-zinc-500">Already have an account?</p>
-                        <button onclick="window.setView('login')" class="text-[10px] font-bold text-white hover:text-emerald-400 uppercase mt-1">Sign In</button>
+                        <p class="text-[10px] ${isDark ? 'text-zinc-500' : 'text-gray-500'}">Already have an account?</p>
+                        <button onclick="window.setView('login')" class="text-[10px] font-bold ${isDark ? 'text-white hover:text-emerald-400' : 'text-gray-900 hover:text-emerald-600'} uppercase mt-1">Sign In</button>
                     </div>
-                    <button onclick="window.goHome()" class="w-full text-zinc-600 hover:text-zinc-400 text-[9px] uppercase mt-8">Back to Store</button>
+                    <button onclick="window.goHome()" class="w-full ${isDark ? 'text-zinc-600 hover:text-zinc-400' : 'text-gray-500 hover:text-gray-700'} text-[9px] uppercase mt-8">Back to Store</button>
                 </div>
             </div>`;
         }
 
         function renderForgotPassword() {
+            const isDark = document.documentElement.classList.contains('dark');
             return `
-            <div class="h-screen overflow-hidden bg-black flex items-center justify-center p-6 animate-enter">
+            <div class="h-screen overflow-hidden ${isDark ? 'bg-black' : 'bg-gray-50'} flex items-center justify-center p-6 animate-enter">
                 <div class="max-w-xs w-full">
                     <div class="text-center mb-8">
-                        <h2 class="text-xl font-bold text-white tracking-tighter mb-1">Reset Password</h2>
-                        <p class="text-zinc-500 text-[10px] font-mono">Enter your email to receive reset instructions</p>
+                        <h2 class="text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} tracking-tighter mb-1">Reset Password</h2>
+                        <p class="${isDark ? 'text-zinc-500' : 'text-gray-500'} text-[10px] font-mono">Enter your email to receive reset instructions</p>
                     </div>
                     <div class="space-y-3">
-                        <input type="email" id="resetEmail" placeholder="Email Address" class="w-full bg-zinc-900 border border-zinc-800 p-3 text-xs text-white rounded-sm focus:border-emerald-500 focus:outline-none" />
-                        <button onclick="window.handlePasswordReset()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
-                            ${state.authLoading ? '<span class="spinner spinner-sm shrink-0 border-zinc-500 border-t-transparent"></span> Sending...' : 'Send Reset Link'}
+                        <input type="email" id="resetEmail" placeholder="Email Address" class="w-full ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-gray-200 text-gray-900'} border p-3 text-xs rounded-sm focus:border-emerald-500 focus:outline-none" />
+                        <button onclick="window.handlePasswordReset()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors flex items-center justify-center gap-2 ${state.authLoading ? 'opacity-50 cursor-not-allowed' : ''}">
+                            ${state.authLoading ? '<span class="spinner spinner-sm shrink-0 border-white/40 border-t-transparent"></span> Sending...' : 'Send Reset Link'}
                         </button>
                     </div>
-                    <button onclick="window.setView('login')" class="w-full text-zinc-500 hover:text-white text-[10px] uppercase mt-6">Back to Login</button>
+                    <button onclick="window.setView('login')" class="w-full ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-500 hover:text-gray-700'} text-[10px] uppercase mt-6">Back to Login</button>
                 </div>
             </div>`;
         }
@@ -1852,7 +1857,7 @@
                         
                         ${showCaptcha ? '<div id="captcha-container" class="w-full my-4 min-h-[78px]"></div>' : ''}
 
-                        <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-black font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ${buttonDisabled}">
+                        <button onclick="window.submitOrder()" class="w-full bg-emerald-500 text-white btn-green-light font-bold py-3 px-4 text-[10px] uppercase mt-5 transition-all tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 ${buttonDisabled}">
                             ${buttonContent}
                         </button>
                     </div>
@@ -2124,7 +2129,7 @@
                                         </div>
                                         <div class="flex justify-end gap-2">
                                             <button onclick="state.activeFulfillmentId = null; render()" class="text-zinc-500 hover:text-white text-[10px] font-bold uppercase transition-colors">Cancel</button>
-                                            <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
+                                            <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
                                         </div>
                                     `}
                                 </td>
@@ -2138,7 +2143,7 @@
                 <div class="bg-zinc-900 border border-white/5">
                     <div class="p-4 border-b border-white/5 flex justify-between items-center">
                         <h3 class="text-[10px] font-bold uppercase text-zinc-400 tracking-widest">Inventory Management</h3>
-                        <button onclick="window.openAddProductModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Product</button>
+                        <button onclick="window.openAddProductModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Product</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                         ${state.products.map(p => `
