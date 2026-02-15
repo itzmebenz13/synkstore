@@ -1,0 +1,22 @@
+# Dependencies – do not upload (huge, not needed for GitHub Pages)
+node_modules/
+supabase/node_modules/
+
+# Supabase local / temp (not needed on GitHub Pages)
+supabase/.temp/
+.supabase/
+*.local
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets (never commit real keys)
+.env
+.env.local
+.env.*.local
