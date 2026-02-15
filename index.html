@@ -263,6 +263,10 @@
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
         const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        const GUEST_ORDERS_KEY = 'stakz_guest_order_ids';
+        const getGuestOrderIds = () => { try { return JSON.parse(localStorage.getItem(GUEST_ORDERS_KEY) || '[]'); } catch(e) { return []; } };
+        const addGuestOrderId = (id) => { const ids = getGuestOrderIds(); if(!ids.includes(id)) { ids.unshift(id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); } };
+        const removeGuestOrderId = (id) => { const ids = getGuestOrderIds().filter(x => x !== id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); };
         const formatDate = (dateStr) => new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         
         function showToast(message, type = 'info') {
@@ -627,6 +631,21 @@
             if(data) state.userOrders = data.map(mapOrderData);
         }
 
+        async function fetchGuestOrders() {
+            if(!supabaseClient) return;
+            const ids = getGuestOrderIds();
+            if(ids.length === 0) { state.userOrders = []; return; }
+            const { data, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .in('id', ids)
+                .order('created_at', { ascending: false });
+            if(data) {
+                const byId = Object.fromEntries(data.map(o => [o.id, o]));
+                state.userOrders = ids.filter(id => byId[id]).map(id => mapOrderData(byId[id]));
+            } else state.userOrders = [];
+        }
+
         async function fetchUserProfile() {
             if(!supabaseClient || !state.user) return;
             try {
@@ -694,6 +713,7 @@
                 if(state.user) fetchUserOrders().then(() => {
                     if (state.view === 'my-orders') render(false);
                 });
+                if(!state.user && state.view === 'my-orders') fetchGuestOrders().then(() => render(false));
                 if(state.view === 'tracker' && state.trackerInput) handleTrack(true);
             })
             .subscribe();
@@ -841,7 +861,10 @@
                 state.payWithCredits = false;
             }
             if (view === 'admin' && state.adminAuth) fetchAllOrders();
-            if (view === 'my-orders' && state.user) fetchUserOrders().then(() => render(false));
+            if (view === 'my-orders') {
+                if (state.user) fetchUserOrders().then(() => render(false));
+                else fetchGuestOrders().then(() => render(false));
+            }
             render();
         }
 
@@ -951,6 +974,8 @@
             if(state.user) {
                 fetchUserOrders(); 
                 fetchUserProfile();
+            } else {
+                addGuestOrderId(newOrderId);
             }
             
             state.isSubmitting = false;
@@ -997,7 +1022,18 @@
         }
 
         async function deleteOrder(id) {
-            showModal('Delete Order?', 'This will permanently remove this order from your history.', async () => {
+            const isGuest = !state.user;
+            const msg = isGuest 
+                ? "Remove this order from your local history?" 
+                : "This will permanently remove this order from your history.";
+            showModal('Delete Order?', msg, async () => {
+                if (isGuest) {
+                    removeGuestOrderId(id);
+                    await fetchGuestOrders();
+                    showToast("Removed from history", "success");
+                    if (state.view === 'my-orders') render(false);
+                    return;
+                }
                 const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('status').eq('id', id).single();
                 if (fetchErr || !order) return showToast("Order not found", "error");
                 if (order.status !== 'Cancelled' && order.status !== 'Refunded') return showToast("Only cancelled or refunded orders can be deleted", "error");
@@ -1009,7 +1045,7 @@
                     await fetchUserOrders();
                     if (state.view === 'my-orders') render(false);
                 }
-            }, 'danger', 'Delete');
+            }, 'danger', isGuest ? 'Remove' : 'Delete');
         }
 
         async function submitRefundRequest(orderId) {
@@ -1223,7 +1259,10 @@
                                <a href="spin.html" class="text-zinc-400 hover:text-yellow-400 transition-colors animate-pulse-slow"><i data-lucide="gift" class="w-4 h-4"></i></a>
                                <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
-                            : `<button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-white transition-colors">Login</button>`
+                            : `
+                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-white transition-colors">Login</button>
+                            `
                         }
                         ${state.user ? `<button onclick="window.handleUserLogout()" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
                         <button onclick="window.setView('admin')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="hexagon" class="w-4 h-4"></i></button>
@@ -1337,6 +1376,7 @@
         function renderUserOrders() {
             const selected = state.selectedOrderId ? state.userOrders.find(o => o.id === state.selectedOrderId) : null;
             const showingAccounts = selected && selected.status === 'Completed' && selected.accounts && selected.accounts.length > 0;
+            const isGuest = !state.user;
 
             return `
             <div class="min-h-screen bg-black font-sans pb-16 pt-14">
@@ -1345,6 +1385,12 @@
                     <span class="text-xs font-bold uppercase tracking-[0.2em] text-zinc-300">${showingAccounts ? 'Access details' : 'My Order History'}</span>
                 </div>
                 <div class="p-4 max-w-2xl mx-auto w-full">
+                    ${isGuest ? `
+                    <div class="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i>
+                        <p class="text-[10px] text-amber-200/90">Your order history is not saved online. Sign in to sync orders across devices and access them anytime.</p>
+                    </div>
+                    ` : ''}
                     ${showingAccounts ? `
                         <div class="bg-zinc-900/50 border border-white/5 p-5 relative overflow-hidden backdrop-blur-sm mb-4">
                             <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
