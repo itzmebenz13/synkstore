@@ -1237,9 +1237,11 @@
             return `
             <div class="px-4 py-3 border-b border-white/5 bg-zinc-900/30">
                 <div class="max-w-2xl mx-auto flex items-center gap-2">
-                    <i data-lucide="search" class="w-4 h-4 text-zinc-500 shrink-0"></i>
-                    <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. ORD-XXXXXXXX)" class="flex-1 bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono" onkeydown="if(event.key==='Enter')window.handleTrack()" />
-                    <button onclick="window.handleTrack()" class="bg-white text-black hover:bg-zinc-200 px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors shrink-0">Track</button>
+                    <div class="flex-1 relative">
+                        <i data-lucide="search" class="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. ORD-XXXXXXXX)" class="w-full bg-zinc-900 border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono" onkeydown="if(event.key==='Enter')window.handleTrack()" />
+                    </div>
+                    <button onclick="window.handleTrack()" class="bg-white text-black hover:bg-zinc-200 p-2.5 rounded-lg transition-colors shrink-0 flex items-center justify-center" title="Track order"><i data-lucide="package-search" class="w-5 h-5"></i></button>
                 </div>
             </div>`;
         }
