@@ -8,8 +8,10 @@
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    <!-- Google reCAPTCHA v2 (Site key only; use Secret key server-side to verify token) -->
+    <!-- Google reCAPTCHA v2 -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -213,6 +215,7 @@
         const apiKey = ""; // Enter Gemini API Key Here
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
         const RECAPTCHA_SITE_KEY = "6LcMHmwsAAAAAFu2VXOqspB0JuzGLyHM-oWjTcoX";
+        const TURNSTILE_SITE_KEY = "0x4AAAAAACcm7IGyb3q3w9nr";
 
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
@@ -251,7 +254,7 @@
             modalCallback: null,
             sessionOrderCount: 0,
             selectedOrderId: null,
-            paymentSettings: { payment_qr_url: '', payment_number: '' },
+            paymentSettings: { payment_qr_url: '', payment_number: '', captcha_provider: 'recaptcha' },
             captchaToken: null,
             payWithCredits: false
         };
@@ -383,6 +386,28 @@
                 theme: 'dark',
                 callback: function(token) { state.captchaToken = token; },
             });
+        }
+
+        function renderTurnstile() {
+            const container = document.getElementById('captcha-container');
+            if (!container || !window.turnstile) return;
+            container.innerHTML = '';
+            window.turnstile.render(container, {
+                sitekey: TURNSTILE_SITE_KEY,
+                theme: 'dark',
+                callback: function(token) { state.captchaToken = token; },
+            });
+        }
+
+        function renderCaptcha() {
+            const provider = (state.paymentSettings?.captcha_provider || 'recaptcha');
+            if (provider === 'turnstile') {
+                if (window.turnstile) renderTurnstile();
+                else setTimeout(renderCaptcha, 200);
+            } else {
+                if (window.recaptchaReady && window.grecaptcha) renderRecaptcha();
+                else setTimeout(renderCaptcha, 300);
+            }
         }
 
         // --- Modal Logic ---
@@ -542,7 +567,12 @@
             if (!error && data && data.length) {
                 const map = {};
                 data.forEach(r => { map[r.key] = r.value || ''; });
-                state.paymentSettings = { payment_qr_url: map.payment_qr_url || '', payment_number: map.payment_number || '' };
+                const provider = (map.captcha_provider || '').trim().toLowerCase();
+                state.paymentSettings = {
+                    payment_qr_url: map.payment_qr_url || '',
+                    payment_number: map.payment_number || '',
+                    captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha')
+                };
             }
         }
 
@@ -1078,6 +1108,8 @@
         async function savePaymentSettings() {
             const url = (document.getElementById('settingsPaymentQrUrl')?.value || '').trim();
             const num = (document.getElementById('settingsPaymentNumber')?.value || '').trim();
+            const providerEl = document.getElementById('settingsCaptchaProvider');
+            const captchaProvider = providerEl ? (providerEl.value === 'turnstile' ? 'turnstile' : 'recaptcha') : (state.paymentSettings?.captcha_provider || 'recaptcha');
 
             async function setSetting(key, value) {
                 const { data: updated, error: updateErr } = await supabaseClient.from('settings').update({ value }).eq('key', key).select('key');
@@ -1087,13 +1119,15 @@
                 return { error: insertErr };
             }
 
+            const r0 = await setSetting('captcha_provider', captchaProvider);
+            if (r0.error) return showToast(r0.error.message || "Failed to save captcha setting", "error");
             const r1 = await setSetting('payment_qr_url', url);
             if (r1.error) return showToast(r1.error.message || "Failed to save QR URL", "error");
             const r2 = await setSetting('payment_number', num);
             if (r2.error) return showToast(r2.error.message || "Failed to save number", "error");
 
-            state.paymentSettings = { payment_qr_url: url, payment_number: num };
-            showToast("Payment settings saved", "success");
+            state.paymentSettings = { payment_qr_url: url, payment_number: num, captcha_provider: captchaProvider };
+            showToast("Settings saved", "success");
             render(false);
         }
 
@@ -1915,8 +1949,20 @@
             } else if (state.adminTab === 'settings') {
                 const qrUrl = (state.paymentSettings?.payment_qr_url || '').trim();
                 const payNum = (state.paymentSettings?.payment_number || '').trim();
+                const captchaProvider = (state.paymentSettings?.captcha_provider || 'recaptcha');
                 tabContent = `
                 <div class="space-y-6 max-w-md">
+                    <div class="bg-zinc-900 border border-white/5 p-6">
+                        <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Captcha Provider</h3>
+                        <div class="mb-4">
+                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Use on register & checkout</label>
+                            <select id="settingsCaptchaProvider" class="w-full bg-black border border-white/10 py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 text-white">
+                                <option value="recaptcha" ${captchaProvider === 'recaptcha' ? 'selected' : ''}>Google reCAPTCHA</option>
+                                <option value="turnstile" ${captchaProvider === 'turnstile' ? 'selected' : ''}>Cloudflare Turnstile</option>
+                            </select>
+                        </div>
+                        <button onclick="window.savePaymentSettings()" class="bg-white text-black font-bold py-2 px-4 text-[10px] uppercase hover:bg-zinc-200 tracking-wider mb-6">Save captcha setting</button>
+                    </div>
                     <div class="bg-zinc-900 border border-white/5 p-6">
                         <h3 class="text-[10px] font-bold uppercase text-zinc-400 mb-4 tracking-widest">Payment (QR + Number)</h3>
                         <p class="text-[9px] text-zinc-500 mb-3">Upload your QR image in Supabase Storage (Storage → New bucket "payment", Public ON → Upload file), then paste the Public URL below.</p>
@@ -1995,11 +2041,8 @@
             app.innerHTML = html;
             lucide.createIcons();
             
-            // Re-render reCAPTCHA if on relevant screens
-            if (state.view === 'checkout' || state.view === 'register') {
-                if (window.recaptchaReady && window.grecaptcha) renderRecaptcha();
-                else setTimeout(renderRecaptcha, 300);
-            }
+            // Re-render captcha (reCAPTCHA or Turnstile per admin setting)
+            if (state.view === 'checkout' || state.view === 'register') setTimeout(renderCaptcha, 100);
 
             if (animate) {
                 window.scrollTo(0, 0);
