@@ -371,7 +371,7 @@
                     ${res.accounts.map((acc, idx) => {
                         const otp = acc.otpRequest || { status: 'idle', code: null };
                         return `
-                    <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 rounded-sm">
+                    <div class="bg-zinc-900 border ${acc.used ? 'border-zinc-800 opacity-50' : 'border-emerald-500/20'} p-3 rounded-md">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-[9px] text-zinc-500 font-mono">Slot #${idx + 1}</span>
                             <button onclick="window.toggleAccountUsed('${res.id}', '${acc.id}')" class="text-[8px] ${acc.used ? 'text-zinc-500' : 'text-zinc-400 hover:text-white'} uppercase font-bold">
@@ -1473,7 +1473,7 @@
                 <div class="px-6 flex-1 pt-2 max-w-2xl mx-auto w-full">
                     <div class="flex justify-between items-start mb-3">
                         <h1 class="text-xl font-bold uppercase leading-tight tracking-tight">${p.title}</h1>
-                        <span class="font-mono text-emerald-400 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5">${p.tag}</span>
+                        <span class="font-mono text-emerald-400 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded-md">${p.tag}</span>
                     </div>
                     
                     <p class="text-zinc-400 text-xs mb-6 leading-relaxed font-light border-l-2 border-zinc-800 pl-3">${p.description}</p>
@@ -1791,8 +1791,8 @@
                     All transactions are secured and safe
                 </div>
                 ${renderTrackerSearchBar()}
-                <div class="overflow-hidden bg-black border-b border-white/5 py-3 relative">
-                     <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-600 uppercase tracking-[0.2em]">
+                <div class="overflow-hidden bg-zinc-200 dark:bg-black border-b border-zinc-300 dark:border-white/5 py-3 relative">
+                     <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-500 dark:text-zinc-600 uppercase tracking-[0.2em]">
                         <span>VERIFIED SHEIN ACCTS</span>
                         <span>BULK PRICING AVAILABLE</span>
                         <span>MANUAL ORDER VERIFICATION</span>
@@ -1802,8 +1802,8 @@
                         <span>BULK PRICING AVAILABLE</span>
                         <span>MANUAL ORDER VERIFICATION</span>
                       </div>
-                      <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black to-transparent z-10"></div>
-                      <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black to-transparent z-10"></div>
+                      <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-200 to-transparent dark:from-black z-10"></div>
+                      <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-200 to-transparent dark:from-black z-10"></div>
                 </div>
                 <div class="p-5 mb-2 relative overflow-hidden group max-w-7xl mx-auto">
                     <div class="relative z-10">
@@ -1823,14 +1823,14 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-20">
                             ${state.products.length === 0 ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>' : ''}
                             ${state.products.map(p => `
-                            <div onclick="window.selectProduct(${p.id})" class="group cursor-pointer bg-zinc-900/50 border border-white/5 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all duration-300 p-2.5 relative overflow-hidden h-full ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
+                            <div onclick="window.selectProduct(${p.id})" class="group cursor-pointer bg-zinc-900/50 border border-white/5 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all duration-300 p-2.5 relative overflow-hidden h-full rounded-md ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
                                 <div class="flex flex-col gap-2 h-full justify-between relative z-10">
                                     <div class="flex justify-between items-start">
-                                        <div class="w-10 h-10 ${p.color} flex items-center justify-center border border-white/5 rounded-sm">
+                                        <div class="w-10 h-10 ${p.color} flex items-center justify-center border border-white/5 rounded-md">
                                             <i data-lucide="package" class="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform duration-500 text-zinc-400"></i>
                                         </div>
                                         <div class="flex flex-col items-end gap-1">
-                                            <span class="bg-white/5 text-zinc-400 border border-white/5 text-[8px] font-mono px-1.5 py-0.5 uppercase rounded-sm tracking-tight">${p.tag}</span>
+                                            <span class="bg-white/5 text-zinc-400 border border-white/5 text-[8px] font-mono px-1.5 py-0.5 uppercase rounded-md tracking-tight">${p.tag}</span>
                                             ${p.stock <= 0 ? '<span class="text-[8px] text-red-500 font-bold uppercase tracking-wide">Out of Stock</span>' : ''}
                                         </div>
                                     </div>
@@ -1948,7 +1948,7 @@
                                         <div class="mb-4">
                                             <h4 class="text-[9px] font-bold uppercase mb-2 text-zinc-400 tracking-wider">Account Details</h4>
                                             ${order.accounts.map(acc => `
-                                                <div class="bg-black/50 p-2 mb-2 border border-white/5 rounded-sm">
+                                                <div class="bg-black/50 p-2 mb-2 border border-white/5 rounded-md">
                                                     <div class="flex justify-between items-center mb-1">
                                                         <span class="text-emerald-500 font-mono text-[10px]">${acc.creds}</span>
                                                         <span class="text-[8px] text-zinc-500">${acc.otpRequest.status === 'sent' ? 'OTP Sent' : 'No OTP'}</span>
