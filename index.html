@@ -35,11 +35,16 @@
                         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'marquee': 'marquee 25s linear infinite',
                         'spin-slow': 'spin 3s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
                     },
                     keyframes: {
                         marquee: {
                             '0%': { transform: 'translateX(0%)' },
                             '100%': { transform: 'translateX(-100%)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
                         }
                     }
                 }
@@ -150,6 +155,14 @@
         .spinner-lg { width: 32px; height: 32px; border-width: 3px; }
         @keyframes spinner-rotate {
             to { transform: rotate(360deg); }
+        }
+
+        /* V2 Specific Styles */
+        .v2-gradient-bg {
+            background: linear-gradient(135deg, #f6f7f9 0%, #ffffff 100%);
+        }
+        #html-root.dark .v2-gradient-bg {
+            background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
         }
     </style>
     <script>
@@ -263,6 +276,7 @@
         // --- State Management ---
         const state = {
             view: 'home',
+            uiVariant: localStorage.getItem('stakz_ui_variant') || 'v1', // 'v1' = Classic, 'v2' = Modern (Image Ref)
             user: null,
             userProfile: null, // Stores credits and last spin
             products: [],
@@ -298,6 +312,14 @@
             localStorage.setItem('stakz_theme', isDark ? 'dark' : 'light');
             render(false);
         }
+        
+        function toggleUiVariant() {
+            state.uiVariant = state.uiVariant === 'v1' ? 'v2' : 'v1';
+            localStorage.setItem('stakz_ui_variant', state.uiVariant);
+            render(true);
+            showToast(`Switched to ${state.uiVariant === 'v2' ? 'Modern' : 'Classic'} UI`, 'info');
+        }
+
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
         const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         const generateOrderId = () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -1238,15 +1260,6 @@
             }
         }
 
-        async function saveProductChanges(id) {
-            const title = document.getElementById(`prod-title-${id}`).value;
-            const price = document.getElementById(`prod-price-${id}`).value;
-            const stock = document.getElementById(`prod-stock-${id}`).value;
-            const { error } = await supabaseClient.from('products').update({ title, price, stock }).eq('id', id);
-            if(error) showToast("Failed to save", "error");
-            else showToast("Changes saved", "success");
-        }
-
         async function sendOtp(orderId, accId, code) {
             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(!data) return;
@@ -1282,11 +1295,12 @@
         // --- Render Functions ---
 
         function renderHeader() {
+            const isV2 = state.uiVariant === 'v2';
             return `
-            <div class="fixed top-0 left-0 w-full z-50 glass">
+            <div class="fixed top-0 left-0 w-full z-50 ${isV2 ? 'bg-white dark:bg-zinc-900 border-b border-gray-100 dark:border-white/10' : 'glass'}">
                 <div class="flex justify-between items-center h-14 px-4 max-w-7xl mx-auto">
                     <div class="flex items-center gap-3">
-                        <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-500 pr-2 pb-1">${SITE_NAME}</button>
+                        <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic ${isV2 ? 'text-black dark:text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-500'} pr-2 pb-1">${SITE_NAME}</button>
                     </div>
                     <div class="flex items-center gap-4">
                         ${state.user 
@@ -1295,16 +1309,22 @@
                                     <span>₱${formatPHP(state.userProfile?.credits || 0).replace('₱', '')}</span>
                                </div>
                                <a href="spin.html" class="text-zinc-400 hover:text-yellow-400 transition-colors animate-pulse-slow"><i data-lucide="gift" class="w-4 h-4"></i></a>
-                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-emerald-500 transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
                             : `
-                               <button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-white transition-colors">Login</button>
-                               <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-white transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
+                               <button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-emerald-500 transition-colors ${isV2 ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-white'}">Login</button>
+                               <button onclick="window.setView('my-orders')" class="${isV2 ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-white'} transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
                         }
                         ${state.user ? `<button onclick="window.handleUserLogout()" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
-                        <button onclick="window.toggleTheme()" class="text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors" title="Toggle theme">${document.documentElement.classList.contains('dark') ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>'}</button>
-                        <button onclick="window.setView('admin')" class="text-zinc-400 hover:text-white transition-colors"><i data-lucide="hexagon" class="w-4 h-4"></i></button>
+                        
+                        <div class="flex items-center gap-2 border-l ${isV2 ? 'border-gray-200 dark:border-white/10' : 'border-white/10'} pl-4">
+                            <button onclick="window.toggleUiVariant()" class="${isV2 ? 'text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white' : 'text-zinc-500 hover:text-white'} transition-colors" title="Switch UI Style">
+                                <i data-lucide="layout" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="window.toggleTheme()" class="${isV2 ? 'text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white' : 'text-zinc-500 hover:text-white'} transition-colors" title="Toggle theme">${document.documentElement.classList.contains('dark') ? '<i data-lucide="sun" class="w-4 h-4"></i>' : '<i data-lucide="moon" class="w-4 h-4"></i>'}</button>
+                            <button onclick="window.setView('admin')" class="${isV2 ? 'text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white' : 'text-zinc-400 hover:text-white'} transition-colors"><i data-lucide="hexagon" class="w-4 h-4"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -1321,6 +1341,195 @@
                     <button onclick="window.handleTrack()" class="bg-white text-black hover:bg-zinc-200 p-2.5 rounded-lg transition-colors shrink-0 flex items-center justify-center" title="Track order"><i data-lucide="package-search" class="w-5 h-5"></i></button>
                 </div>
             </div>`;
+        }
+
+        // --- V1 (Classic) Home Render ---
+        function renderHomeV1(animate) {
+            const animClass = animate ? 'animate-enter' : '';
+            return `
+            <div class="pt-14 pb-16 ${animClass}">
+                <div class="bg-zinc-900/50 border-b border-white/5 py-1.5 px-4 flex justify-center items-center gap-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
+                    <i data-lucide="lock" class="w-3 h-3 text-zinc-400"></i>
+                    All transactions are secured and safe
+                </div>
+                ${renderTrackerSearchBar()}
+                <div class="overflow-hidden bg-zinc-200 dark:bg-black border-b border-zinc-300 dark:border-white/5 py-3 relative">
+                     <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-500 dark:text-zinc-600 uppercase tracking-[0.2em]">
+                        <span>VERIFIED SHEIN ACCTS</span>
+                        <span>BULK PRICING AVAILABLE</span>
+                        <span>MANUAL ORDER VERIFICATION</span>
+                        <span>EXCLUSIVE VOUCHERS INCLUDED</span>
+                        <span>SECURE PAYMENT PROCESSING</span>
+                        <span>VERIFIED SHEIN ACCTS</span>
+                        <span>BULK PRICING AVAILABLE</span>
+                        <span>MANUAL ORDER VERIFICATION</span>
+                      </div>
+                      <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-200 to-transparent dark:from-black z-10"></div>
+                      <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-200 to-transparent dark:from-black z-10"></div>
+                </div>
+                <div class="p-5 mb-2 relative overflow-hidden group max-w-7xl mx-auto">
+                    <div class="relative z-10">
+                        <h1 class="text-3xl font-bold leading-none mb-3 tracking-tighter text-white">SHOP WITHOUT<br/>HASSLE!</h1>
+                        <p class="text-[10px] text-zinc-400 max-w-[220px] leading-relaxed font-mono">
+                            Fresh SHEIN accounts with exclusive vouchers delivered to your dashboard. Secure. Fast. Anonymous.
+                        </p>
+                    </div>
+                    <div class="absolute right-0 top-0 w-56 h-56 bg-gradient-to-b from-zinc-800 to-transparent opacity-20 blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                </div>
+                <div class="px-6 max-w-7xl mx-auto w-full">
+                    <div class="flex items-center gap-2 mb-4 opacity-50">
+                        <i data-lucide="grid" class="w-3 h-3 text-white"></i>
+                        <span class="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400">AVAILABLE STOCK</span>
+                    </div>
+                    <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-20">
+                            ${state.products.length === 0 ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>' : ''}
+                            ${state.products.map(p => `
+                            <div onclick="window.selectProduct(${p.id})" class="group cursor-pointer bg-zinc-900/50 border border-white/5 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all duration-300 p-2.5 relative overflow-hidden h-full rounded-md ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
+                                <div class="flex flex-col gap-2 h-full justify-between relative z-10">
+                                    <div class="flex justify-between items-start">
+                                        <div class="w-10 h-10 ${p.color} flex items-center justify-center border border-white/5 rounded-md">
+                                            <i data-lucide="package" class="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform duration-500 text-zinc-400"></i>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span class="bg-white/5 text-zinc-400 border border-white/5 text-[8px] font-mono px-1.5 py-0.5 uppercase rounded-md tracking-tight">${p.tag}</span>
+                                            ${p.stock <= 0 ? '<span class="text-[8px] text-red-500 font-bold uppercase tracking-wide">Out of Stock</span>' : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-end justify-between mt-1">
+                                        <div>
+                                            <h3 class="text-[10px] font-bold uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors leading-tight mb-1 line-clamp-2">${p.title}</h3>
+                                            <span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>
+                                        </div>
+                                        <div class="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-black transition-colors shrink-0">
+                                            <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // --- V2 (Modern/Clean) Home Render ---
+        function renderHomeV2(animate) {
+             const animClass = animate ? 'animate-enter' : '';
+             return `
+             <div class="pt-14 pb-20 bg-white dark:bg-black font-sans ${animClass} min-h-screen">
+                <!-- Safe Banner -->
+                <div class="bg-gray-100 dark:bg-zinc-900 py-2 flex justify-center items-center gap-2 text-[10px] uppercase font-semibold tracking-wider text-gray-500 dark:text-zinc-400">
+                    <i data-lucide="lock" class="w-3 h-3"></i>
+                    All transactions are secured and safe
+                </div>
+
+                <!-- Search Section -->
+                <div class="px-6 pt-6 pb-4">
+                    <div class="relative w-full max-w-lg mx-auto">
+                        <div class="relative flex items-center">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-4 pointer-events-none"></i>
+                            <input type="text" id="trackerInputVal" value="${state.trackerInput}" placeholder="Track order by ID (e.g. ORD-XXXXX)" 
+                                   class="w-full h-12 pl-11 pr-14 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-lg text-sm text-gray-700 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                   onkeydown="if(event.key==='Enter')window.handleTrack()" />
+                            <button onclick="window.handleTrack()" class="absolute right-1.5 top-1.5 h-9 w-9 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center justify-center text-white transition-colors shadow-sm">
+                                <i data-lucide="package-search" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center max-w-lg mx-auto mt-4 px-1">
+                        <span class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest cursor-pointer hover:text-black dark:hover:text-white transition-colors">Bulk Pricing Available</span>
+                        <span class="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest cursor-pointer hover:text-black dark:hover:text-white transition-colors">Manual Order Verification</span>
+                    </div>
+                </div>
+
+                <!-- Hero Section -->
+                <div class="px-6 py-8 max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-8">
+                    <div class="flex-1">
+                        <h1 class="text-4xl font-extrabold text-black dark:text-white leading-tight mb-4 tracking-tight">SHOP WITH<br/>CONFIDENCE.</h1>
+                        <p class="text-gray-500 dark:text-zinc-400 text-sm leading-relaxed max-w-xs">
+                            Fresh SHEIN accounts with exclusive vouchers delivered to your dashboard. Secure. Fast. Anonymous.
+                        </p>
+                    </div>
+                    <!-- CSS/SVG Illustration of Receipt & Glass -->
+                    <div class="flex-1 flex justify-center md:justify-end">
+                        <div class="relative w-40 h-40">
+                            <!-- Receipt Shape -->
+                            <div class="absolute top-0 right-4 w-24 h-32 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-white/10 rounded-md shadow-sm flex flex-col items-center pt-4 gap-2 z-0 transform rotate-3">
+                                <div class="w-16 h-2 bg-gray-200 rounded-full"></div>
+                                <div class="w-12 h-1 bg-gray-200 rounded-full self-start ml-4"></div>
+                                <div class="w-16 h-1 bg-gray-200 rounded-full self-start ml-4"></div>
+                                <div class="w-10 h-1 bg-gray-200 rounded-full self-start ml-4"></div>
+                                <!-- Zigzag bottom -->
+                                <div class="absolute bottom-0 left-0 w-full h-2 bg-gray-50" style="clip-path: polygon(0 0, 10% 100%, 20% 0, 30% 100%, 40% 0, 50% 100%, 60% 0, 70% 100%, 80% 0, 90% 100%, 100% 0);"></div>
+                            </div>
+                            <!-- Magnifying Glass -->
+                            <div class="absolute top-10 right-0 z-10 animate-float">
+                                <div class="w-16 h-16 border-4 border-blue-600 rounded-full bg-white/20 backdrop-blur-sm shadow-xl flex items-center justify-center">
+                                    <div class="w-12 h-12 bg-blue-50/50 rounded-full"></div>
+                                </div>
+                                <div class="absolute bottom-0 right-0 translate-x-1 translate-y-2 w-4 h-12 bg-blue-600 rounded-full transform -rotate-45 origin-top-left shadow-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Accounts -->
+                <div class="px-6 max-w-5xl mx-auto">
+                    <div class="flex items-center gap-2 mb-6">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-black dark:text-white"></i>
+                        <h3 class="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-widest">Popular Accounts</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                         ${state.products.length === 0 ? '<div class="col-span-full text-center text-gray-400 dark:text-zinc-500 py-10"><p>Loading products...</p></div>' : ''}
+                         ${state.products.map((p, idx) => {
+                             const isVerified = idx % 2 === 0; // Simulate variations
+                             const badgeText = isVerified ? "Verified" : "Instant Delivery";
+                             return `
+                             <div onclick="window.selectProduct(${p.id})" class="bg-gray-50 dark:bg-zinc-900 rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-300 border border-transparent hover:border-gray-200 dark:hover:border-white/10 group relative ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
+                                <div class="flex justify-between items-start mb-8">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-sm text-white">
+                                        <i data-lucide="ticket" class="w-5 h-5"></i>
+                                    </div>
+                                    <span class="bg-gray-200/80 dark:bg-white/10 text-gray-600 dark:text-zinc-400 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide flex items-center gap-1">
+                                        ${isVerified ? '<i data-lucide="shield-check" class="w-3 h-3"></i>' : ''} ${badgeText}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white text-sm mb-1 group-hover:text-blue-600 transition-colors">${p.title}</h4>
+                                        <p class="font-extrabold text-gray-900 dark:text-white text-lg tracking-tight">${formatPHP(p.price)}</p>
+                                    </div>
+                                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
+                                        <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                                ${p.stock <= 0 ? '<div class="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center font-bold text-red-500 uppercase tracking-widest text-xs border-2 border-red-500 rounded-xl m-2">Out of Stock</div>' : ''}
+                             </div>
+                             `
+                         }).join('')}
+                    </div>
+                </div>
+
+                <!-- Footer Logos -->
+                <div class="mt-20 px-6 py-8 flex flex-wrap justify-center gap-8 items-center border-t border-gray-100 dark:border-white/10 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                    <div class="flex items-center gap-1 font-bold text-blue-600 text-lg"><span class="bg-blue-600 text-white rounded-full p-1"><i data-lucide="wallet" class="w-3 h-3"></i></span> GCash</div>
+                    <div class="font-bold text-green-600 text-lg tracking-tight">maya</div>
+                    <div class="font-bold text-blue-800 text-lg italic font-serif">VISA</div>
+                    <div class="flex items-center gap-1 font-bold text-gray-800 text-lg"><div class="flex -space-x-2"><div class="w-4 h-4 rounded-full bg-red-500 opacity-80"></div><div class="w-4 h-4 rounded-full bg-yellow-500 opacity-80"></div></div>Mastercard</div>
+                </div>
+             </div>
+             `;
+        }
+
+        function renderHome(animate = true) {
+            // Check UI Variant
+            if (state.uiVariant === 'v2') {
+                return renderHomeV2(animate);
+            }
+            return renderHomeV1(animate);
         }
 
         function renderLogin() {
@@ -1461,29 +1670,35 @@
             const total = subtotal - discountAmount;
             const isBulk = state.quantity >= p.bulk_threshold;
             const animClass = animate ? 'animate-enter' : '';
+            const isV2 = state.uiVariant === 'v2';
+            
+            // Adjust styles for V2 Product Page if needed, but keeping it unified for now with conditional colors
+            const bgClass = isV2 ? 'bg-white dark:bg-black' : 'bg-transparent';
+            const textMain = isV2 ? 'text-black dark:text-white' : 'text-white';
+            const textSub = isV2 ? 'text-gray-500 dark:text-zinc-400' : 'text-zinc-400';
 
             return `
-            <div class="pt-14 pb-32 ${animClass} flex flex-col h-full max-w-7xl mx-auto w-full">
+            <div class="pt-14 pb-32 ${animClass} flex flex-col h-full max-w-7xl mx-auto w-full ${bgClass} min-h-screen">
                 <div class="p-6">
-                    <button onclick="window.goHome()" class="flex items-center gap-2 text-[10px] font-mono text-zinc-400 hover:text-white transition-colors">
+                    <button onclick="window.goHome()" class="flex items-center gap-2 text-[10px] font-mono hover:underline transition-colors ${textSub}">
                         <i data-lucide="arrow-left" class="w-3 h-3"></i> Back to Catalog
                     </button>
                 </div>
 
                 <div class="px-6 flex-1 pt-2 max-w-2xl mx-auto w-full">
                     <div class="flex justify-between items-start mb-3">
-                        <h1 class="text-xl font-bold uppercase leading-tight tracking-tight">${p.title}</h1>
-                        <span class="font-mono text-emerald-400 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded-md">${p.tag}</span>
+                        <h1 class="text-xl font-bold uppercase leading-tight tracking-tight ${textMain}">${p.title}</h1>
+                        <span class="font-mono text-emerald-500 text-[10px] border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded-md">${p.tag}</span>
                     </div>
                     
-                    <p class="text-zinc-400 text-xs mb-6 leading-relaxed font-light border-l-2 border-zinc-800 pl-3">${p.description}</p>
+                    <p class="${textSub} text-xs mb-6 leading-relaxed font-light border-l-2 ${isV2 ? 'border-gray-300 dark:border-zinc-700' : 'border-zinc-800'} pl-3">${p.description}</p>
 
-                    <div class="bg-zinc-900/50 border border-white/5 p-4 mb-6 rounded-sm">
-                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/5 ${!isBulk ? 'text-white' : 'text-zinc-500'}">
+                    <div class="${isV2 ? 'bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-white/10' : 'bg-zinc-900/50 border border-white/5'} p-4 mb-6 rounded-sm">
+                        <div class="flex justify-between items-center mb-2 pb-2 border-b ${isV2 ? 'border-gray-200 dark:border-white/10' : 'border-white/5'} ${!isBulk ? textMain : textSub}">
                             <span class="text-[10px] uppercase font-bold tracking-wider">Single Unit</span>
                             <span class="font-mono text-xs">${formatPHP(p.price)}</span>
                         </div>
-                        <div class="flex justify-between items-center ${isBulk ? 'text-emerald-400' : 'text-zinc-500'}">
+                        <div class="flex justify-between items-center ${isBulk ? 'text-emerald-500' : textSub}">
                             <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-2">
                                 Bulk Pack (10+) 
                                 ${isBulk ? '<span>●</span>' : ''}
@@ -1493,35 +1708,35 @@
                     </div>
 
                     <div class="flex items-center justify-between mb-6">
-                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">QUANTITY</span>
-                        <div class="flex items-center gap-1 bg-zinc-900 border border-white/10 p-1 rounded-full">
-                            <button onclick="window.updateQuantity(-1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-800 text-white transition-colors">-</button>
-                            <span class="w-10 text-center text-xs font-mono font-bold text-emerald-400">${state.quantity}</span>
-                            <button onclick="window.updateQuantity(1)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-800 text-white transition-colors">+</button>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] ${textSub}">QUANTITY</span>
+                        <div class="flex items-center gap-1 ${isV2 ? 'bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-white/10' : 'bg-zinc-900 border border-white/10'} p-1 rounded-full">
+                            <button onclick="window.updateQuantity(-1)" class="w-8 h-8 rounded-full flex items-center justify-center ${isV2 ? 'hover:bg-white dark:hover:bg-zinc-700 text-black dark:text-white' : 'hover:bg-zinc-800 text-white'} transition-colors">-</button>
+                            <span class="w-10 text-center text-xs font-mono font-bold text-emerald-500">${state.quantity}</span>
+                            <button onclick="window.updateQuantity(1)" class="w-8 h-8 rounded-full flex items-center justify-center ${isV2 ? 'hover:bg-white dark:hover:bg-zinc-700 text-black dark:text-white' : 'hover:bg-zinc-800 text-white'} transition-colors">+</button>
                         </div>
                     </div>
 
                     <div class="mb-10">
-                        <label class="block text-[10px] font-bold uppercase text-zinc-500 mb-2 tracking-wider">Voucher Code</label>
+                        <label class="block text-[10px] font-bold uppercase ${textSub} mb-2 tracking-wider">Voucher Code</label>
                         <div class="flex gap-2">
-                            <input type="text" id="discountInput" class="w-full bg-zinc-900 border border-white/10 py-2.5 px-3 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors uppercase placeholder-zinc-700" placeholder="ENTER CODE" value="${state.discount > 0 ? 'TEST1111' : ''}" ${state.discount > 0 ? 'disabled' : ''} />
-                            <button onclick="window.applyDiscount()" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-3 text-[9px] uppercase transition-colors" ${state.discount > 0 ? 'disabled' : ''}>Apply</button>
+                            <input type="text" id="discountInput" class="w-full ${isV2 ? 'bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-white/10 text-black dark:text-white placeholder-gray-400 dark:placeholder-zinc-500' : 'bg-zinc-900 border-white/10 text-white placeholder-zinc-700'} border py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500 transition-colors uppercase" placeholder="ENTER CODE" value="${state.discount > 0 ? 'TEST1111' : ''}" ${state.discount > 0 ? 'disabled' : ''} />
+                            <button onclick="window.applyDiscount()" class="${isV2 ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-zinc-200' : 'bg-white/10 text-white hover:bg-white/20'} font-bold py-2 px-3 text-[9px] uppercase transition-colors" ${state.discount > 0 ? 'disabled' : ''}>Apply</button>
                         </div>
                         ${state.discount > 0 ? '<p class="text-emerald-500 text-[9px] mt-2 font-mono flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> 5% DISCOUNT APPLIED</p>' : ''}
                     </div>
                 </div>
             </div>
 
-            <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-3 safe-area-bottom z-20">
+            <div class="fixed bottom-0 left-0 right-0 ${isV2 ? 'bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-white/10' : 'glass border-t border-white/10'} p-3 safe-area-bottom z-20">
                 <div class="max-w-7xl mx-auto flex items-center gap-3">
                     <div class="flex-1">
-                        <span class="text-[9px] uppercase text-zinc-500 block mb-0.5 font-mono tracking-wider">Total</span>
+                        <span class="text-[9px] uppercase ${textSub} block mb-0.5 font-mono tracking-wider">Total</span>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-xl font-bold font-mono text-white">${formatPHP(total)}</span>
+                            <span class="text-xl font-bold font-mono ${textMain}">${formatPHP(total)}</span>
                             ${state.discount > 0 ? `<span class="text-xs text-zinc-500 line-through font-mono decoration-zinc-500">${formatPHP(subtotal)}</span>` : ''}
                         </div>
                     </div>
-                    <button onclick="window.setView('checkout')" class="flex-1 bg-white text-black font-bold py-2.5 px-4 text-[10px] uppercase tracking-wider hover:bg-zinc-200 transition-all flex items-center justify-center gap-2">
+                    <button onclick="window.setView('checkout')" class="flex-1 ${isV2 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-white hover:bg-zinc-200 text-black'} font-bold py-2.5 px-4 text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2">
                         Proceed to Payment <i data-lucide="arrow-right" class="w-3 h-3"></i>
                     </button>
                 </div>
@@ -1779,76 +1994,6 @@
                     </div>
                 </div>` : ''}
                 ${accountsHtml}
-            </div>`;
-        }
-
-        function renderHome(animate = true) {
-            const animClass = animate ? 'animate-enter' : '';
-            return `
-            <div class="pt-14 pb-16 ${animClass}">
-                <div class="bg-zinc-900/50 border-b border-white/5 py-1.5 px-4 flex justify-center items-center gap-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
-                    <i data-lucide="lock" class="w-3 h-3 text-zinc-400"></i>
-                    All transactions are secured and safe
-                </div>
-                ${renderTrackerSearchBar()}
-                <div class="overflow-hidden bg-zinc-200 dark:bg-black border-b border-zinc-300 dark:border-white/5 py-3 relative">
-                     <div class="whitespace-nowrap animate-marquee flex gap-16 items-center text-[9px] font-mono text-zinc-500 dark:text-zinc-600 uppercase tracking-[0.2em]">
-                        <span>VERIFIED SHEIN ACCTS</span>
-                        <span>BULK PRICING AVAILABLE</span>
-                        <span>MANUAL ORDER VERIFICATION</span>
-                        <span>EXCLUSIVE VOUCHERS INCLUDED</span>
-                        <span>SECURE PAYMENT PROCESSING</span>
-                        <span>VERIFIED SHEIN ACCTS</span>
-                        <span>BULK PRICING AVAILABLE</span>
-                        <span>MANUAL ORDER VERIFICATION</span>
-                      </div>
-                      <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-zinc-200 to-transparent dark:from-black z-10"></div>
-                      <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-zinc-200 to-transparent dark:from-black z-10"></div>
-                </div>
-                <div class="p-5 mb-2 relative overflow-hidden group max-w-7xl mx-auto">
-                    <div class="relative z-10">
-                        <h1 class="text-3xl font-bold leading-none mb-3 tracking-tighter text-white">SHOP WITHOUT<br/>HASSLE!</h1>
-                        <p class="text-[10px] text-zinc-400 max-w-[220px] leading-relaxed font-mono">
-                            Fresh SHEIN accounts with exclusive vouchers delivered to your dashboard. Secure. Fast. Anonymous.
-                        </p>
-                    </div>
-                    <div class="absolute right-0 top-0 w-56 h-56 bg-gradient-to-b from-zinc-800 to-transparent opacity-20 blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                </div>
-                <div class="px-6 max-w-7xl mx-auto w-full">
-                    <div class="flex items-center gap-2 mb-4 opacity-50">
-                        <i data-lucide="grid" class="w-3 h-3 text-white"></i>
-                        <span class="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400">AVAILABLE STOCK</span>
-                    </div>
-                    <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-20">
-                            ${state.products.length === 0 ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>' : ''}
-                            ${state.products.map(p => `
-                            <div onclick="window.selectProduct(${p.id})" class="group cursor-pointer bg-zinc-900/50 border border-white/5 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all duration-300 p-2.5 relative overflow-hidden h-full rounded-md ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
-                                <div class="flex flex-col gap-2 h-full justify-between relative z-10">
-                                    <div class="flex justify-between items-start">
-                                        <div class="w-10 h-10 ${p.color} flex items-center justify-center border border-white/5 rounded-md">
-                                            <i data-lucide="package" class="w-5 h-5 opacity-90 group-hover:scale-110 transition-transform duration-500 text-zinc-400"></i>
-                                        </div>
-                                        <div class="flex flex-col items-end gap-1">
-                                            <span class="bg-white/5 text-zinc-400 border border-white/5 text-[8px] font-mono px-1.5 py-0.5 uppercase rounded-md tracking-tight">${p.tag}</span>
-                                            ${p.stock <= 0 ? '<span class="text-[8px] text-red-500 font-bold uppercase tracking-wide">Out of Stock</span>' : ''}
-                                        </div>
-                                    </div>
-                                    <div class="flex items-end justify-between mt-1">
-                                        <div>
-                                            <h3 class="text-[10px] font-bold uppercase tracking-tight text-white group-hover:text-emerald-400 transition-colors leading-tight mb-1 line-clamp-2">${p.title}</h3>
-                                            <span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>
-                                        </div>
-                                        <div class="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-black transition-colors shrink-0">
-                                            <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
             </div>`;
         }
 
@@ -2166,6 +2311,7 @@
         window.goHome = goHome;
         window.setView = setView;
         window.toggleTheme = toggleTheme;
+        window.toggleUiVariant = toggleUiVariant;
         window.showOrderAccounts = showOrderAccounts;
         window.clearOrderSelection = clearOrderSelection;
         window.selectProduct = selectProduct;
