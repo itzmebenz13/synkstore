@@ -1075,11 +1075,20 @@
         async function savePaymentSettings() {
             const url = (document.getElementById('settingsPaymentQrUrl')?.value || '').trim();
             const num = (document.getElementById('settingsPaymentNumber')?.value || '').trim();
-            const { error } = await supabaseClient.from('settings').upsert([
-                { key: 'payment_qr_url', value: url },
-                { key: 'payment_number', value: num }
-            ], { onConflict: 'key' });
-            if (error) return showToast("Failed to save", "error");
+
+            async function setSetting(key, value) {
+                const { data: updated, error: updateErr } = await supabaseClient.from('settings').update({ value }).eq('key', key).select('key');
+                if (updateErr) return { error: updateErr };
+                if (updated && updated.length > 0) return {};
+                const { error: insertErr } = await supabaseClient.from('settings').insert([{ key, value }]);
+                return { error: insertErr };
+            }
+
+            const r1 = await setSetting('payment_qr_url', url);
+            if (r1.error) return showToast(r1.error.message || "Failed to save QR URL", "error");
+            const r2 = await setSetting('payment_number', num);
+            if (r2.error) return showToast(r2.error.message || "Failed to save number", "error");
+
             state.paymentSettings = { payment_qr_url: url, payment_number: num };
             showToast("Payment settings saved", "success");
             render(false);
@@ -1459,9 +1468,7 @@
                         
                         <div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
                              <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-10"></div>
-                             <div class="bg-white p-1.5">
-                                <img src="${getPaymentQrUrl()}" alt="QR" class="w-24 h-24 object-cover mix-blend-multiply" onerror="this.src='${GCASH_QR_URL}'" />
-                             </div>
+                             <img src="${getPaymentQrUrl()}" alt="QR" class="w-24 h-24 object-contain" onerror="this.src='${GCASH_QR_URL}'" />
                              <div class="text-center relative z-10">
                                 <p class="font-mono text-sm font-bold text-white tracking-widest">${getPaymentNumber()}</p>
                                 <p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p>
