@@ -924,28 +924,6 @@
             else showToast("Changes saved", "success");
         }
 
-        // Auto-enable products after cutoff time if everything is paused
-        // This runs client-side: once it's past 8 AM local time and all products
-        // are disabled in the database, it will flip them back on.
-        async function autoEnableProductsIfCutoff(products) {
-            if (!supabaseClient || !products || !products.length) return;
-            try {
-                const now = new Date();
-                const openingHour = 8; // 8 AM local time
-                if (now.getHours() < openingHour) return;
-
-                const allDisabled = products.every(p => p.enabled === false);
-                if (!allDisabled) return;
-
-                await supabaseClient
-                    .from('products')
-                    .update({ enabled: true })
-                    .eq('enabled', false);
-            } catch (e) {
-                console.error("Auto-enable products failed:", e);
-            }
-        }
-
         async function fetchProducts() {
             if(!supabaseClient) return;
             const { data, error } = await supabaseClient
@@ -955,9 +933,6 @@
 
             if (data) {
                 state.products = data;
-                // If the shop is in nightly cutoff (all products disabled),
-                // automatically re-open everything after 8 AM.
-                await autoEnableProductsIfCutoff(data);
                 if(state.view === 'admin' && state.adminTab === 'products') render(false);
                 else if(state.view === 'home') render(false);
             }
