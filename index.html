@@ -34,14 +34,14 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-[#F9FAFB] flex flex-col font-sans text-slate-900 overflow-hidden relative selection:bg-blue-100 selection:text-blue-600">
+<body class="min-h-screen bg-[#F9FAFB] flex flex-col font-sans text-slate-900 overflow-x-hidden relative selection:bg-blue-100 selection:text-blue-600">
 
     <!-- Background Canvas -->
-    <div class="absolute inset-0 z-0 opacity-[0.4] bg-dot-grid pointer-events-none"></div>
+    <div class="absolute inset-0 z-0 opacity-[0.4] bg-dot-grid pointer-events-none fixed"></div>
 
-    <!-- Mock Multiplayer Cursors -->
+    <!-- Mock Multiplayer Cursors (Hidden on mobile to prevent clutter) -->
     <!-- Cursor 1: Design -->
-    <div class="absolute z-20 pointer-events-none" style="top: 20%; left: 70%; animation: float 6s ease-in-out infinite alternate;">
+    <div class="hidden md:block absolute z-20 pointer-events-none" style="top: 20%; left: 70%; animation: float 6s ease-in-out infinite alternate;">
         <svg class="w-5 h-5 text-[#10B981] fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
             <path d="M13 13l6 6"></path>
@@ -52,11 +52,117 @@
     </div>
 
     <!-- Cursor 2: Engineering -->
-    <div class="absolute z-20 pointer-events-none" style="top: 60%; left: 20%; animation: float 7.5s ease-in-out infinite alternate 1.5s;">
+    <div class="hidden md:block absolute z-20 pointer-events-none" style="top: 60%; left: 20%; animation: float 7.5s ease-in-out infinite alternate 1.5s;">
         <svg class="w-5 h-5 text-[#EC4899] fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
             <path d="M13 13l6 6"></path>
         </svg>
-        <div class="px-2 py-0.
+        <div class="px-2 py-0.5 ml-3 mt-1 text-[10px] font-bold text-white rounded-sm shadow-sm whitespace-nowrap bg-[#EC4899]">
+            Engineering
+        </div>
+    </div>
 
-            
+    <!-- Cursor 3: PM -->
+    <div class="hidden md:block absolute z-20 pointer-events-none" style="top: 70%; left: 85%; animation: float 6.5s ease-in-out infinite alternate 0.5s;">
+        <svg class="w-5 h-5 text-[#F59E0B] fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+            <path d="M13 13l6 6"></path>
+        </svg>
+        <div class="px-2 py-0.5 ml-3 mt-1 text-[10px] font-bold text-white rounded-sm shadow-sm whitespace-nowrap bg-[#F59E0B]">
+            PM
+        </div>
+    </div>
+
+    <!-- Main Content Split -->
+    <main class="relative z-10 flex-grow container mx-auto px-4 lg:px-12 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-16 py-12 lg:py-0">
+        
+        <!-- Left Column: Content -->
+        <div class="w-full lg:w-1/2 max-w-xl space-y-8 text-center lg:text-left">
+            <div class="space-y-4">
+                <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+                    We're iterating <br/>
+                    <span class="text-blue-600">on the future.</span>
+                </h1>
+                <p class="text-lg sm:text-xl text-slate-500 font-medium leading-relaxed max-w-md mx-auto lg:mx-0">
+                    Our team is currently shipping updates. We’re polishing pixels and optimizing code. Back shortly.
+                </p>
+            </div>
+
+            <!-- Stats / Timeline -->
+            <div class="grid grid-cols-2 gap-4 pt-6 text-left">
+                <div class="p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</div>
+                    <div class="font-bold text-slate-900">Deploying Update 2.0</div>
+                </div>
+                <div class="p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">ETA</div>
+                    <div class="font-bold text-slate-900">~5 Hours</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Visual Editor Representation -->
+        <div class="w-full lg:w-1/2 flex justify-center perspective-1000 mt-8 lg:mt-0">
+            <!-- Container with hover effect implemented via CSS 'group' class -->
+            <div class="relative transition-transform duration-500 ease-out hover:scale-[1.02] group w-full max-w-md lg:max-w-full">
+                
+                <!-- The Bounding Box (Selection State) - Opacity controlled by group-hover -->
+                <div class="absolute -inset-6 border-2 border-blue-500 rounded-xl pointer-events-none transition-opacity duration-300 opacity-0 group-hover:opacity-100">
+                    <div class="absolute -top-3 -left-3 px-2 py-0.5 bg-blue-500 text-white text-[10px] font-bold rounded-sm">Frame 1</div>
+                    <div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-sm"></div>
+                    <div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-sm"></div>
+                    <div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-sm"></div>
+                    <div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-blue-500 rounded-sm"></div>
+                </div>
+
+                <!-- Construction Illustration SVG -->
+                <svg viewBox="0 0 600 500" class="w-full h-auto drop-shadow-xl" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000000" floodOpacity="0.05" />
+                        </filter>
+                    </defs>
+
+                    <!-- Abstract UI Window -->
+                    <!-- Darkened stroke from e2e8f0 to cbd5e1 for better visibility on light screens -->
+                    <rect x="100" y="80" width="400" height="300" rx="8" fill="white" stroke="#cbd5e1" stroke-width="2" />
+                    <rect x="100" y="80" width="400" height="40" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2" />
+                    <circle cx="125" cy="100" r="4" fill="#94a3b8" />
+                    <circle cx="140" cy="100" r="4" fill="#94a3b8" />
+                    <circle cx="155" cy="100" r="4" fill="#94a3b8" />
+
+                    <!-- Wireframe Elements -->
+                    <rect x="140" y="160" width="140" height="12" rx="2" fill="#e2e8f0" />
+                    <rect x="140" y="185" width="220" height="8" rx="2" fill="#f1f5f9" />
+                    <rect x="140" y="205" width="180" height="8" rx="2" fill="#f1f5f9" />
+
+                    <!-- The "Selected" Object - Vibrant Blue with Corner Handles -->
+                    <g class="animate-pulse-slow">
+                        <rect x="360" y="150" width="100" height="100" rx="4" fill="#3b82f6" fill-opacity="0.1" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4 4" />
+                        <!-- Corner Handles -->
+                        <rect x="356" y="146" width="8" height="8" fill="white" stroke="#3b82f6" stroke-width="2" />
+                        <rect x="456" y="146" width="8" height="8" fill="white" stroke="#3b82f6" stroke-width="2" />
+                        <rect x="456" y="246" width="8" height="8" fill="white" stroke="#3b82f6" stroke-width="2" />
+                        <rect x="356" y="246" width="8" height="8" fill="white" stroke="#3b82f6" stroke-width="2" />
+                        
+                        <!-- Object Content -->
+                        <circle cx="410" cy="200" r="30" fill="#3b82f6" />
+                    </g>
+
+                    <!-- Connection Line (Bezier) -->
+                    <path d="M280 200 C320 200, 320 200, 360 200" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 4" />
+                    
+                    <!-- Floating Tools/Palettes -->
+                    <rect x="50" y="250" width="120" height="140" rx="6" fill="white" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)" transform="rotate(-5 110 320)" />
+                    <rect x="65" y="270" width="90" height="8" rx="2" fill="#f1f5f9" transform="rotate(-5 110 320)" />
+                    <rect x="65" y="290" width="60" height="8" rx="2" fill="#e2e8f0" transform="rotate(-5 110 320)" />
+                </svg>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>
+
+
