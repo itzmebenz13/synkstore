@@ -1996,9 +1996,8 @@
                                        </div>`
                                     : `<span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>`;
                                 const badgeHtml = isNewUserPromo
-                                    ? `<div class="absolute top-1 left-1 z-20 flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-emerald-400 text-[8px] font-mono text-black px-2 py-0.5 rounded-full uppercase tracking-[0.18em] shadow-[0_0_12px_rgba(16,185,129,0.35)]">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse"></span>
-                                            <span>NEW USER DEAL</span>
+                                    ? `<div class="absolute top-1 left-1 bg-emerald-500 text-[8px] font-mono text-black px-1.5 py-0.5 rounded-sm uppercase tracking-wide shadow-sm z-20">
+                                            NEW USER DEAL
                                        </div>`
                                     : '';
                                 return `
@@ -2110,9 +2109,8 @@
                                    </div>`
                                 : `<p class="font-poppins font-medium text-gray-900 dark:text-white text-sm tracking-tight">${formatPHPPoppins(p.price)}</p>`;
                              const badgeHtml = isNewUserPromo
-                                ? `<div class="absolute -top-2 left-2 z-20 flex items-center gap-1 bg-gradient-to-r from-emerald-500 to-emerald-400 text-[8px] font-bold text-black px-2 py-0.5 rounded-full uppercase tracking-[0.18em] shadow-[0_0_12px_rgba(16,185,129,0.35)]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse"></span>
-                                        <span>NEW USER DEAL</span>
+                                ? `<div class="absolute -top-2 left-2 bg-emerald-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+                                        NEW USER DEAL
                                    </div>`
                                 : '';
                              return `
@@ -2322,12 +2320,7 @@
                         <div class="flex justify-between items-center mb-2 pb-2 border-b ${isV2 ? 'border-gray-200 dark:border-white/10' : 'border-white/5'} ${!isBulk ? textMain : textSub}">
                             <div>
                                 <span class="text-[10px] uppercase font-bold tracking-wider block">Single Unit</span>
-                                ${isNewUserPromo ? `
-                                    <span class="inline-flex items-center gap-1 text-[8px] text-emerald-400 uppercase tracking-[0.18em] mt-0.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                        New user deal active
-                                    </span>
-                                ` : ''}
+                                ${isNewUserPromo ? `<span class="text-[8px] ${textSub} uppercase tracking-wider">New user price applied</span>` : ''}
                             </div>
                             <div class="text-right">
                                 <span class="${isV2 ? 'price-poppins' : 'font-mono'} text-xs ${isNewUserPromo ? 'text-emerald-500' : ''}">${formatPHP(isNewUserPromo ? promoUnitPrice : p.price)}</span>
