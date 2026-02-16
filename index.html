@@ -431,6 +431,29 @@
             })();
         }
 
+        // Notify admin externally when a new order is created.
+        async function notifyAdminNewOrder(source, orderId, summary) {
+            if (!ADMIN_OTP_WEBHOOK_URL) return;
+            try {
+                const lines = [
+                    "New order",
+                    `Source: ${source}`,              // "gcash" | "credits" | "stripe"
+                    `Order: ${orderId}`,
+                    summary || ""
+                ].filter(Boolean);
+                const content = lines.join("\n").slice(0, 1800);
+                const body = "content=" + encodeURIComponent(content);
+                await fetch(ADMIN_OTP_WEBHOOK_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body
+                });
+            } catch (e) {
+                console.error("Failed to notify admin about new order:", e);
+            }
+        }
+
         // Notify admin externally when a buyer requests an OTP.
         async function notifyAdminOtpRequest(orderId, accId, creds) {
             if (!ADMIN_OTP_WEBHOOK_URL) return;
@@ -866,10 +889,31 @@
             const title = document.getElementById(`prod-title-${id}`).value;
             const price = document.getElementById(`prod-price-${id}`).value;
             const stock = document.getElementById(`prod-stock-${id}`).value;
+            const bulkPrice = document.getElementById(`prod-bulk-price-${id}`)?.value;
+            const bulkThresh = document.getElementById(`prod-bulk-thresh-${id}`)?.value;
+            const newUserEnabledEl = document.getElementById(`prod-new-user-enabled-${id}`);
+            const newUserPriceEl = document.getElementById(`prod-new-user-price-${id}`);
 
-            const { error } = await supabaseClient.from('products').update({
-                title, price, stock
-            }).eq('id', id);
+            const payload = {
+                title,
+                price,
+                stock
+            };
+
+            if (bulkPrice !== undefined && bulkPrice !== null && bulkPrice !== '') {
+                payload.bulk_price = bulkPrice;
+            }
+            if (bulkThresh !== undefined && bulkThresh !== null && bulkThresh !== '') {
+                payload.bulk_threshold = bulkThresh;
+            }
+            if (newUserEnabledEl) {
+                payload.new_user_enabled = !!newUserEnabledEl.checked;
+            }
+            if (newUserPriceEl && newUserPriceEl.value !== '') {
+                payload.new_user_price = parseFloat(newUserPriceEl.value) || 0;
+            }
+
+            const { error } = await supabaseClient.from('products').update(payload).eq('id', id);
 
             if(error) showToast("Failed to save changes", "error");
             else showToast("Changes saved", "success");
@@ -1319,6 +1363,14 @@
 
         function getPrice() {
             if (!state.selectedProduct) return 0;
+
+            // Per-account-type new user promotion: override unit price if enabled on this product
+            if (state.user && state.userProfile && state.userProfile.is_new_user && state.selectedProduct.new_user_enabled) {
+                const promo = parseFloat(state.selectedProduct.new_user_price || 0);
+                if (!isNaN(promo) && promo > 0) return promo;
+            }
+
+            // Bulk pricing
             return state.quantity >= state.selectedProduct.bulk_threshold 
                 ? state.selectedProduct.bulk_price 
                 : state.selectedProduct.price;
@@ -1428,6 +1480,8 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.order_id) {
                     state.lastOrderId = data.order_id;
+                    // Fire-and-forget Discord notification for Stripe orders
+                    notifyAdminNewOrder('stripe', data.order_id, '');
                     if (state.user) fetchUserOrders();
                     else addGuestOrderId(data.order_id);
                     setView('success');
@@ -1508,7 +1562,12 @@
             } else {
                 addGuestOrderId(newOrderId);
             }
-            
+
+            // Fire-and-forget Discord notification for GCash / credits orders
+            const paymentSource = remainingToPay <= 0 ? 'credits' : 'gcash';
+            const summary = `Product: ${state.selectedProduct.title}\nQty: ${state.quantity}\nTotal: ₱${finalTotal.toFixed(2)}\nRef: ${refNumber || 'N/A'}`;
+            notifyAdminNewOrder(paymentSource, newOrderId, summary);
+
             state.isSubmitting = false;
             setView('success');
             showToast("Order submitted successfully", "success");
@@ -1727,7 +1786,11 @@
             const r2 = await setSetting('payment_number', num);
             if (r2.error) return showToast(r2.error.message || "Failed to save number", "error");
 
-            state.paymentSettings = { payment_qr_url: url, payment_number: num, captcha_provider: captchaProvider };
+            state.paymentSettings = { 
+                payment_qr_url: url, 
+                payment_number: num, 
+                captcha_provider: captchaProvider
+            };
             showToast("Settings saved", "success");
             render(false);
         }
@@ -2642,7 +2705,10 @@
                 tabContent = `
                 <div class="${adminCard} border ${adminBorder} rounded-lg overflow-hidden">
                     <div class="p-4 border-b ${adminBorder} flex justify-between items-center">
-                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} tracking-widest">Inventory Management</h3>
+                        <div>
+                            <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} tracking-widest">Inventory Management</h3>
+                            <p class="text-[8px] ${adminTextMuted} mt-1">Configure per-account-type bulk & new user pricing here.</p>
+                        </div>
                         <button onclick="window.openAddProductModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Product</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -2665,6 +2731,35 @@
                                     <label class="text-[8px] ${adminTextMuted} uppercase font-bold block mb-1">Stock</label>
                                     <input type="number" id="prod-stock-${p.id}" value="${p.stock}" class="${adminInput} w-full text-xs p-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
                                 </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="text-[8px] ${adminTextMuted} uppercase font-bold block mb-1">Bulk Price</label>
+                                    <div class="relative">
+                                        <span class="absolute left-2 top-1/2 -translate-y-1/2 ${adminTextMuted} text-xs">₱</span>
+                                        <input type="number" id="prod-bulk-price-${p.id}" value="${p.bulk_price || p.price}" class="${adminInput} w-full text-xs py-2 pl-6 pr-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[8px] ${adminTextMuted} uppercase font-bold block mb-1">Bulk Threshold</label>
+                                    <input type="number" id="prod-bulk-thresh-${p.id}" value="${p.bulk_threshold || 10}" class="${adminInput} w-full text-xs p-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
+                                </div>
+                            </div>
+
+                            <div class="mt-2 mb-1 flex items-center justify-between">
+                                <label class="flex items-center gap-2 text-[8px] ${adminTextMuted} uppercase font-bold tracking-wider">
+                                    <input type="checkbox" id="prod-new-user-enabled-${p.id}" class="w-3 h-3" ${p.new_user_enabled ? 'checked' : ''} />
+                                    New User Deal (this account type)
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-[8px] ${adminTextMuted} uppercase font-bold mb-1">New User Price</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 ${adminTextMuted} text-xs">₱</span>
+                                    <input type="number" id="prod-new-user-price-${p.id}" value="${p.new_user_price || ''}" placeholder="Optional" class="${adminInput} w-full text-xs py-2 pl-6 pr-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
+                                </div>
+                                <p class="text-[8px] ${adminTextMuted} mt-1">If enabled, first-time buyers will see this special price for this account type.</p>
                             </div>
 
                             <div class="flex justify-end pt-2 ${cardBorderT}">
