@@ -362,6 +362,14 @@
         const GCASH_NUMBER = "0917 123 4567";
         const apiKey = ""; // Enter Gemini API Key Here
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
+        // Homepage chat widget (Tawk.to free live chat)
+        // 1. Go to https://www.tawk.to, create a free account, add your site.
+        // 2. Copy the PROPERTY_ID and WIDGET_ID from the embed snippet they give you.
+        // 3. Paste them below. When both are set, the chat widget will appear on your site.
+        const ENABLE_TAWK_CHAT = true;
+        const TAWK_PROPERTY_ID = ""; // e.g. "xxxxxxxxxxxxxxxxxxxxxxxx"
+        const TAWK_WIDGET_ID = "";   // e.g. "1abcdefg123456"
+
         // Optional: webhook to notify you (admin) externally when a buyer requests OTP.
         // Example: Discord webhook URL. Leave empty to disable.
         const ADMIN_OTP_WEBHOOK_URL = "https://discord.com/api/webhooks/1472890172038189261/jeznXFU5s64OZZhlLAlU6dSZtRLiJpRXUnZEFCTj6CB7FNiFB8EipVyNGqfPqgIjln7w";
@@ -402,6 +410,24 @@
                 console.error("loadPersistedAdminAuth error:", e);
                 return false;
             }
+        }
+
+        // Initialize Tawk.to chat widget (homepage / site-wide)
+        function initTawkChat() {
+            if (!ENABLE_TAWK_CHAT) return;
+            if (!TAWK_PROPERTY_ID || !TAWK_WIDGET_ID) return;
+            if (window.Tawk_API) return; // already initialized
+            window.Tawk_API = window.Tawk_API || {};
+            window.Tawk_LoadStart = new Date();
+            (function() {
+                const s1 = document.createElement("script");
+                const s0 = document.getElementsByTagName("script")[0];
+                s1.async = true;
+                s1.src = "https://embed.tawk.to/" + TAWK_PROPERTY_ID + "/" + TAWK_WIDGET_ID;
+                s1.charset = "UTF-8";
+                s1.setAttribute("crossorigin", "*");
+                s0.parentNode.insertBefore(s1, s0);
+            })();
         }
 
         // Notify admin externally when a buyer requests an OTP.
@@ -2888,12 +2914,27 @@
             }
             await fetchProducts();
             await fetchPaymentSettings();
+            // Initialize external chat widget (Tawk.to) if configured
+            initTawkChat();
             setupRealtime();
             render();
         }
 
         init();
-
+        
     </script>
+    <!--Start of Tawk.to Script-->
+    <script type="text/javascript">
+    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+    (function(){
+    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+    s1.async=true;
+    s1.src='https://embed.tawk.to/687baded7f202b19181ef539/1j0hhuqrh';
+    s1.charset='UTF-8';
+    s1.setAttribute('crossorigin','*');
+    s0.parentNode.insertBefore(s1,s0);
+    })();
+    </script>
+    <!--End of Tawk.to Script-->
 </body>
 </html>
