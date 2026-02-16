@@ -435,14 +435,13 @@
         async function notifyAdminOtpRequest(orderId, accId, creds) {
             if (!ADMIN_OTP_WEBHOOK_URL) return;
             try {
-                const payload = {
-                    // Discord-compatible minimal payload; adjust if using another service
-                    content: `New OTP request\nOrder: ${orderId}\nAccount: ${creds || accId}`
-                };
+                const content = `New OTP request\nOrder: ${orderId}\nAccount: ${creds || accId}`;
+                const body = "content=" + encodeURIComponent(content);
                 await fetch(ADMIN_OTP_WEBHOOK_URL, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body
                 });
             } catch (e) {
                 console.error("Failed to notify admin about OTP request:", e);
@@ -458,10 +457,12 @@
                 const prefix = sender === "admin" ? "Admin reply" : "New buyer message";
                 // Keep under Discord's 2000 character limit with some buffer
                 const content = `${prefix}\nOrder: ${orderId}\nAccount: ${accId}\nMessage: ${safeText}`.slice(0, 1800);
+                const body = "content=" + encodeURIComponent(content);
                 await fetch(ADMIN_OTP_WEBHOOK_URL, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ content })
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body
                 });
             } catch (e) {
                 console.error("Failed to notify admin about buyer message:", e);
