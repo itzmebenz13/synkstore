@@ -3,98 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance</title>
+    <title>Maintenance Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Montserrat:wght@200;300&display=swap');
-
-        body {
-            background-color: #fcfcfc;
-            color: #1a1a1a;
-            font-family: 'Montserrat', sans-serif;
-            overflow: hidden; /* Prevent scroll */
+        /* Custom Animations */
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -40px); }
+            100% { transform: translate(-20px, 20px); }
+        }
+        
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-        .serif {
-            font-family: 'Cormorant Garamond', serif;
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        /* Subtle breathing animation for the main text */
-        @keyframes breathe {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
+        /* Dot Grid Background */
+        .bg-dot-grid {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
         }
 
-        .breathe {
-            animation: breathe 6s ease-in-out infinite;
-        }
-
-        /* Grain texture overlay for a film-like aesthetic */
-        .noise {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 50;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        }
-
-        /* Loading line animation */
-        .loader-line {
-            width: 0%;
-            height: 1px;
-            background-color: #1a1a1a;
-            animation: load 2.5s ease-out forwards;
-        }
-
-        @keyframes load {
-            0% { width: 0%; }
-            100% { width: 40px; }
+        /* 3D Perspective for the container */
+        .perspective-1000 {
+            perspective: 1000px;
         }
     </style>
 </head>
-<body class="h-screen w-full flex flex-col items-center justify-center relative select-none">
+<body class="min-h-screen bg-[#F9FAFB] flex flex-col font-sans text-slate-900 overflow-hidden relative selection:bg-blue-100 selection:text-blue-600">
 
-    <!-- Grain Overlay -->
-    <div class="noise"></div>
+    <!-- Background Canvas -->
+    <div class="absolute inset-0 z-0 opacity-[0.4] bg-dot-grid pointer-events-none"></div>
 
-    <!-- Main Content -->
-    <main class="z-10 text-center flex flex-col items-center gap-8">
-        
-        <!-- Minimal Status Indicator -->
-        <div class="loader-line mb-4"></div>
-
-        <!-- Typography -->
-        <div class="space-y-2">
-            <h1 class="serif text-4xl md:text-5xl lg:text-6xl font-light tracking-wide italic">
-                Currently Offline
-            </h1>
-            <p class="text-[10px] md:text-xs uppercase tracking-[0.3em] text-neutral-500 font-light mt-4">
-                Scheduled Maintenance
-            </p>
+    <!-- Mock Multiplayer Cursors -->
+    <!-- Cursor 1: Design -->
+    <div class="absolute z-20 pointer-events-none" style="top: 20%; left: 70%; animation: float 6s ease-in-out infinite alternate;">
+        <svg class="w-5 h-5 text-[#10B981] fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+            <path d="M13 13l6 6"></path>
+        </svg>
+        <div class="px-2 py-0.5 ml-3 mt-1 text-[10px] font-bold text-white rounded-sm shadow-sm whitespace-nowrap bg-[#10B981]">
+            Design
         </div>
+    </div>
 
-        <!-- Date/Time Stamp (Dynamic) -->
-        <div class="fixed bottom-12 left-0 right-0 text-center">
-            <p id="time" class="text-[10px] text-neutral-400 font-light tracking-widest font-mono opacity-60"></p>
-        </div>
+    <!-- Cursor 2: Engineering -->
+    <div class="absolute z-20 pointer-events-none" style="top: 60%; left: 20%; animation: float 7.5s ease-in-out infinite alternate 1.5s;">
+        <svg class="w-5 h-5 text-[#EC4899] fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+            <path d="M13 13l6 6"></path>
+        </svg>
+        <div class="px-2 py-0.
 
-    </main>
-
-    <script>
-        // Simple script to show UTC time, adding a technical touch
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toISOString().split('T')[0] + ' — ' + now.toLocaleTimeString('en-US', {hour12: false});
-            document.getElementById('time').textContent = timeString;
-        }
-        
-        updateTime();
-        setInterval(updateTime, 1000);
-    </script>
-</body>
-</html>
-
+            
