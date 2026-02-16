@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Montserrat:wght@200;300&display=swap');
+
+        body {
+            background-color: #fcfcfc;
+            color: #1a1a1a;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden; /* Prevent scroll */
+        }
+
+        .serif {
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        /* Subtle breathing animation for the main text */
+        @keyframes breathe {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        .breathe {
+            animation: breathe 6s ease-in-out infinite;
+        }
+
+        /* Grain texture overlay for a film-like aesthetic */
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Loading line animation */
+        .loader-line {
+            width: 0%;
+            height: 1px;
+            background-color: #1a1a1a;
+            animation: load 2.5s ease-out forwards;
+        }
+
+        @keyframes load {
+            0% { width: 0%; }
+            100% { width: 40px; }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative select-none">
+
+    <!-- Grain Overlay -->
+    <div class="noise"></div>
+
+    <!-- Main Content -->
+    <main class="z-10 text-center flex flex-col items-center gap-8">
+        
+        <!-- Minimal Status Indicator -->
+        <div class="loader-line mb-4"></div>
+
+        <!-- Typography -->
+        <div class="space-y-2">
+            <h1 class="serif text-4xl md:text-5xl lg:text-6xl font-light tracking-wide italic">
+                Currently Offline
+            </h1>
+            <p class="text-[10px] md:text-xs uppercase tracking-[0.3em] text-neutral-500 font-light mt-4">
+                Scheduled Maintenance
+            </p>
+        </div>
+
+        <!-- Date/Time Stamp (Dynamic) -->
+        <div class="fixed bottom-12 left-0 right-0 text-center">
+            <p id="time" class="text-[10px] text-neutral-400 font-light tracking-widest font-mono opacity-60"></p>
+        </div>
+
+    </main>
+
+    <script>
+        // Simple script to show UTC time, adding a technical touch
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toISOString().split('T')[0] + ' — ' + now.toLocaleTimeString('en-US', {hour12: false});
+            document.getElementById('time').textContent = timeString;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
+
