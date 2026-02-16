@@ -367,8 +367,9 @@
         // 2. Copy the PROPERTY_ID and WIDGET_ID from the embed snippet they give you.
         // 3. Paste them below. When both are set, the chat widget will appear on your site.
         const ENABLE_TAWK_CHAT = true;
-        const TAWK_PROPERTY_ID = ""; // e.g. "xxxxxxxxxxxxxxxxxxxxxxxx"
-        const TAWK_WIDGET_ID = "";   // e.g. "1abcdefg123456"
+        // Integrated from your provided Tawk.to snippet
+        const TAWK_PROPERTY_ID = "687baded7f202b19181ef539";
+        const TAWK_WIDGET_ID = "1j0hhuqrh";
 
         // Optional: webhook to notify you (admin) externally when a buyer requests OTP.
         // Example: Discord webhook URL. Leave empty to disable.
@@ -445,6 +446,25 @@
                 });
             } catch (e) {
                 console.error("Failed to notify admin about OTP request:", e);
+            }
+        }
+
+        // Notify admin externally when a buyer sends a message on an order.
+        async function notifyAdminBuyerMessage(orderId, accId, text, sender) {
+            if (!ADMIN_OTP_WEBHOOK_URL) return;
+            const safeText = (text || "").trim();
+            if (!safeText) return;
+            try {
+                const prefix = sender === "admin" ? "Admin reply" : "New buyer message";
+                // Keep under Discord's 2000 character limit with some buffer
+                const content = `${prefix}\nOrder: ${orderId}\nAccount: ${accId}\nMessage: ${safeText}`.slice(0, 1800);
+                await fetch(ADMIN_OTP_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content })
+                });
+            } catch (e) {
+                console.error("Failed to notify admin about buyer message:", e);
             }
         }
 
@@ -1573,6 +1593,8 @@
         async function sendAccountMessage(orderId, accId, text, sender) {
             if(!text || !text.trim()) return;
 
+            const trimmed = text.trim();
+
             const { data, error: fetchError } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
             if(fetchError || !data) return showToast("Error fetching order", "error");
 
@@ -1581,7 +1603,7 @@
                     const msgs = acc.messages || [];
                     return { 
                         ...acc, 
-                        messages: [...msgs, { text: text.trim(), sender: sender, time: new Date().toISOString(), read: false }] 
+                        messages: [...msgs, { text: trimmed, sender: sender, time: new Date().toISOString(), read: false }] 
                     };
                 }
                 return acc;
@@ -1593,6 +1615,11 @@
                 showToast("Message sent", "success");
                 const inputEl = document.getElementById(sender === 'admin' ? `admin-msg-${accId}` : `msg-${accId}`);
                 if(inputEl) inputEl.value = '';
+
+                // Fire-and-forget Discord notification for buyer messages
+                if (sender === 'user') {
+                    notifyAdminBuyerMessage(orderId, accId, trimmed, sender);
+                }
             }
         }
 
@@ -2923,18 +2950,5 @@
         init();
         
     </script>
-    <!--Start of Tawk.to Script-->
-    <script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/687baded7f202b19181ef539/1j0hhuqrh';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
-    </script>
-    <!--End of Tawk.to Script-->
 </body>
 </html>
