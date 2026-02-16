@@ -924,6 +924,28 @@
             else showToast("Changes saved", "success");
         }
 
+        // Auto-enable products after cutoff time if everything is paused
+        // This runs client-side: once it's past 8 AM local time and all products
+        // are disabled in the database, it will flip them back on.
+        async function autoEnableProductsIfCutoff(products) {
+            if (!supabaseClient || !products || !products.length) return;
+            try {
+                const now = new Date();
+                const openingHour = 8; // 8 AM local time
+                if (now.getHours() < openingHour) return;
+
+                const allDisabled = products.every(p => p.enabled === false);
+                if (!allDisabled) return;
+
+                await supabaseClient
+                    .from('products')
+                    .update({ enabled: true })
+                    .eq('enabled', false);
+            } catch (e) {
+                console.error("Auto-enable products failed:", e);
+            }
+        }
+
         async function fetchProducts() {
             if(!supabaseClient) return;
             const { data, error } = await supabaseClient
@@ -933,6 +955,9 @@
 
             if (data) {
                 state.products = data;
+                // If the shop is in nightly cutoff (all products disabled),
+                // automatically re-open everything after 8 AM.
+                await autoEnableProductsIfCutoff(data);
                 if(state.view === 'admin' && state.adminTab === 'products') render(false);
                 else if(state.view === 'home') render(false);
             }
@@ -1948,6 +1973,7 @@
         // --- V1 (Classic) Home Render ---
         function renderHomeV1(animate) {
             const animClass = animate ? 'animate-enter' : '';
+            const enabledProducts = state.products.filter(p => p.enabled !== false);
             return `
             <div class="pt-14 pb-16 ${animClass}">
                 <div class="bg-zinc-900/50 border-b border-white/5 py-1.5 px-4 flex justify-center items-center gap-2 text-[9px] uppercase tracking-widest text-zinc-500 font-mono">
@@ -1985,8 +2011,11 @@
                     </div>
                     <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-20">
-                            ${state.products.length === 0 ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>' : ''}
-                            ${state.products.filter(p => p.enabled !== false).map(p => {
+                            ${state.products.length === 0 
+                                ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>'
+                                : (enabledProducts.length === 0
+                                    ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
+                                    : enabledProducts.map(p => {
                                 const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
                                 const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
                                 const priceHtml = isNewUserPromo
@@ -2025,7 +2054,7 @@
                                 </div>
                             </div>
                                 `;
-                            }).join('')}
+                            }).join(''))}
                         </div>
                     </div>
                 </div>
@@ -2035,6 +2064,7 @@
         // --- V2 (Modern/Clean) Home Render ---
         function renderHomeV2(animate) {
              const animClass = animate ? 'animate-enter' : '';
+             const enabledProducts = state.products.filter(p => p.enabled !== false);
              return `
              <div class="pt-14 pb-12 bg-white dark:bg-black font-poppins ${animClass} min-h-screen">
                 <!-- Safe Banner -->
@@ -2098,8 +2128,11 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                         ${state.products.length === 0 ? '<div class="col-span-2 text-center text-gray-400 dark:text-zinc-500 py-8 text-xs"><p>Loading products...</p></div>' : ''}
-                         ${state.products.filter(p => p.enabled !== false).map((p) => {
+                         ${state.products.length === 0 
+                            ? '<div class="col-span-2 text-center text-gray-400 dark:text-zinc-500 py-8 text-xs"><p>Loading products...</p></div>'
+                            : (enabledProducts.length === 0
+                                ? '<div class="col-span-2 text-center text-gray-500 dark:text-zinc-500 py-8 text-xs"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
+                                : enabledProducts.filter(p => p.enabled !== false).map((p) => {
                              const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
                              const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
                              const priceHtml = isNewUserPromo
@@ -2134,7 +2167,7 @@
                                 ${p.stock <= 0 ? '<div class="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center font-bold text-red-500 uppercase tracking-widest text-[10px] border-2 border-red-500 rounded-lg m-1.5">Out of Stock</div>' : ''}
                              </div>
                              `;
-                         }).join('')}
+                         }).join(''))}
                     </div>
                 </div>
              </div>
