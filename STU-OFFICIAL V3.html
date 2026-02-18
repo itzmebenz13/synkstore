@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHEIN Script Updater</title>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
+:root{
+  --bg:#0a0c10; --panel:#0f1218; --border:#1e2530;
+  --accent:#00e5ff; --accent2:#ff6b35; --success:#00ff88;
+  --warn:#ffcc00; --text:#c8d4e0; --dim:#4a5568;
+  --code:#080b0e; --red:#ff4444;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+/* header */
+header{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.logo{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:#000;flex-shrink:0}
+header h1{font-family:'Rajdhani',sans-serif;font-size:21px;font-weight:700;color:#fff;letter-spacing:1px}
+header p{font-size:11px;color:var(--dim);margin-top:2px}
+.hright{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.dot.on{background:var(--success);box-shadow:0 0 8px var(--success);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+/* summary */
+#sum{display:none;margin-bottom:14px;padding:11px 15px;background:rgba(0,255,136,.06);
+  border:1px solid rgba(0,255,136,.22);border-radius:8px;font-size:11px;color:var(--success);
+  align-items:center;gap:10px;flex-wrap:wrap}
+#sum.on{display:flex}
+.chip{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);border-radius:4px;padding:2px 9px;font-size:10px}
+/* grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:820px){.g2{grid-template-columns:1fr}}
+/* panel */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 15px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.pt{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent)}
+/* badges */
+.b{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500;letter-spacing:.5px}
+.b-blue{background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25)}
+.b-orange{background:rgba(255,107,53,.12);color:var(--accent2);border:1px solid rgba(255,107,53,.25)}
+.b-green{background:rgba(0,255,136,.12);color:var(--success);border:1px solid rgba(0,255,136,.25)}
+.b-yellow{background:rgba(255,204,0,.12);color:var(--warn);border:1px solid rgba(255,204,0,.3);border-radius:12px;padding:2px 10px}
+#nchanged{display:none}
+/* textarea */
+textarea{width:100%;background:var(--code);color:#8be9fd;font-family:'JetBrains Mono',monospace;
+  font-size:11px;line-height:1.6;border:none;outline:none;padding:13px;resize:vertical;
+  min-height:290px;tab-size:2}
+textarea::placeholder{color:#2d3748}
+textarea:focus{background:#060a0d;box-shadow:inset 0 0 0 1px rgba(0,229,255,.18)}
+.script-ta{color:#a8d4f0;font-size:10.5px;min-height:400px;white-space:pre;tab-size:4}
+/* buttons */
+.br{padding:11px 13px;display:flex;gap:7px;border-top:1px solid var(--border);flex-wrap:wrap}
+button{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+  padding:7px 13px;border-radius:5px;border:none;cursor:pointer;
+  letter-spacing:.4px;transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-p{background:var(--accent);color:#000;flex:1;justify-content:center}
+.btn-p:hover{background:#33ecff;transform:translateY(-1px)}
+.btn-s{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{background:rgba(255,255,255,.1)}
+.btn-g{background:rgba(0,255,136,.1);color:var(--success);border:1px solid rgba(0,255,136,.22)}
+.btn-g:hover{background:rgba(0,255,136,.18)}
+.btn-o{background:rgba(255,107,53,.1);color:var(--accent2);border:1px solid rgba(255,107,53,.22)}
+.btn-o:hover{background:rgba(255,107,53,.18)}
+.btn-add{background:rgba(0,255,136,.1);color:var(--success);border:1px solid rgba(0,255,136,.25);padding:6px 12px}
+.btn-add:hover{background:rgba(0,255,136,.2)}
+.btn-rm{background:rgba(255,68,68,.08);color:var(--red);border:1px solid rgba(255,68,68,.22);
+  padding:3px 8px;font-size:10px}
+.btn-rm:hover{background:rgba(255,68,68,.18)}
+/* token preview grid */
+.tg{display:flex;flex-direction:column;gap:1px;background:var(--border)}
+.tr{display:grid;grid-template-columns:150px 1fr;background:var(--code)}
+.tk{padding:6px 11px;font-size:10px;color:var(--accent);border-right:1px solid var(--border);
+  letter-spacing:.4px;display:flex;align-items:center}
+.tv{padding:6px 11px;font-size:10px;color:#a0b4c8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tv.ok{color:var(--success);background:rgba(0,255,136,.04)}
+.tv.dim{color:var(--dim)}
+/* voucher manager */
+.vbody{padding:13px}
+.vadd{display:flex;gap:7px;margin-bottom:11px}
+#vinput{flex:1;background:var(--code);color:#8be9fd;font-family:'JetBrains Mono',monospace;
+  font-size:12px;border:1px solid var(--border);border-radius:5px;padding:6px 11px;outline:none}
+#vinput:focus{border-color:rgba(0,255,136,.4);box-shadow:0 0 0 2px rgba(0,255,136,.07)}
+#vinput::placeholder{color:#2d3748}
+.vlist{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto}
+.vi{display:flex;align-items:center;justify-content:space-between;
+  background:var(--code);border:1px solid var(--border);border-radius:5px;padding:6px 10px}
+.vi:hover{border-color:rgba(0,229,255,.18)}
+.vc{font-size:12px;color:#8be9fd;letter-spacing:.4px}
+.vempty{text-align:center;padding:22px;color:var(--dim);font-size:11px}
+/* toast */
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:8px;
+  font-size:12px;font-weight:500;display:flex;align-items:center;gap:7px;
+  transform:translateY(70px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);
+  z-index:999;max-width:300px;pointer-events:none}
+#toast.on{transform:translateY(0);opacity:1}
+#toast.s{background:#0a2e1c;border:1px solid var(--success);color:var(--success)}
+#toast.e{background:#2e0a0a;border:1px solid #f44;color:#f66}
+#toast.i{background:#0a1e2e;border:1px solid var(--accent);color:var(--accent)}
+#toast.w{background:#2b2000;border:1px solid var(--warn);color:var(--warn)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#2a3340;border-radius:3px}
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo">SH</div>
+    <div>
+      <h1>SHEIN SCRIPT UPDATER</h1>
+      <p>Paste RAW data to refresh tokens &bull; Manage vouchers &bull; Download updated script</p>
+    </div>
+    <div class="hright">
+      <div class="dot" id="dot"></div>
+      <span id="stext">IDLE</span>
+    </div>
+  </header>
+
+  <div id="sum"><span>&#10003; Updated &mdash;</span><span id="schips"></span></div>
+
+  <!-- ROW 1: RAW input | Token preview -->
+  <div class="g2">
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">&#8595; RAW REQUEST INPUT</div>
+        <span class="b b-blue">PASTE HERE</span>
+      </div>
+      <textarea id="rawin" placeholder="Paste your full RAW HTTP request here...
+
+POST /ph/bff-api/user/common_login?...
+smdeviceid: WHJMr...
+x-cs-random: 13d0ed...
+x-gw-auth: a=xjq...
+armortoken: T1_3...
+anti-in: 1_1.9...
+x-csrf-token: ...
+x-oest: ...
+x-ad-flag: ...
+cookie: AT=MDEw...
+
+------WebKitFormBoundary...
+name=&quot;blackbox&quot;
+
+nWPUZ17713..."></textarea>
+      <div class="br">
+        <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE SCRIPT</button>
+        <button class="btn-s" id="clearbtn">&#10005; CLEAR</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">&#9672; EXTRACTED TOKENS</div>
+        <span class="b b-blue" id="nchanged"></span>
+      </div>
+      <div id="tpreview" class="tg">
+        <div class="tr"><div class="tk">SMDEVICE_ID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">CS_RANDOM</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">GW_AUTH</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">ARMOR_TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">ANTI_IN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">CSRF_TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">OEST</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">AD_FLAG</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">COOKIES</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+        <div class="tr"><div class="tk">BLACKBOX</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Voucher manager -->
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">
+      <div class="pt">&#127914; VOUCHER CODE MANAGER</div>
+      <span class="b-yellow" id="vcnt">0 codes</span>
+    </div>
+    <div class="vbody">
+      <div class="vadd">
+        <input id="vinput" type="text" placeholder="Enter code (e.g. phsf021215) or paste multiple comma-separated &mdash; press Enter to add" maxlength="200">
+        <button class="btn-add" id="addbtn">&#43; ADD</button>
+      </div>
+      <div id="vlist" class="vlist">
+        <div class="vempty" id="vempty">No voucher codes. Add some above.</div>
+      </div>
+    </div>
+    <div class="br">
+      <button class="btn-p" id="applybtn">&#9889; APPLY CODES TO SCRIPT</button>
+      <button class="btn-s" id="reloadbtn">&#8635; RELOAD FROM SCRIPT</button>
+      <button class="btn-s" id="clearvbtn">&#10005; CLEAR ALL</button>
+    </div>
+  </div>
+
+  <!-- ROW 3: Output script -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">&#8593; OUTPUT SCRIPT</div>
+      <span class="b b-orange" id="obadge">ORIGINAL</span>
+    </div>
+    <textarea id="scriptout" class="script-ta" readonly></textarea>
+    <div class="br">
+      <button class="btn-g" id="copybtn">&#8680; COPY</button>
+      <button class="btn-o" id="dlbtn">&#8595; DOWNLOAD .py</button>
+      <button class="btn-s" id="resetbtn">&#8635; RESET</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+
+// ================================================================
+// DEFAULT SCRIPT (JSON-encoded, safe for any content)
+// ================================================================
+var ORIG = "#!/usr/bin/env python3\n\"\"\"\nSHEIN Login + Coupon Collector\n- Logs in using email/password (prompted in Termux)\n- Extracts session cookies & tokens from login response\n- Collects ALL voucher codes in ONE single bundle request\n- Supports multiple accounts\n\"\"\"\n\nimport requests\nimport uuid\nimport time\nimport getpass\nimport sys\nimport re\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# BASE TOKENS FROM YOUR LOGIN REQUEST HEADERS\n# These are pre-login tokens (used to authenticate the login\n# request itself). They come from your captured request.\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nSMDEVICE_ID = \"WHJMrwNw1k/E+z84j8tgt0WlCBlGFuFTTYOg/xLJFeGQ6s5s1c6HPPyOI/349HDd0REoG5ut37auxN7saRjyyzGf8iCSUsLB0dCW1tldyDzmQI99+chXEigOFh31R03Td9lCUKKcsmkSqmJzoPeggwzYmmmXo8LlTkQE5YcNLqNriNYPfoOP/bhemZjezQQufFRRuSg/X1FURTkAd7H/eWgq1wQa1jio3pffYRUhyUZRaZJvLllk2ArrcVHcgjZd88F7i/EiSrzo=1487582755342\"\nCS_RANDOM   = \"13d0ed2175cf158f0a3c4de434fb00a5f1bb95b85bc0112b882877a048ecc0384ff0fd138d3fdb9a9d88bf21cbad6adaa13da1d40728a498e5a02fb6ec637af109054624ce379\"\nGW_AUTH     = \"a=xjqHR52UWJdjKJ0x6QrCsus66rNXR9@2.0.13&b=1771336709550&d=06942fbc37be6a98b8dee877d03ae8f6&e=hkapjOTY1NDY1MGIxMjQyOGI1Y2JkZjFjNjdmMTlhNTk3ZDg1OWYxYjczOWZjMWU5NWI2ZDA0YTBkNDgxYTk0ZmE3NQ%3D%3D\"\nARMOR_TOKEN = \"T1_3.11.1_i7HCNI8sWSUN4Wsff-xWfKwlamc8NEt2DDO_KwzzGAbsgYfy8XSjZOEhhIq4oVFGzjo9i1RzeV01thpE37_H_wWIv9-ennf341MCG5zlm-NqmUW6FgBjGj5sVavPvBPCTHn3E6un1qRPktMsR4nVt8__Z7wmIkax0H-an61B2bmLM1OLz3uGDgz8yUMq5AzW_1771336636107\"\nANTI_IN     = \"1_1.9.1_131ec1_yJSgdJ_0ZH2A4fe5zwhyy5ZjlGJC4KipCP_Bm85H_PK2qSurVyltG1HFh0fhrX0y6o2YrHSB2HUbHM1RwlpIducJ6JiWZnTbc2XkeP1JdpH2Zj_w_Z0B3xmLaaRmuvvb2sUaH9OUBLAgYESS2Du_wOgA5-5EnfPMkbvs8TostJb2mqWfi-rnaOCGGk5OYLW1CFrjBSY2wfN80t9G3Zs7Vq4Eks1nUfHOi-5QQwA0iUmFY4VCdhioP1yRFfOsuM3iIV5f7VyOc6IP0-ciw1ubbOC1srVb59SfJFv7nxeJSx7OPOX6SWmVydbO0Z2GEP1rWtN_bIzGgtzcZTuXVIPe9Zdbheq0ZjfOg4qQxfAY8xrfH0vV7JVwYfc9HEGP2ExPnOSFTEzQc7VyRO1rIsLgQcWIng2qAHPZ1K0lcdpPlexbKfaESz0P215sUymEOe9YEcCCzOzMwuSMx5QmFAKo4PX152cxNIzHlmKYbuDGMknSKqD-7EV3Imsa3egWt07kDygoFjxuNWVVBueTFm4Q3A0V2jUFuv_zBKIcqWzcdMbIXk4MaYEWgIkm_lbcYvHIZUL48zlyavOCXD1Dbs3IntJ3Bg0FvnC-XNqhX115MrPtmku1znY8Q2_yO8v0f981UZqh2LhcuuHZyNHlzvYs8N6lXD8hIK3cHzsFWm-j6HmdQ4hwP_mJzbt_MYeSiwCE7xhHY3JXL0snnZObrbADfI77eNcPsGuyxtIWPvPcZtmdgb7zdCvm_lWz2WHO2HvwOSSoEF1tOPS87BFxXQYACmx7Nip-VGdc_AsKEwss_xEf8I24KXNOv5ZSIbjZR4FcadeTEiLID-MxlRdkOSpO8-nox0yNVgKQFLGTtYFYC8Zv\"\nCSRF_TOKEN  = \"tqpIYQON-onu98IT0-30pjaAF0ulLGbt8WLg\"\nOEST        = \"NDEyMkE5QjBfODdDQl8yMEY0XzR8MTc3MTMzNjcwOTUzN3xCOEZfNkQwOTExREUzMzlE\"\nAD_FLAG     = \"8FkZa3NuCnoO+IBsqSDbVS0ujpVi/IXf//kOjWMsgnOZ0k+h6+rK67aH0c1E5efGgWYq61YJe9rvWC5xPj7ZVVYoP3i9GVpBfVkWfa8EsrsGa2KgaixOSZmJfGKy6YI874yU0pb2l85B3RSMhSMlbQ==\"\n\n# Pre-login cookies (from your captured request, before auth)\nPRE_LOGIN_COOKIES = (\n    \"AT=MDEwMDE.eyJiIjo3LCJnIjoxNzcxMzM2NjEyLCJyIjoiNWZ6bjdOIiwidCI6MX0.941777ea0a470db0; \"\n    \"armorUuid=20260217215652a516cf1f31a0a8d5d32acffa939a00e000b89debe220b20d00; \"\n    \"sessionID_shein_m_pwa=s%3AdxdbGorcyJnd2fsND0mqhSkgVPkcNFGg.VtO2DDBgZKb8GL9KSgu4rftg1rJ%2FQRQ1pGxoLiCGAEI; \"\n    \"_cfuvid=4p8Yyvl4LJ2pE41DoMcxsE2Ele0wK8J939CyDRX67PU-1771336612237-0.0.1.1-604800000; \"\n    \"cf_clearance=R8DDoApifDmHc7jhtkNnGzUmS_hBSHZjy2dgJp4ZeFc-1771336619-1.2.1.1-SR3bzoNHDObMBi9Rz.SQkwNOHH3nQq89do5ncHYoiEP64N9sI.u64nC5BwTCqorWS36h3XvNBu.s8ZDZgRA3ZeCsOkIuvj0QIX7xe88OG51ZdiTaShwH15Q1o3RHW0RXks7BcVLwmeTQYeH0qkaB_WHRnKZmmZ4CjFKeDObkT_xsYuoD3N_g3QqbjYt2vISE8YtvafHAtCzef8ol.7yGfuESNS.NtX_SL95mV15lK6Y; \"\n    \"smidV2=202602172157141167d44e69bd0058f99b98635345b6af003346da2a02a52f0; \"\n    \"zpnvSrwrNdywdz=center; \"\n    \"_gcl_au=1.1.432693870.1771336636; \"\n    \"_fbp=fb.1.1771336636041.122241680264224304; \"\n    \"_uetsid=913a00e00c0811f19e4d4361c92c6d56; \"\n    \"_uetvid=913a64d00c0811f1814e2f6136f19789; \"\n    \"cto_bundle=qmuD219ENDMlMkYxRTBrOUg2OG1aWkQlMkJaR2IxOGN3Tk9OOGUydGQ0ZFpVTEFxOVUyJTJGaDclMkJuOVJ5YmxBaVVGJTJGbzNtZFR0bCUyQmlRdVVWV2FQd2RnWE9yMGdDTjd4VmhWeEdYa0xBZGIydUdhV2pnVkc4NzF2VSUyQkxKWVlRbWlNdGIxajlGaGt6; \"\n    \"_pin_unauth=dWlkPU56WXlOVGt6WlRRdFlXTXhaQzAwWWpaaExXSTRZbVV0TlRFek9URTRPRGN3TlRObQ; \"\n    \"_cbp=fb.1.1771336636656.222285523; \"\n    \"language=ph\"\n)\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# COUPON CODES TO COLLECT\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nCODES = [\n    \"phsf021210\",\n    \"phsf021209\",\n    \"phsf021208\",\n    \"phsf021207\",\n    \"phsf021206\",\n    \"phsf021205\",\n    \"phsf021204\",\n    \"phsf012604\",\n    \"phsf012601\",\n    \"phsf021203\",\n    \"gmphi3652-1\",\n    \"gm0pha11\",\n]\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# CONFIG\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nBASE_URL       = \"https://m.shein.com/ph\"\nLOGIN_URL      = f\"{BASE_URL}/bff-api/user/common_login\"\nCOUPON_URL     = f\"{BASE_URL}/bff-api/promotion/coupon/bind_coupon\"\nSEND_OTP_URL   = \"https://m.shein.com/ph/api/user/center/sendRiskCode/get\"\nVERIFY_OTP_URL = \"https://m.shein.com/ph/api/user/center/verifyRiskCode/update\"\nAPI_PARAMS     = {\"_ver\": \"1.1.8\", \"_lang\": \"en\"}\nCOUPON_PKG_ID  = \"17135535\"\nACCOUNT_DELAY  = 5    # seconds between accounts\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# LOGIN FUNCTION\n# Replicates the exact multipart/form-data request from DevTools\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef shein_login(email, password):\n    \"\"\"\n    Logs into SHEIN using email + password.\n    Returns a requests.Session with auth cookies set, or None on failure.\n    \"\"\"\n\n    session = requests.Session()\n\n    # Login request headers (mirroring your captured request exactly)\n    login_headers = {\n        \"sec-ch-ua-platform\": '\"Android\"',\n        \"smdeviceid\":         SMDEVICE_ID,\n        \"timezone\":           \"GMT+8\",\n        \"sec-ch-ua\":          '\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"',\n        \"sec-ch-ua-mobile\":   \"?1\",\n        \"x-requested-with\":   \"XMLHttpRequest\",\n        \"x-cs-random\":        CS_RANDOM,\n        \"accept\":             \"application/json, text/plain, */*\",\n        \"x-gw-auth\":          GW_AUTH,\n        \"armortoken\":         ARMOR_TOKEN,\n        \"anti-in\":            ANTI_IN,\n        \"x-csrf-token\":       CSRF_TOKEN,\n        \"x-oest\":             OEST,\n        \"x-ad-flag\":          AD_FLAG,\n        \"user-agent\":         \"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36\",\n        \"webversion\":         \"14.3.0\",\n        \"origin\":             \"https://m.shein.com\",\n        \"sec-fetch-site\":     \"same-origin\",\n        \"sec-fetch-mode\":     \"cors\",\n        \"sec-fetch-dest\":     \"empty\",\n        \"referer\":            f\"{BASE_URL}/user/index\",\n        \"accept-language\":    \"en-US,en;q=0.9\",\n        \"Cookie\":             PRE_LOGIN_COOKIES,\n    }\n\n    # Multipart form-data body (exactly as captured)\n    form_data = {\n        \"email\":            email,\n        \"password\":         password,\n        \"biz_uuid\":         \"E4757133050954767874\",\n        \"daId\":             \"2-8-108\",\n        \"checkboxSubscrib\": \"false\",\n        \"login_from\":       \"login\",\n        \"clause_flag\":      \"0\",\n        \"blackbox\":         \"qWPU91771336641wtYbhD8KIwa\",\n        \"clause_country_id\": \"\",\n    }\n\n    print(f\"\\n  Logging in as: {email}\")\n\n    try:\n        resp = session.post(\n            LOGIN_URL,\n            params=API_PARAMS,\n            data=form_data,          # multipart/form-data (requests handles boundary)\n            headers=login_headers,\n            timeout=20,\n        )\n\n        result = resp.json()\n        code   = str(result.get(\"code\", \"\"))\n        info   = result.get(\"info\", {}) or {}\n\n        # Success codes: \"0\" or \"200\"\n        if code in (\"0\", \"200\"):\n            member_id = info.get(\"member_id\", \"\") or result.get(\"info\", {}).get(\"memberId\", \"\")\n            print(f\"  \u2705 Login successful! Member ID: {member_id}\")\n\n            # Extract updated cookies from response headers & merge\n            resp_cookies = resp.cookies.get_dict()\n            if resp_cookies:\n                cookie_str = PRE_LOGIN_COOKIES\n                for k, v in resp_cookies.items():\n                    # Update or append each cookie\n                    if k in cookie_str:\n                        cookie_str = re.sub(\n                            rf'(?<![;\\w]){re.escape(k)}=[^;]*',\n                            f'{k}={v}',\n                            cookie_str\n                        )\n                    else:\n                        cookie_str += f\"; {k}={v}\"\n                return session, cookie_str\n\n            # If no new cookies in response, use pre-login cookies\n            # (some flows set cookies via Set-Cookie header automatically)\n            return session, PRE_LOGIN_COOKIES\n\n        # \u2500\u2500 OTP verification required \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        # Triggered when SHEIN returns riskInfo in the response\n        # (confirmed error code: 402906)\n        msg = result.get(\"msg\") or result.get(\"message\") or f\"code={code}\"\n        if \"riskInfo\" in str(info) or \"verification\" in msg.lower() or \"complete the following\" in msg.lower():\n\n            risk_info     = info.get(\"riskInfo\") or {}\n            risk_id       = risk_info.get(\"riskId\") or \"\"\n            captcha_param = (risk_info.get(\"captcha\") or {}).get(\"param\") or {}\n            encrypt_email = captcha_param.get(\"encrypt_email\") or \"\"\n\n            if not risk_id:\n                print(f\"  \u274c Login failed (no risk_id found): {msg}\")\n                return None, None\n\n            print(f\"  \u26a0  Verification required \u2014 sending OTP to: {email}\")\n\n            # Cookie string for OTP requests\n            cookie_str = PRE_LOGIN_COOKIES\n            for c in session.cookies:\n                cookie_str += f\"; {c.name}={c.value}\"\n\n            # OTP request headers (same tokens as login)\n            otp_headers = {\n                \"Content-Type\":       \"application/json\",\n                \"sec-ch-ua-platform\": '\"Android\"',\n                \"smdeviceid\":         SMDEVICE_ID,\n                \"timezone\":           \"GMT+8\",\n                \"sec-ch-ua\":          '\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"',\n                \"sec-ch-ua-mobile\":   \"?1\",\n                \"x-requested-with\":   \"XMLHttpRequest\",\n                \"x-cs-random\":        CS_RANDOM,\n                \"accept\":             \"application/json, text/plain, */*\",\n                \"x-gw-auth\":          GW_AUTH,\n                \"armortoken\":         ARMOR_TOKEN,\n                \"anti-in\":            ANTI_IN,\n                \"x-csrf-token\":       CSRF_TOKEN,\n                \"x-oest\":             OEST,\n                \"x-ad-flag\":          AD_FLAG,\n                \"user-agent\":         \"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36\",\n                \"origin\":             \"https://m.shein.com\",\n                \"referer\":            f\"{BASE_URL}/user/index\",\n                \"accept-language\":    \"en-US,en;q=0.9\",\n                \"Cookie\":             cookie_str,\n            }\n\n            # Send OTP \u2014 target is always the live login email, never hardcoded\n            send_payload = {\n                \"scene\":         \"login\",\n                \"risk_id\":       risk_id,\n                \"channel\":       \"mmp_email\",\n                \"target\":        email,\n                \"encrypt_email\": encrypt_email,\n                \"message_type\":  \"login_confirm\",\n                \"unlogin\":       True,\n            }\n            try:\n                sr = session.post(SEND_OTP_URL, params=API_PARAMS,\n                                  json=send_payload, headers=otp_headers, timeout=15)\n                sd = sr.json()\n                if str(sd.get(\"code\", \"\")) in (\"0\", \"200\"):\n                    print(f\"  \u2705 OTP sent! Check inbox: {email}\")\n                else:\n                    print(f\"  \u26a0  Send OTP: {sd.get('msg', '')} \u2014 check inbox anyway\")\n            except Exception as e:\n                print(f\"  \u26a0  Send OTP error: {e} \u2014 check inbox anyway\")\n\n            # Prompt OTP in Termux \u2014 up to 3 tries\n            print(f\"\\n  \u2709  Enter the OTP sent to: {email}\")\n            for attempt in range(1, 4):\n                try:\n                    otp = input(f\"  OTP code (attempt {attempt}/3): \").strip()\n                except (KeyboardInterrupt, EOFError):\n                    print(\"\\n  Cancelled.\")\n                    return None, None\n\n                if not otp:\n                    print(\"  Empty \u2014 skipping.\")\n                    return None, None\n\n                # Refresh cookie_str before verify\n                cookie_str = PRE_LOGIN_COOKIES\n                for c in session.cookies:\n                    cookie_str += f\"; {c.name}={c.value}\"\n                otp_headers[\"Cookie\"] = cookie_str\n\n                verify_payload = {\n                    \"risk_id\": risk_id,\n                    \"content\": otp,\n                    \"unlogin\": True,\n                }\n                try:\n                    vr = session.post(VERIFY_OTP_URL, params=API_PARAMS,\n                                      json=verify_payload, headers=otp_headers, timeout=15)\n                    vd = vr.json()\n                    if str(vd.get(\"code\", \"\")) in (\"0\", \"200\"):\n                        print(f\"  \u2705 OTP verified! Completing login...\")\n                        # After OTP, re-submit login with risk_id in form to\n                        # signal the session is verified \u2014 SHEIN returns real\n                        # AT + sessionID cookies this time, no OTP challenge.\n                        verified_form = dict(form_data)\n                        verified_form[\"risk_id\"] = risk_id\n                        # Also update Cookie header with any new session cookies\n                        post_otp_cookies = PRE_LOGIN_COOKIES\n                        for c in session.cookies:\n                            if c.name in post_otp_cookies:\n                                post_otp_cookies = re.sub(\n                                    rf'(?<![;\\w]){re.escape(c.name)}=[^;]*',\n                                    f'{c.name}={c.value}', post_otp_cookies)\n                            else:\n                                post_otp_cookies += f\"; {c.name}={c.value}\"\n                        login_headers2 = dict(login_headers)\n                        login_headers2[\"Cookie\"] = post_otp_cookies\n                        try:\n                            resp2   = session.post(LOGIN_URL, params=API_PARAMS,\n                                                   data=verified_form,\n                                                   headers=login_headers2, timeout=20)\n                            result2 = resp2.json()\n                            code2   = str(result2.get(\"code\", \"\"))\n                            info2   = result2.get(\"info\") or {}\n                            if code2 in (\"0\", \"200\"):\n                                member_id = info2.get(\"memberId\") or info2.get(\"member_id\") or \"?\"\n                                print(f\"  \u2705 Login successful! Member ID: {member_id}\")\n                                cookie_str = post_otp_cookies\n                                for k, v in resp2.cookies.get_dict().items():\n                                    if k in cookie_str:\n                                        cookie_str = re.sub(\n                                            rf'(?<![;\\w]){re.escape(k)}=[^;]*',\n                                            f'{k}={v}', cookie_str)\n                                    else:\n                                        cookie_str += f\"; {k}={v}\"\n                                for c in session.cookies:\n                                    if c.name not in cookie_str:\n                                        cookie_str += f\"; {c.name}={c.value}\"\n                                return session, cookie_str\n                            else:\n                                # Login still asking for OTP \u2014 use session jar directly\n                                # (some SHEIN versions set cookies on verifyRiskCode)\n                                msg2 = result2.get(\"msg\") or f\"code={code2}\"\n                                print(f\"  \u26a0  Re-login response: {msg2}\")\n                                print(f\"  Attempting to use session cookies directly...\")\n                                cookie_str = PRE_LOGIN_COOKIES\n                                for c in session.cookies:\n                                    if c.name in cookie_str:\n                                        cookie_str = re.sub(\n                                            rf'(?<![;\\w]){re.escape(c.name)}=[^;]*',\n                                            f'{c.name}={c.value}', cookie_str)\n                                    else:\n                                        cookie_str += f\"; {c.name}={c.value}\"\n                                if cookie_str != PRE_LOGIN_COOKIES:\n                                    return session, cookie_str\n                                print(f\"  \u274c No session cookies available.\")\n                                return None, None\n                        except Exception as e2:\n                            print(f\"  \u274c Post-OTP login error: {e2}\")\n                            return None, None\n                    else:\n                        print(f\"  \u274c Wrong OTP: {vd.get('msg', '')}\")\n                        if attempt < 3:\n                            print(\"  Try again.\")\n                except Exception as e:\n                    print(f\"  \u274c Verify error: {e}\")\n\n            print(\"  \u274c All OTP attempts failed.\")\n            return None, None\n\n        # \u2500\u2500 Other failure \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n        print(f\"  \u274c Login failed: {msg}\")\n        return None, None\n\n    except requests.exceptions.Timeout:\n        print(\"  \u274c Login timed out.\")\n        return None, None\n    except requests.exceptions.ConnectionError:\n        print(\"  \u274c Connection error during login.\")\n        return None, None\n    except Exception as e:\n        print(f\"  \u274c Login error: {e}\")\n        return None, None\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# COLLECT COUPONS\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef collect_coupons(session, cookie_str, codes):\n    \"\"\"Claim all voucher codes in one single bundle request.\"\"\"\n\n    # Headers identical to the working single-code script\n    coupon_headers = {\n        \"Content-Type\":  \"application/json\",\n        \"smdeviceid\":    SMDEVICE_ID,\n        \"x-cs-random\":   CS_RANDOM,\n        \"x-gw-auth\":     GW_AUTH,\n        \"armortoken\":    ARMOR_TOKEN,\n        \"anti-in\":       ANTI_IN,\n        \"x-csrf-token\":  CSRF_TOKEN,\n        \"x-oest\":        OEST,\n        \"x-ad-flag\":     AD_FLAG,\n        \"user-agent\":    \"Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36\",\n        \"Cookie\":        cookie_str,\n    }\n\n    print(f\"\\n  {'\u2500'*54}\")\n    print(f\"  Claiming {len(codes)} voucher(s) in one bundle request...\")\n    print(f\"  Codes: {', '.join(codes)}\")\n    print(f\"  {'\u2500'*54}\")\n\n    # Send all codes as a single comma-separated string in one request.\n    # Confirmed from real working RAW capture of bind_coupon:\n    #   \"couponCodes\": \"phsf021203,phsf021214,phsf021222,phsf021229\"\n    payload = {\n        \"scene\":          \"home\",\n        \"idempotentCode\": str(uuid.uuid4()),\n        \"couponPackages\": [{\n            \"couponPackageId\": COUPON_PKG_ID,\n            \"couponCodes\":     \",\".join(codes),   # \"phsf021210,phsf021209,...\"\n        }]\n    }\n\n    try:\n        r = session.post(\n            COUPON_URL,\n            params=API_PARAMS,\n            json=payload,\n            headers=coupon_headers,\n            timeout=15,\n        )\n        data     = r.json()\n        res_code = str(data.get(\"code\", \"\"))\n\n        if res_code == \"0\":\n            info        = data.get(\"info\") or {}\n            bind_result = info.get(\"bindResult\", \"\")\n            fail_list   = info.get(\"failCodeList\") or []\n            if not fail_list:\n                print(f\"\\n  \u2705 All {len(codes)} vouchers claimed! (bindResult: {bind_result})\")\n            else:\n                print(f\"\\n  \u26a0  Partial \u2014 bindResult: {bind_result}\")\n                print(f\"     Failed: {fail_list}\")\n        else:\n            msg = data.get(\"msg\") or data.get(\"message\") or f\"code={res_code}\"\n            print(f\"\\n  \u274c Failed: {msg}\")\n            print(f\"     Raw response: {data}\")\n\n    except requests.exceptions.Timeout:\n        print(f\"  \u274c Request timed out\")\n    except requests.exceptions.ConnectionError:\n        print(f\"  \u274c Connection error\")\n    except Exception as e:\n        print(f\"  \u274c Error: {e}\")\n\n    print(f\"  Check: {BASE_URL}/user/coupon\")\n    print(f\"  {'\u2500'*54}\")\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# MAIN \u2014 TERMUX EMAIL + PASSWORD INPUT\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef main():\n    print(\"\\n\" + \"=\" * 60)\n    print(\"   SHEIN COUPON COLLECTOR  \u2014  Multi-Account Mode\")\n    print(\"=\" * 60)\n    print(\"  Enter accounts one by one.\")\n    print(\"  Leave email blank when done to start collecting.\")\n    print(\"=\" * 60)\n\n    accounts = []\n\n    while True:\n        print(f\"\\n  Account #{len(accounts) + 1}\")\n        try:\n            email = input(\"  Email (or press Enter to finish): \").strip()\n        except (KeyboardInterrupt, EOFError):\n            print(\"\\n  Cancelled.\")\n            sys.exit(0)\n\n        if not email:\n            if not accounts:\n                print(\"  No accounts entered. Exiting.\")\n                sys.exit(0)\n            break\n\n        try:\n            password = getpass.getpass(\"  Password: \").strip()\n        except (KeyboardInterrupt, EOFError):\n            print(\"\\n  Cancelled.\")\n            sys.exit(0)\n\n        if not password:\n            print(\"  \u26a0  Password cannot be empty. Skipping.\")\n            continue\n\n        accounts.append({\"email\": email, \"password\": password})\n        print(f\"  \u2713 Account added: {email}\")\n\n    print(f\"\\n  {'='*60}\")\n    print(f\"  Total accounts: {len(accounts)}\")\n    print(f\"  Total coupons per account: {len(CODES)}\")\n    print(f\"  {'='*60}\")\n\n    for i, acc in enumerate(accounts, 1):\n        print(f\"\\n{'#'*60}\")\n        print(f\"  Account {i}/{len(accounts)}: {acc['email']}\")\n        print(f\"{'#'*60}\")\n\n        session, cookie_str = shein_login(acc[\"email\"], acc[\"password\"])\n\n        if session is None:\n            print(f\"  \u26a0  Skipping {acc['email']} (login failed)\")\n        else:\n            collect_coupons(session, cookie_str, CODES)\n\n        if i < len(accounts):\n            print(f\"\\n  Waiting {ACCOUNT_DELAY}s before next account...\")\n            time.sleep(ACCOUNT_DELAY)\n\n    print(\"\\n\" + \"=\" * 60)\n    print(\"  All done! Check My Coupons on SHEIN.\")\n    print(\"=\" * 60 + \"\\n\")\n\n\nif __name__ == \"__main__\":\n    main()\n";
+
+// ================================================================
+// STATE
+// ================================================================
+var vouchers = [];
+
+// ================================================================
+// INIT
+// ================================================================
+document.getElementById('scriptout').value = ORIG;
+loadCodesFromText(ORIG);
+
+// Button wiring — done here, never inline, avoids any HTML escaping issues
+document.getElementById('parsebtn').addEventListener('click', doParse);
+document.getElementById('clearbtn').addEventListener('click', function(){ document.getElementById('rawin').value = ''; });
+document.getElementById('addbtn').addEventListener('click', doAdd);
+document.getElementById('applybtn').addEventListener('click', doApply);
+document.getElementById('reloadbtn').addEventListener('click', function(){ loadCodesFromText(document.getElementById('scriptout').value); toast('i','Reloaded from script'); });
+document.getElementById('clearvbtn').addEventListener('click', function(){ vouchers=[]; renderVouchers(); toast('i','Cleared'); });
+document.getElementById('copybtn').addEventListener('click', doCopy);
+document.getElementById('dlbtn').addEventListener('click', doDownload);
+document.getElementById('resetbtn').addEventListener('click', doReset);
+document.getElementById('vinput').addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();doAdd();} });
+document.getElementById('rawin').addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();doParse();} });
+
+// ================================================================
+// VOUCHER MANAGER
+// ================================================================
+function loadCodesFromText(src) {
+  var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
+  if (!m) return;
+  var found = m[1].match(/"([^"]+)"/g);
+  vouchers = found ? found.map(function(c){ return c.replace(/"/g,''); }) : [];
+  renderVouchers();
+}
+
+function renderVouchers() {
+  var list = document.getElementById('vlist');
+  var empty = document.getElementById('vempty');
+  document.getElementById('vcnt').textContent = vouchers.length + ' code' + (vouchers.length !== 1 ? 's' : '');
+  if (vouchers.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < vouchers.length; i++) {
+    html += '<div class="vi">'
+      + '<span class="vc">' + (i+1) + '. ' + esc(vouchers[i]) + '</span>'
+      + '<button class="btn-rm" data-i="' + i + '">&#10005; REMOVE</button>'
+      + '</div>';
+  }
+  list.innerHTML = html;
+  // attach remove handlers
+  var btns = list.querySelectorAll('.btn-rm');
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].addEventListener('click', function(){
+      var idx = parseInt(this.getAttribute('data-i'));
+      var code = vouchers[idx];
+      vouchers.splice(idx, 1);
+      renderVouchers();
+      toast('i', 'Removed: ' + code);
+    });
+  }
+}
+
+function doAdd() {
+  var raw = document.getElementById('vinput').value.trim();
+  if (!raw) { toast('w','Enter a voucher code first'); return; }
+  var parts = raw.split(',');
+  var added = [], dupes = [];
+  for (var i = 0; i < parts.length; i++) {
+    var c = parts[i].trim();
+    if (!c) continue;
+    if (vouchers.indexOf(c) >= 0) { dupes.push(c); }
+    else { vouchers.push(c); added.push(c); }
+  }
+  document.getElementById('vinput').value = '';
+  renderVouchers();
+  if (added.length && !dupes.length) toast('s', '\u2713 Added: ' + added.join(', '));
+  else if (added.length) toast('w', '\u2713 Added ' + added.length + ', skipped ' + dupes.length + ' dupe(s)');
+  else toast('w', '\u26a0 Already in list: ' + dupes.join(', '));
+}
+
+function doApply() {
+  if (vouchers.length === 0) { toast('e','No voucher codes to apply'); return; }
+  var lines = '';
+  for (var i = 0; i < vouchers.length; i++) lines += '    "' + vouchers[i] + '",\n';
+  var block = 'CODES = [\n' + lines + ']';
+  var src = document.getElementById('scriptout').value;
+  var updated = src.replace(/CODES\s*=\s*\[[\s\S]*?\]/, block);
+  if (updated === src) { toast('e','Could not find CODES block in script'); return; }
+  document.getElementById('scriptout').value = updated;
+  markUpdated('CODES (' + vouchers.length + ')');
+  toast('s', '\u2713 ' + vouchers.length + ' code(s) applied to script');
+}
+
+// ================================================================
+// RAW PARSER
+// ================================================================
+function getHdr(raw, name) {
+  var re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
+  var m = raw.match(re);
+  return m ? m[1].trim() : null;
+}
+
+function doParse() {
+  var raw = document.getElementById('rawin').value.trim();
+  if (!raw) { toast('e','\u2715 No RAW data pasted!'); return; }
+
+  var parsed = {
+    SMDEVICE_ID: getHdr(raw,'smdeviceid'),
+    CS_RANDOM:   getHdr(raw,'x-cs-random'),
+    GW_AUTH:     getHdr(raw,'x-gw-auth'),
+    ARMOR_TOKEN: getHdr(raw,'armortoken'),
+    ANTI_IN:     getHdr(raw,'anti-in'),
+    CSRF_TOKEN:  getHdr(raw,'x-csrf-token'),
+    OEST:        getHdr(raw,'x-oest'),
+    AD_FLAG:     getHdr(raw,'x-ad-flag'),
+  };
+
+  // Blackbox from multipart body
+  var bbm = raw.match(/name="blackbox"\s*\r?\n\r?\n([^\r\n\-]+)/i);
+  parsed.BLACKBOX = bbm ? bbm[1].trim() : null;
+
+  // Merge all cookie: lines
+  var cookieMap = {};
+  var cre = /^cookie:\s*(.+)/gim;
+  var cm;
+  while ((cm = cre.exec(raw)) !== null) {
+    var parts = cm[1].trim().split(';');
+    for (var i = 0; i < parts.length; i++) {
+      var eq = parts[i].indexOf('=');
+      if (eq > 0) {
+        var k = parts[i].slice(0,eq).trim();
+        var v = parts[i].slice(eq+1).trim();
+        cookieMap[k] = v;
+      }
+    }
+  }
+  var hasCookies = Object.keys(cookieMap).length > 0;
+
+  var anyFound = hasCookies || parsed.BLACKBOX;
+  var keys = ['SMDEVICE_ID','CS_RANDOM','GW_AUTH','ARMOR_TOKEN','ANTI_IN','CSRF_TOKEN','OEST','AD_FLAG','BLACKBOX'];
+  for (var ki = 0; ki < keys.length; ki++) if (parsed[keys[ki]]) { anyFound = true; break; }
+  if (!anyFound) { toast('e','\u2715 No tokens found. Check your RAW format.'); return; }
+
+  // Always patch from ORIGINAL so tokens are clean
+  var script = ORIG;
+  var changed = [];
+
+  function repVar(name, val) {
+    if (!val) return;
+    // match:  NAME   =   "..."   or   NAME = (\n...\n)
+    var re = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
+    var next = script.replace(re, '$1"' + val.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"');
+    if (next !== script) { script = next; changed.push(name); }
+  }
+
+  repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
+  repVar('CS_RANDOM',   parsed.CS_RANDOM);
+  repVar('GW_AUTH',     parsed.GW_AUTH);
+  repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
+  repVar('ANTI_IN',     parsed.ANTI_IN);
+  repVar('CSRF_TOKEN',  parsed.CSRF_TOKEN);
+  repVar('OEST',        parsed.OEST);
+  repVar('AD_FLAG',     parsed.AD_FLAG);
+
+  if (parsed.BLACKBOX) {
+    var bbre = /"blackbox":\s*"[^"]*"/g;
+    var nb = script.replace(bbre, '"blackbox":         "' + parsed.BLACKBOX + '"');
+    if (nb !== script) { script = nb; changed.push('BLACKBOX'); }
+  }
+
+  if (hasCookies) {
+    var cookLines = '';
+    var ckEntries = Object.entries(cookieMap);
+    for (var ci = 0; ci < ckEntries.length; ci++) {
+      var ck = ckEntries[ci][0];
+      var cv = ckEntries[ci][1].replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+      if (ci < ckEntries.length - 1) cookLines += '    "' + ck + '=' + cv + '; "\n';
+      else cookLines += '    "' + ck + '=' + cv + '"\n';
+    }
+    var cookBlock = '(\n' + cookLines + ')';
+    var cookRe = /(PRE_LOGIN_COOKIES\s*=\s*)\([\s\S]*?\n\)/;
+    var nc = script.replace(cookRe, '$1' + cookBlock);
+    if (nc !== script) { script = nc; changed.push('PRE_LOGIN_COOKIES'); }
+  }
+
+  // Re-apply current voucher list so it survives token refresh
+  if (vouchers.length > 0) {
+    var vlines = '';
+    for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+    var vblock = 'CODES = [\n' + vlines + ']';
+    script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, vblock);
+  }
+
+  document.getElementById('scriptout').value = script;
+  updateTokenPreview(parsed, changed, hasCookies);
+
+  var cc = document.getElementById('nchanged');
+  cc.style.display = 'inline';
+  cc.textContent = changed.length + ' CHANGED';
+
+  document.getElementById('sum').className = 'on';
+  var chips = '';
+  for (var chi = 0; chi < changed.length; chi++) chips += '<span class="chip">' + changed[chi] + '</span> ';
+  document.getElementById('schips').innerHTML = chips;
+
+  markUpdated(changed.length + ' tokens');
+  toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated');
+}
+
+function updateTokenPreview(parsed, changed, hasCookies) {
+  var fields = [
+    ['SMDEVICE_ID', parsed.SMDEVICE_ID],
+    ['CS_RANDOM',   parsed.CS_RANDOM],
+    ['GW_AUTH',     parsed.GW_AUTH],
+    ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
+    ['ANTI_IN',     parsed.ANTI_IN],
+    ['CSRF_TOKEN',  parsed.CSRF_TOKEN],
+    ['OEST',        parsed.OEST],
+    ['AD_FLAG',     parsed.AD_FLAG],
+    ['COOKIES',     hasCookies ? Object.keys(arguments[0]).length + ' found (via headers)' : null],
+    ['BLACKBOX',    parsed.BLACKBOX],
+  ];
+  // cookies row uses hasCookies
+  fields[8][1] = hasCookies ? 'cookies found' : null;
+
+  var html = '';
+  for (var i = 0; i < fields.length; i++) {
+    var fname = fields[i][0];
+    var fval  = fields[i][1];
+    var isChanged = changed.indexOf(fname) >= 0
+      || (fname === 'COOKIES' && changed.indexOf('PRE_LOGIN_COOKIES') >= 0);
+    if (!fval) {
+      html += '<div class="tr"><div class="tk">' + fname + '</div><div class="tv dim">&#8212; not found &#8212;</div></div>';
+    } else {
+      var display = fval.length > 58 ? fval.slice(0,55) + '\u2026' : fval;
+      html += '<div class="tr"><div class="tk">' + fname + '</div>'
+            + '<div class="tv' + (isChanged?' ok':'') + '">'
+            + (isChanged ? '\u2713 ' : '') + esc(display) + '</div></div>';
+    }
+  }
+  document.getElementById('tpreview').innerHTML = html;
+}
+
+// ================================================================
+// OUTPUT / HELPERS
+// ================================================================
+function markUpdated(label) {
+  document.getElementById('obadge').textContent = 'UPDATED: ' + label;
+  document.getElementById('obadge').className = 'b b-green';
+  document.getElementById('dot').className = 'dot on';
+  document.getElementById('stext').textContent = 'READY';
+}
+
+function doCopy() {
+  var txt = document.getElementById('scriptout').value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){ toast('s','\u2698 Copied!'); }).catch(function(){ fallbackCopy(txt); });
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(txt) {
+  document.getElementById('scriptout').select();
+  document.execCommand('copy');
+  toast('i','\u2698 Copied (fallback)');
+}
+
+function doDownload() {
+  var blob = new Blob([document.getElementById('scriptout').value], {type:'text/x-python'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shein_coupon_collector.py';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast('s','\u2193 Downloaded!');
+}
+
+function doReset() {
+  document.getElementById('scriptout').value = ORIG;
+  document.getElementById('obadge').textContent = 'ORIGINAL';
+  document.getElementById('obadge').className = 'b b-orange';
+  document.getElementById('nchanged').style.display = 'none';
+  document.getElementById('dot').className = 'dot';
+  document.getElementById('stext').textContent = 'IDLE';
+  document.getElementById('sum').className = '';
+  document.getElementById('tpreview').innerHTML = [
+    'SMDEVICE_ID','CS_RANDOM','GW_AUTH','ARMOR_TOKEN','ANTI_IN',
+    'CSRF_TOKEN','OEST','AD_FLAG','COOKIES','BLACKBOX'
+  ].map(function(k){
+    return '<div class="tr"><div class="tk">'+k+'</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>';
+  }).join('');
+  loadCodesFromText(ORIG);
+  toast('i','Reset to original');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+var _tt;
+function toast(type, msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'on ' + type;
+  clearTimeout(_tt);
+  _tt = setTimeout(function(){ t.className = ''; }, 3200);
+}
+
+</script>
+</body>
+</html>
