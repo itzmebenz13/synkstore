@@ -160,24 +160,10 @@ svg{width:16px;height:16px;flex-shrink:0;}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
 @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
 
-/* Fullscreen Preloader Overlay */
-#loader-overlay {
-  position: fixed; inset: 0; background: rgba(5,7,10,0.85); backdrop-filter: blur(8px);
-  z-index: 9999; display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-}
-[data-theme="light"] #loader-overlay { background: rgba(244,247,251,0.85); }
-#loader-overlay.active { opacity: 1; pointer-events: all; }
-.loader-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.loader-svg { width: 90px; height: 90px; animation: spin 2s linear infinite; }
-.loader-circle { fill: none; stroke-width: 4; stroke-linecap: round; }
-.loader-circle.bg { stroke: var(--border); }
-.loader-circle.fg { stroke: var(--accent); stroke-dasharray: 200; stroke-dashoffset: 200; animation: dash 1.5s ease-in-out infinite; }
-.loader-text { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 3px; }
-@keyframes dash {
-  0% { stroke-dashoffset: 200; }
-  50% { stroke-dashoffset: 50; transform: rotate(135deg); transform-origin: center; }
-  100% { stroke-dashoffset: 200; transform: rotate(450deg); transform-origin: center; }
+/* Button Loading State */
+.btn-loading {
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 /* Toast */
@@ -246,17 +232,6 @@ svg{width:16px;height:16px;flex-shrink:0;}
 </style>
 </head>
 <body>
-
-<!-- Preloader Overlay -->
-<div id="loader-overlay">
-  <div class="loader-content">
-    <svg class="loader-svg" viewBox="0 0 100 100">
-      <circle class="loader-circle bg" cx="50" cy="50" r="40" />
-      <circle class="loader-circle fg" cx="50" cy="50" r="40" />
-    </svg>
-    <div class="loader-text">EXTRACTING TOKENS...</div>
-  </div>
-</div>
 
 <div class="wrap">
   <header>
@@ -913,12 +888,17 @@ function triggerParseWithDelay() {
   const raw = document.getElementById('rawin').value.trim();
   if (!raw) { toast('e','❌ Paste RAW request first!'); return; }
   
-  const overlay = document.getElementById('loader-overlay');
-  overlay.classList.add('active');
+  const btn = document.getElementById('parsebtn');
+  const originalHTML = btn.innerHTML;
   
-  // Wait 2 seconds for dramatic effect, then parse
+  // Set button to loading state
+  btn.classList.add('btn-loading');
+  btn.innerHTML = `<svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> PARSING...`;
+  
+  // Wait 2 seconds, then parse and restore button
   setTimeout(() => {
-    overlay.classList.remove('active');
+    btn.classList.remove('btn-loading');
+    btn.innerHTML = originalHTML;
     doParse(raw);
   }, 2000);
 }
