@@ -57,9 +57,10 @@ header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-botto
   transform:rotate(45deg);animation:shine 3s infinite;}
 @keyframes shine{0%{transform:translateX(-100%) rotate(45deg);}100%{transform:translateX(100%) rotate(45deg);}}
 
+.title-row { display: flex; align-items: center; gap: 12px; }
 header h1{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--header-c);letter-spacing:1px;
   text-shadow: 0 0 10px var(--logo-shadow);transition:color 0.4s ease;}
-header p{font-size:12px;color:var(--dim);margin-top:2px}
+header p{font-size:12px;color:var(--dim);margin-top:4px}
 .hright{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--dim)}
 
 /* Animated Theme Toggle SVG */
@@ -201,9 +202,10 @@ svg{width:16px;height:16px;flex-shrink:0;}
 @media (max-width: 768px) {
   .wrap { padding: 15px 12px 40px; }
   header { flex-wrap: wrap; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; }
+  .title-row { gap: 10px; }
   .logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
   header h1 { font-size: 18px; }
-  header p { font-size: 10px; line-height: 1.4; }
+  header p { font-size: 10px; line-height: 1.4; margin-top: 6px; }
   
   .g2 { gap: 12px; margin-bottom: 12px; }
   .panel { border-radius: 10px; }
@@ -258,9 +260,11 @@ svg{width:16px;height:16px;flex-shrink:0;}
 
 <div class="wrap">
   <header>
-    <div class="logo">SH</div>
     <div>
-      <h1>SHEIN SCRIPT UPDATER <span style="color:var(--accent2)">PRO</span></h1>
+      <div class="title-row">
+        <div class="logo">SH</div>
+        <h1>SHEIN SCRIPT UPDATER <span style="color:var(--accent2)">PRO</span></h1>
+      </div>
       <p>Paste RAW data &bull; Auto-Update Tokens &bull; Save & Manage Multiple Scripts Locally</p>
     </div>
     <div class="hright">
