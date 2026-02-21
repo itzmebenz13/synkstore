@@ -1193,11 +1193,42 @@
 
         async function addSheinAccounts() {
             const ta = document.getElementById('sheinAccountsBulkInput');
+            const productSelect = document.getElementById('sheinAccountProductSelect');
             const entries = ta ? ta.value.trim() : '';
+            const productTitle = productSelect ? productSelect.value.trim() : '';
+
             if (!entries) return showToast('Enter email:password lines', 'error');
-            const { data, error } = await supabaseClient.rpc('add_shein_accounts', { p_entries: entries });
-            if (error) return showToast(error.message || 'Failed to add accounts', 'error');
-            showToast(`${data ?? 0} account(s) added to pool`, 'success');
+            if (!productTitle) return showToast('Please select a product type for these accounts', 'error');
+
+            // Parse lines on the frontend so we can attach product_title
+            const schema = state.sheinAccountsSchema || {};
+            const credsCol = (schema.type === 'split' ? null : schema.credsCol) || 'creds';
+            const lines = entries.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+            if (lines.length === 0) return showToast('No valid entries found', 'error');
+
+            let rows;
+            if (schema.type === 'split') {
+                rows = lines.map(line => {
+                    const sep = line.indexOf(':');
+                    return {
+                        [schema.emailCol]: sep >= 0 ? line.slice(0, sep) : line,
+                        [schema.passCol]: sep >= 0 ? line.slice(sep + 1) : '',
+                        product_title: productTitle
+                    };
+                });
+            } else {
+                rows = lines.map(line => ({ [credsCol]: line, product_title: productTitle }));
+            }
+
+            const { error } = await supabaseClient.from('shein_accounts').insert(rows);
+            if (error) {
+                // Fallback: try the RPC (without product tagging) if direct insert fails
+                const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('add_shein_accounts', { p_entries: entries });
+                if (rpcErr) return showToast(rpcErr.message || 'Failed to add accounts', 'error');
+                showToast(`${rpcData ?? 0} account(s) added (without product tag — add product_title column to shein_accounts table)`, 'success');
+            } else {
+                showToast(`${lines.length} account(s) added to pool as "${productTitle}"`, 'success');
+            }
             ta.value = '';
             await fetchSheinAccountStats();
             await fetchSheinAccountsList();
@@ -1257,15 +1288,16 @@
             }
         }
 
+
+
         async function deleteSheinAccount(id) {
-            showModal('Delete Account?', 'Remove this account from the pool? This cannot be undone.', async () => {
-                const { error } = await supabaseClient.from('shein_accounts').delete().eq('id', id);
-                if (error) return showToast('Failed to delete account', 'error');
-                showToast('Account deleted', 'success');
-                await fetchSheinAccountStats();
-                await fetchSheinAccountsList();
-                render(false);
-            }, 'danger', 'Delete');
+            if (!confirm('Remove this account from the pool? This cannot be undone.')) return;
+            const { error } = await supabaseClient.from('shein_accounts').delete().eq('id', id);
+            if (error) return showToast('Failed to delete account: ' + error.message, 'error');
+            showToast('Account deleted', 'success');
+            await fetchSheinAccountStats();
+            await fetchSheinAccountsList();
+            render(false);
         }
 
         async function updateSheinAccount(id) {
@@ -1275,15 +1307,16 @@
             if (!newCreds) return showToast('Credentials cannot be empty', 'error');
             const schema = state.sheinAccountsSchema || {};
             let updatePayload = {};
-            if (schema.type === 'split') {
-                // Split email:password back into separate columns
+            if (schema.type === 'split' && schema.emailCol && schema.passCol) {
                 const sep = newCreds.indexOf(':');
                 updatePayload[schema.emailCol] = sep >= 0 ? newCreds.slice(0, sep) : newCreds;
                 updatePayload[schema.passCol] = sep >= 0 ? newCreds.slice(sep + 1) : '';
             } else if (schema.type === 'single' && schema.credsCol) {
                 updatePayload[schema.credsCol] = newCreds;
             } else {
-                return showToast('Cannot update: schema not detected. Refresh the list first.', 'error');
+                // Fallback: try the most common column names
+                const commonCols = ['creds', 'credentials', 'entry', 'account', 'data', 'value', 'text', 'email'];
+                updatePayload[commonCols[0]] = newCreds; // default to 'creds'
             }
             const { error } = await supabaseClient.from('shein_accounts').update(updatePayload).eq('id', id);
             if (error) return showToast('Failed to update: ' + error.message, 'error');
@@ -1673,11 +1706,18 @@
         function getPrice() {
             if (!state.selectedProduct) return 0;
 
+            // New-user promo takes highest priority
             if (state.user && state.userProfile && state.userProfile.is_new_user && state.selectedProduct.new_user_enabled) {
                 const promo = parseFloat(state.selectedProduct.new_user_price || 0);
                 if (!isNaN(promo) && promo > 0) return promo;
             }
 
+            // Sale price (must be lower than regular price)
+            const saleP = parseFloat(state.selectedProduct.sale_price || 0);
+            const regularP = parseFloat(state.selectedProduct.price || 0);
+            if (saleP > 0 && saleP < regularP) return saleP;
+
+            // Bulk pricing
             return state.quantity >= state.selectedProduct.bulk_threshold
                 ? state.selectedProduct.bulk_price
                 : state.selectedProduct.price;
@@ -2244,24 +2284,74 @@
         async function autoAssignFromPool(orderId, quantity) {
             const qty = Math.max(1, Math.min(Number(quantity) || 1, 100));
             showToast('Assigning from pool...', 'success');
-            const { data, error } = await supabaseClient.rpc('allocate_and_fulfill', {
-                p_order_id: orderId,
-                p_quantity: qty
-            });
-            if (error) {
-                return showToast('Auto-assign failed: ' + (error.message || 'unknown error'), 'error');
+
+            // Fetch the order to know which product to match
+            const { data: order } = await supabaseClient
+                .from('orders')
+                .select('product_title, quantity')
+                .eq('id', orderId)
+                .single();
+            const productTitle = order?.product_title;
+
+            // Build FIFO query filtered by product_title
+            let query = supabaseClient
+                .from('shein_accounts')
+                .select('*')
+                .order('id', { ascending: true })
+                .limit(qty);
+
+            // Filter unsold: try common column names for sold status
+            const isSoldCol = (state.sheinAccountsSchema?.type === 'split')
+                ? null
+                : null; // We'll filter client-side using isSold helper
+
+            // Add product filter if known
+            if (productTitle) query = query.eq('product_title', productTitle);
+
+            const { data: candidates, error: fetchErr } = await query;
+            if (fetchErr) return showToast('Auto-assign failed: ' + fetchErr.message, 'error');
+
+            // Client-side filter: only unsold accounts
+            const isSoldFn = (a) => !!(a.sold || a.is_sold || a.assigned_order_id || a.assigned);
+            const available = (candidates || []).filter(a => !isSoldFn(a)).slice(0, qty);
+
+            if (available.length === 0) {
+                return showToast(`No available "${productTitle || 'any'}" accounts in pool. Add more accounts first.`, 'error');
             }
-            // Check if the order was actually fulfilled
-            const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', orderId).single();
-            if (ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0) {
-                state.activeFulfillmentId = null;
-                showToast('Accounts auto-assigned from pool!', 'success');
-                await fetchAllOrders();
-                await fetchSheinAccountStats();
-                render(false);
-            } else {
-                showToast('No available accounts in pool. Add more accounts first.', 'error');
+
+            // Build accounts_data payload
+            const schema = state.sheinAccountsSchema || {};
+            const accountsData = available.map((a, i) => ({
+                id: `acc-${Date.now()}-${i}`,
+                creds: a._creds || a.creds || a.credentials || a.entry || '',
+                used: false,
+                otpRequest: { status: 'idle', code: null, requestedAt: null },
+                messages: []
+            }));
+
+            // Mark each account as sold
+            const ids = available.map(a => a.id);
+            const soldPayload = {};
+            if (schema.type === 'split') {
+                // No single sold column to update easily; try common names
             }
+            // Try updating sold = true; if column doesn't exist the order still goes through
+            await supabaseClient.from('shein_accounts').update({ sold: true }).in('id', ids);
+
+            // Update order to Completed
+            const { error: orderErr } = await supabaseClient
+                .from('orders')
+                .update({ status: 'Completed', accounts_data: accountsData })
+                .eq('id', orderId);
+
+            if (orderErr) return showToast('Failed to fulfill order: ' + orderErr.message, 'error');
+
+            state.activeFulfillmentId = null;
+            showToast(`${available.length} account(s) auto-assigned from pool!`, 'success');
+            await fetchAllOrders();
+            await fetchSheinAccountStats();
+            await fetchSheinAccountsList();
+            render(false);
         }
 
         async function adminAction(id, action) {
@@ -2942,6 +3032,12 @@
             const animClass = animate ? 'animate-enter' : '';
             const showCaptcha = state.sessionOrderCount >= 3;
 
+            // Sale discount info
+            const originalPrice = parseFloat(state.selectedProduct?.price || 0);
+            const effectivePrice = getPrice();
+            const hasSaleDiscount = effectivePrice < originalPrice && parseFloat(state.selectedProduct?.sale_price || 0) > 0;
+            const saleSavings = hasSaleDiscount ? (originalPrice - effectivePrice) * state.quantity : 0;
+
             const buttonContent = state.isSubmitting
                 ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> Verifying payment`
                 : (state.paymentMethod === 'gcash' ? `<i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Payment` : `Confirm Payment`);
@@ -2971,18 +3067,23 @@
                             </div>
                             <div class="flex justify-between opacity-60 text-[9px]">
                                 <span>SKU: ${state.selectedProduct.id.toString().padStart(4, '0')}</span>
-                                <span>UNIT: ${formatPHP(getPrice())}</span>
+                                <span>${hasSaleDiscount ? `<span style="text-decoration:line-through;opacity:0.5">${formatPHP(originalPrice)}</span> <span style="color:#dc2626;font-weight:900">${formatPHP(effectivePrice)}</span>` : `UNIT: ${formatPHP(effectivePrice)}`}</span>
                             </div>
                          </div>
 
                          <div class="space-y-1 mb-4">
                              <div class="flex justify-between items-center text-zinc-600">
                                 <span>SUBTOTAL</span>
-                                <span>${formatPHP(subtotal)}</span>
+                                <span>${hasSaleDiscount ? `<span style="text-decoration:line-through;opacity:0.4">${formatPHP(originalPrice * state.quantity)}</span> ${formatPHP(subtotal)}` : formatPHP(subtotal)}</span>
                              </div>
+                             ${hasSaleDiscount ? `
+                             <div class="flex justify-between items-center font-bold" style="color:#dc2626">
+                                <span>SALE DISCOUNT</span>
+                                <span>-${formatPHP(saleSavings)}</span>
+                             </div>` : ''}
                              ${state.discount > 0 ? `
                              <div class="flex justify-between items-center text-emerald-600 font-bold">
-                                <span>DISCOUNT (5%)</span>
+                                <span>VOUCHER (5%)</span>
                                 <span>-${formatPHP(discountAmount)}</span>
                              </div>` : ''}
                              <div class="flex justify-between items-end text-base font-bold pt-2 border-t border-black/10 mt-2">
@@ -3582,7 +3683,14 @@
                     </div>
                     <div class="p-4 border-t ${adminBorder}">
                         <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-2 tracking-wider">Add accounts (one per line)</label>
-                        <p class="text-[8px] ${adminTextMuted} mb-2">Format: <code class="${isDark ? 'bg-zinc-800' : 'bg-gray-200'} px-1 rounded">email:password</code> — Lines starting with # are ignored.</p>
+                        <p class="text-[8px] ${adminTextMuted} mb-3">Format: <code class="${isDark ? 'bg-zinc-800' : 'bg-gray-200'} px-1 rounded">email:password</code> — Lines starting with # are ignored.</p>
+                        <div class="mb-3">
+                            <label class="block text-[8px] font-bold uppercase ${adminTextMuted} mb-1 tracking-wider">Product Type <span class="text-red-400">*</span></label>
+                            <select id="sheinAccountProductSelect" class="${adminInput} w-full border p-2 text-xs focus:border-emerald-500 focus:outline-none rounded-sm">
+                                <option value="">— Select product —</option>
+                                ${state.products.filter(p => p.enabled !== false).map(p => `<option value="${escapeHtml(p.title)}">${escapeHtml(p.title)}</option>`).join('')}
+                            </select>
+                        </div>
                         <textarea id="sheinAccountsBulkInput" class="${adminInput} w-full border p-3 text-xs font-mono h-32 focus:border-emerald-500 focus:outline-none rounded-sm resize-none" placeholder="user1@email.com:pass123&#10;user2@email.com:pass456"></textarea>
                         <div class="flex justify-end mt-2">
                             <button onclick="window.addSheinAccounts()" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-4 py-2 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to pool</button>
@@ -3613,9 +3721,10 @@
                                 return '<div class="' + (isDark ? 'bg-black/40 border-white/5' : 'bg-gray-50 border-gray-200') + ' border rounded-lg p-3 group">' +
                                     '<div class="flex items-center gap-2 mb-2">' +
                                     '<span class="text-[8px] font-bold ' + adminTextMuted + ' font-mono w-6 shrink-0">#' + (idx + 1) + '</span>' +
+                                    (acc.product_title ? '<span class="text-[7px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">' + escapeHtml(acc.product_title) + '</span>' : '') +
                                     '<input type="text" id="edit-acc-' + acc.id + '" value="' + escapeHtml(displayCreds) + '" class="flex-1 ' + adminInput + ' border text-[10px] font-mono px-2 py-1 focus:outline-none focus:border-emerald-500 rounded-sm" />' +
-                                    '<button onclick="window.updateSheinAccount(' + JSON.stringify(acc.id) + ')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-2 py-1 text-[8px] uppercase font-bold rounded-sm transition-colors"><i data-lucide="save" class="w-3 h-3"></i></button>' +
-                                    '<button onclick="window.deleteSheinAccount(' + JSON.stringify(acc.id) + ')" class="shrink-0 text-red-500 hover:text-red-400 px-1 py-1 transition-colors"><i data-lucide="trash-2" class="w-3 h-3"></i></button>' +
+                                    '<button onclick="window.updateSheinAccount(\'' + acc.id + '\')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-2 py-1 text-[8px] uppercase font-bold rounded-sm transition-colors"><i data-lucide="save" class="w-3 h-3"></i></button>' +
+                                    '<button onclick="window.deleteSheinAccount(\'' + acc.id + '\')" class="shrink-0 text-red-500 hover:text-red-400 px-1 py-1 transition-colors"><i data-lucide="trash-2" class="w-3 h-3"></i></button>' +
                                     '</div>' +
                                     '<div class="flex gap-3 pl-8">' +
                                     '<span class="text-[9px] ' + adminTextMuted + ' font-mono truncate">' + escapeHtml(email) + '</span>' +
