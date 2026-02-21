@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" id="html-root">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StakzShop</title>
-    
+
     <!-- Supabase Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+
     <!-- Google reCAPTCHA v2 -->
     <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
     <!-- Cloudflare Turnstile -->
@@ -37,6 +38,8 @@
                         'marquee': 'marquee 25s linear infinite',
                         'spin-slow': 'spin 3s linear infinite',
                         'float': 'float 6s ease-in-out infinite',
+                        'fade-out-in': 'fadeOutIn 7s infinite',
+                        'fade-in-out': 'fadeInOut 7s infinite',
                     },
                     keyframes: {
                         marquee: {
@@ -46,42 +49,79 @@
                         float: {
                             '0%, 100%': { transform: 'translateY(0)' },
                             '50%': { transform: 'translateY(-10px)' },
+                        },
+                        fadeOutIn: {
+                            '0%, 45%': { opacity: '1', transform: 'translateY(0)' },
+                            '50%, 55%': { opacity: '0', transform: 'translateY(-4px)' },
+                            '60%, 95%': { opacity: '0', transform: 'translateY(-4px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        fadeInOut: {
+                            '0%, 45%': { opacity: '0', transform: 'translateY(4px)' },
+                            '50%, 55%': { opacity: '1', transform: 'translateY(0)' },
+                            '60%, 95%': { opacity: '1', transform: 'translateY(0)' },
+                            '100%': { opacity: '0', transform: 'translateY(4px)' }
                         }
                     }
                 }
             }
         }
     </script>
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Custom Fonts -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        body { 
+
+        body {
             background-color: #fafafa;
             color: #18181b;
             -webkit-font-smoothing: antialiased;
         }
+
         #html-root.dark body {
             background-color: #000000;
             color: #f4f4f5;
         }
-        
+
         /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 2px; }
-        ::-webkit-scrollbar-track { background: #e4e4e7; }
-        ::-webkit-scrollbar-thumb { background: #a1a1aa; }
-        #html-root.dark ::-webkit-scrollbar-track { background: #09090b; }
-        #html-root.dark ::-webkit-scrollbar-thumb { background: #27272a; }
+        ::-webkit-scrollbar {
+            width: 2px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #e4e4e7;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #a1a1aa;
+        }
+
+        #html-root.dark ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+
+        #html-root.dark ::-webkit-scrollbar-thumb {
+            background: #27272a;
+        }
 
         /* Animations */
-        .animate-enter { animation: enter 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-enter {
+            animation: enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         @keyframes enter {
-            from { opacity: 0; transform: translateY(10px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .glass {
@@ -90,62 +130,157 @@
             -webkit-backdrop-filter: blur(16px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
+
         #html-root.dark .glass {
             background: rgba(24, 24, 27, 0.85);
             border-bottom-color: rgba(255, 255, 255, 0.08);
         }
+
         /* Light mode overrides for common dark backgrounds */
-        #html-root:not(.dark) .bg-black { background-color: #ffffff !important; }
-        #html-root:not(.dark) [class*="bg-zinc-900"] { background-color: #f4f4f5 !important; }
-        #html-root:not(.dark) [class*="border-white/"] { border-color: rgba(0,0,0,0.08) !important; }
-        #html-root:not(.dark) .text-white { color: #18181b !important; }
+        #html-root:not(.dark) .bg-black {
+            background-color: #ffffff !important;
+        }
+
+        #html-root:not(.dark) [class*="bg-zinc-900"] {
+            background-color: #f4f4f5 !important;
+        }
+
+        #html-root:not(.dark) [class*="border-white/"] {
+            border-color: rgba(0, 0, 0, 0.08) !important;
+        }
+
+        #html-root:not(.dark) .text-white {
+            color: #18181b !important;
+        }
+
         #html-root:not(.dark) .text-zinc-400,
-        #html-root:not(.dark) .text-zinc-500 { color: #52525b !important; }
-        #html-root:not(.dark) .text-zinc-600 { color: #3f3f46 !important; }
+        #html-root:not(.dark) .text-zinc-500 {
+            color: #52525b !important;
+        }
+
+        #html-root:not(.dark) .text-zinc-600 {
+            color: #3f3f46 !important;
+        }
 
         /* Confirmation modal: keep light theme in light mode */
-        #html-root:not(.dark) #confirmation-modal #modal-content { background-color: #ffffff !important; border-color: rgba(0,0,0,0.12) !important; }
-        #html-root:not(.dark) #confirmation-modal #modal-title { color: #111827 !important; }
-        #html-root:not(.dark) #confirmation-modal #modal-message { color: #4b5563 !important; }
-        #html-root:not(.dark) #confirmation-modal .modal-icon-default { background-color: #f3f4f6 !important; color: #111827 !important; }
+        #html-root:not(.dark) #confirmation-modal #modal-content {
+            background-color: #ffffff !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        #html-root:not(.dark) #confirmation-modal #modal-title {
+            color: #111827 !important;
+        }
+
+        #html-root:not(.dark) #confirmation-modal #modal-message {
+            color: #4b5563 !important;
+        }
+
+        #html-root:not(.dark) #confirmation-modal .modal-icon-default {
+            background-color: #f3f4f6 !important;
+            color: #111827 !important;
+        }
+
         /* When we explicitly need white text on a colored button inside the modal */
-        #html-root:not(.dark) #confirmation-modal .modal-force-white-text { color: #ffffff !important; }
-        #html-root:not(.dark) #confirmation-modal #modal-cancel-btn { color: #ffffff !important; }
+        #html-root:not(.dark) #confirmation-modal .modal-force-white-text {
+            color: #ffffff !important;
+        }
+
+        #html-root:not(.dark) #confirmation-modal #modal-cancel-btn {
+            color: #ffffff !important;
+        }
+
         /* Keep white text on primary buttons in light mode */
-        #html-root:not(.dark) .btn-primary-light { color: #ffffff !important; }
-        #html-root:not(.dark) .voucher-apply-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .btn-primary-light {
+            color: #ffffff !important;
+        }
+
+        #html-root:not(.dark) .voucher-apply-btn {
+            color: #ffffff !important;
+        }
+
         /* Green/emerald buttons: white text in light mode */
-        #html-root:not(.dark) .btn-green-light { color: #ffffff !important; }
+        #html-root:not(.dark) .btn-green-light {
+            color: #ffffff !important;
+        }
+
         /* Stripe button: keep white text in light mode */
-        #html-root:not(.dark) .btn-stripe-light { color: #ffffff !important; }
+        #html-root:not(.dark) .btn-stripe-light {
+            color: #ffffff !important;
+        }
+
         /* Admin Stocks Save Changes: keep white text on dark button in light mode */
-        #html-root:not(.dark) .admin-save-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .admin-save-btn {
+            color: #ffffff !important;
+        }
+
         /* Admin Orders Send message: keep white text on dark button in light mode */
-        #html-root:not(.dark) .admin-send-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .admin-send-btn {
+            color: #ffffff !important;
+        }
+
         /* Admin Orders Fulfill button: keep white text on dark button in light mode */
-        #html-root:not(.dark) .admin-fulfill-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .admin-fulfill-btn {
+            color: #ffffff !important;
+        }
+
         /* Buyer Request OTP button: keep white text on dark button in light mode */
-        #html-root:not(.dark) .request-otp-btn { color: #ffffff !important; }
+        #html-root:not(.dark) .request-otp-btn {
+            color: #ffffff !important;
+        }
+
         /* Buyer send message button: keep white icon on dark button in light mode */
-        #html-root:not(.dark) .buyer-send-btn { color: #ffffff !important; }
-        #html-root:not(.dark) .buyer-send-btn i { color: #ffffff !important; }
+        #html-root:not(.dark) .buyer-send-btn {
+            color: #ffffff !important;
+        }
+
+        #html-root:not(.dark) .buyer-send-btn i {
+            color: #ffffff !important;
+        }
+
         /* Admin login Authenticate button: keep white text on dark button in light mode */
-        #html-root:not(.dark) .admin-auth-btn { color: #ffffff !important; background-color: #111827 !important; }
-        #html-root:not(.dark) .admin-auth-btn:hover { background-color: #1f2937 !important; }
+        #html-root:not(.dark) .admin-auth-btn {
+            color: #ffffff !important;
+            background-color: #111827 !important;
+        }
+
+        #html-root:not(.dark) .admin-auth-btn:hover {
+            background-color: #1f2937 !important;
+        }
+
         /* Admin settings buttons: keep white text on dark button in light mode */
-        #html-root:not(.dark) .admin-settings-btn { color: #ffffff !important; background-color: #111827 !important; }
-        #html-root:not(.dark) .admin-settings-btn:hover { background-color: #1f2937 !important; }
+        #html-root:not(.dark) .admin-settings-btn {
+            color: #ffffff !important;
+            background-color: #111827 !important;
+        }
+
+        #html-root:not(.dark) .admin-settings-btn:hover {
+            background-color: #1f2937 !important;
+        }
+
         /* Success page Check Status button: black/dark with white text (all themes) */
         .success-check-status-btn,
         .success-check-status-btn:hover,
         .success-check-status-btn:focus,
         button.success-check-status-btn,
         #html-root .success-check-status-btn,
-        #html-root:not(.dark) .success-check-status-btn { color: #ffffff !important; background-color: #111827 !important; }
-        .success-check-status-btn:hover { background-color: #1f2937 !important; }
+        #html-root:not(.dark) .success-check-status-btn {
+            color: #ffffff !important;
+            background-color: #111827 !important;
+        }
+
+        .success-check-status-btn:hover {
+            background-color: #1f2937 !important;
+        }
 
         /* Use Wallet toggle switch */
-        .wallet-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .wallet-toggle-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
         .wallet-toggle-track {
             display: block;
             width: 44px;
@@ -156,6 +291,7 @@
             transition: background-color 0.2s ease;
             position: relative;
         }
+
         .wallet-toggle-track::after {
             content: '';
             position: absolute;
@@ -165,21 +301,26 @@
             height: 20px;
             border-radius: 9999px;
             background-color: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
             transition: transform 0.2s ease;
         }
-        .wallet-toggle-input:checked + .wallet-toggle-track {
+
+        .wallet-toggle-input:checked+.wallet-toggle-track {
             background-color: #10b981;
         }
-        .wallet-toggle-input:checked + .wallet-toggle-track::after {
+
+        .wallet-toggle-input:checked+.wallet-toggle-track::after {
             transform: translateX(20px);
         }
-        .wallet-toggle-input:disabled + .wallet-toggle-track {
+
+        .wallet-toggle-input:disabled+.wallet-toggle-track {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
 
         /* Toast Container */
         #toast-container {
@@ -192,6 +333,7 @@
             max-width: 350px;
             pointer-events: none;
         }
+
         .toast {
             pointer-events: auto;
             background: rgba(255, 255, 255, 0.95);
@@ -208,15 +350,24 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
             animation: slideDown 0.3s ease-out forwards;
         }
+
         #html-root.dark .toast {
             background: rgba(20, 20, 20, 0.9);
             border-color: rgba(255, 255, 255, 0.1);
             color: white;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8);
         }
+
         @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Loading Spinner */
@@ -227,11 +378,29 @@
             border-top-color: transparent;
             animation: spinner-rotate 0.8s linear infinite;
         }
-        .spinner-sm { width: 14px; height: 14px; border-width: 2px; }
-        .spinner-md { width: 24px; height: 24px; border-width: 2px; }
-        .spinner-lg { width: 32px; height: 32px; border-width: 3px; }
+
+        .spinner-sm {
+            width: 14px;
+            height: 14px;
+            border-width: 2px;
+        }
+
+        .spinner-md {
+            width: 24px;
+            height: 24px;
+            border-width: 2px;
+        }
+
+        .spinner-lg {
+            width: 32px;
+            height: 32px;
+            border-width: 3px;
+        }
+
         @keyframes spinner-rotate {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Confirm Payment: advanced white preloader (visible on green in light & dark) */
@@ -242,6 +411,7 @@
             gap: 4px;
             color: #ffffff;
         }
+
         .confirm-preloader .dot {
             width: 6px;
             height: 6px;
@@ -249,21 +419,43 @@
             background: #ffffff;
             animation: confirm-preloader-bounce 0.6s ease-in-out infinite both;
         }
-        .confirm-preloader .dot:nth-child(1) { animation-delay: 0s; }
-        .confirm-preloader .dot:nth-child(2) { animation-delay: 0.15s; }
-        .confirm-preloader .dot:nth-child(3) { animation-delay: 0.3s; }
+
+        .confirm-preloader .dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .confirm-preloader .dot:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .confirm-preloader .dot:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
         @keyframes confirm-preloader-bounce {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.6);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         /* V2 Specific Styles */
         .v2-gradient-bg {
             background: linear-gradient(135deg, #f6f7f9 0%, #ffffff 100%);
         }
+
         #html-root.dark .v2-gradient-bg {
             background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
         }
+
         /* Force peso and numbers to use Poppins or sans-serif fallback (no serif) */
         .price-poppins {
             font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
@@ -271,90 +463,130 @@
 
         /* Receipt Scanning Animation */
         @keyframes scan-down {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
+            0% {
+                top: 0%;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
         }
     </style>
     <script>
-        (function() {
-            const stored = localStorage.getItem('stakz_theme');
-            const isDark = stored !== null ? stored === 'dark' : false;
-            document.documentElement.classList.toggle('dark', isDark);
-        })();
+            (function () {
+                const stored = localStorage.getItem('stakz_theme');
+                const isDark = stored !== null ? stored === 'dark' : false;
+                document.documentElement.classList.toggle('dark', isDark);
+            })();
     </script>
 </head>
+
 <body>
 
     <div id="toast-container"></div>
     <input type="file" id="receiptVerifyFile" accept="image/*" class="hidden" />
 
     <!-- Custom Confirmation Modal -->
-    <div id="confirmation-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-xs w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4" id="modal-content">
+    <div id="confirmation-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-xs w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4"
+            id="modal-content">
             <div class="flex flex-col items-center text-center mb-4">
-                <div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-zinc-400" id="modal-icon">
+                <div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center mb-3 text-zinc-400"
+                    id="modal-icon">
                     <i data-lucide="alert-triangle" class="w-5 h-5"></i>
                 </div>
                 <h3 id="modal-title" class="text-lg font-bold text-white tracking-tight">Confirm Action</h3>
             </div>
-            <p id="modal-message" class="text-zinc-400 text-xs mb-6 leading-relaxed text-center">Are you sure you want to proceed?</p>
+            <p id="modal-message" class="text-zinc-400 text-xs mb-6 leading-relaxed text-center">Are you sure you want
+                to proceed?</p>
             <div class="flex gap-3">
-                <button onclick="window.closeModal()" id="modal-cancel-btn" class="flex-1 py-3 text-[10px] font-bold uppercase text-zinc-400 hover:text-white transition-colors bg-zinc-800/50 hover:bg-zinc-800 rounded-sm tracking-wider border border-white/5 modal-force-white-text">Cancel</button>
-                <button onclick="window.confirmModalAction()" class="flex-1 py-3 text-[10px] font-bold uppercase text-black bg-white hover:bg-zinc-200 transition-colors rounded-sm tracking-wider shadow-lg" id="modal-confirm-btn">Confirm</button>
+                <button onclick="window.closeModal()" id="modal-cancel-btn"
+                    class="flex-1 py-3 text-[10px] font-bold uppercase text-zinc-400 hover:text-white transition-colors bg-zinc-800/50 hover:bg-zinc-800 rounded-sm tracking-wider border border-white/5 modal-force-white-text">Cancel</button>
+                <button onclick="window.confirmModalAction()"
+                    class="flex-1 py-3 text-[10px] font-bold uppercase text-black bg-white hover:bg-zinc-200 transition-colors rounded-sm tracking-wider shadow-lg"
+                    id="modal-confirm-btn">Confirm</button>
             </div>
         </div>
     </div>
 
     <!-- Add Product Modal -->
-    <div id="add-product-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div id="add-product-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md hidden opacity-0 transition-opacity duration-200">
+        <div
+            class="bg-zinc-900 border border-white/10 p-6 rounded-lg max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-200 mx-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-5">
                 <h3 class="text-sm font-bold uppercase tracking-widest text-white">Add New Product</h3>
-                <button onclick="window.closeAddProductModal()" class="text-zinc-500 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="window.closeAddProductModal()" class="text-zinc-500 hover:text-white"><i
+                        data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Title</label>
-                    <input type="text" id="new-prod-title" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="e.g. SHEIN ACCT (100c)" />
+                    <input type="text" id="new-prod-title"
+                        class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                        placeholder="e.g. SHEIN ACCT (100c)" />
                 </div>
                 <div>
                     <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Tag</label>
-                    <input type="text" id="new-prod-tag" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="e.g. HOT SALE" />
+                    <input type="text" id="new-prod-tag"
+                        class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                        placeholder="e.g. HOT SALE" />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Price (₱)</label>
-                        <input type="number" id="new-prod-price" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                        <input type="number" id="new-prod-price"
+                            class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                            placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Initial Stock</label>
-                        <input type="number" id="new-prod-stock" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                        <input type="number" id="new-prod-stock"
+                            class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                            placeholder="0" />
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Bulk Price (₱)</label>
-                        <input type="number" id="new-prod-bulk-price" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="0" />
+                        <input type="number" id="new-prod-bulk-price"
+                            class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                            placeholder="0" />
                     </div>
                     <div>
                         <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Bulk Threshold</label>
-                        <input type="number" id="new-prod-bulk-thresh" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" value="10" />
+                        <input type="number" id="new-prod-bulk-thresh"
+                            class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                            value="10" />
                     </div>
                 </div>
                 <div>
                     <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1">Description</label>
-                    <textarea id="new-prod-desc" rows="3" class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm" placeholder="Product details..."></textarea>
+                    <textarea id="new-prod-desc" rows="3"
+                        class="w-full bg-black border border-zinc-700 p-2 text-xs text-white focus:border-emerald-500 focus:outline-none rounded-sm"
+                        placeholder="Product details..."></textarea>
                 </div>
-                <button onclick="window.submitNewProduct()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors mt-2">
+                <button onclick="window.submitNewProduct()"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light font-bold py-3 text-[10px] uppercase tracking-widest rounded-sm transition-colors mt-2">
                     Create Product
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="app" class="w-full min-h-screen bg-zinc-50 dark:bg-black overflow-x-hidden relative text-zinc-900 dark:text-zinc-100 flex flex-col text-sm">
+    <div id="app"
+        class="w-full min-h-screen bg-zinc-50 dark:bg-black overflow-x-hidden relative text-zinc-900 dark:text-zinc-100 flex flex-col text-sm">
         <div class="flex items-center justify-center min-h-screen w-full">
             <div class="flex flex-col items-center gap-4 px-6">
                 <div class="spinner spinner-lg text-emerald-500" aria-hidden="true"></div>
@@ -367,7 +599,7 @@
     <script>
         // --- Configuration ---
         const SITE_NAME = "StakzShop";
-        const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
+        const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg";
         const GCASH_NUMBER = "0917 123 4567";
         // Gemini API key is stored in Supabase secrets (server-side only). Receipt verification and chat use Edge Functions.
 
@@ -422,10 +654,10 @@
         function initTawkChat() {
             if (!ENABLE_TAWK_CHAT) return;
             if (!TAWK_PROPERTY_ID || !TAWK_WIDGET_ID) return;
-            if (window.Tawk_API) return; 
+            if (window.Tawk_API) return;
             window.Tawk_API = window.Tawk_API || {};
             window.Tawk_LoadStart = new Date();
-            (function() {
+            (function () {
                 const s1 = document.createElement("script");
                 const s0 = document.getElementsByTagName("script")[0];
                 s1.async = true;
@@ -441,7 +673,7 @@
             try {
                 const lines = [
                     "New order",
-                    `Source: ${source}`,              
+                    `Source: ${source}`,
                     `Order: ${orderId}`,
                     summary || ""
                 ].filter(Boolean);
@@ -496,11 +728,11 @@
         // --- SUPABASE CONFIGURATION ---
         const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
-        
+
         let supabaseClient;
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch(e) {
+        } catch (e) {
             console.error("Supabase failed to init:", e);
         }
 
@@ -509,15 +741,15 @@
         // --- State Management ---
         const state = {
             view: 'home',
-            uiVariant: localStorage.getItem('stakz_ui_variant') || 'v2', 
+            uiVariant: localStorage.getItem('stakz_ui_variant') || 'v2',
             user: null,
-            userProfile: null, 
+            userProfile: null,
             products: [],
             orders: [],
             userOrders: [],
             selectedProduct: null,
             quantity: 1,
-            paymentMethod: 'gcash', 
+            paymentMethod: 'gcash',
             lastOrderId: null,
             lastOrderFulfilled: null,
             trackerInput: '',
@@ -544,7 +776,9 @@
             trackedPendingOtps: new Set(),
             checkoutReceiptBase64: null,
             checkoutVerifying: false,
-            receiptTestResult: null
+            receiptTestResult: null,
+            sheinAccountsList: [],
+            sheinAccountsLoading: false
         };
 
         // --- Helpers ---
@@ -554,7 +788,7 @@
             localStorage.setItem('stakz_theme', isDark ? 'dark' : 'light');
             render(false);
         }
-        
+
         function toggleUiVariant() {
             state.uiVariant = state.uiVariant === 'v1' ? 'v2' : 'v1';
             localStorage.setItem('stakz_ui_variant', state.uiVariant);
@@ -564,14 +798,14 @@
 
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
         const formatPHPPoppins = (amount) => 'PHP ' + new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-        const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        const escapeHtml = (s) => ('' + s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const generateOrderId = () => 'STKZ-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         const GUEST_ORDERS_KEY = 'stakz_guest_order_ids';
-        const getGuestOrderIds = () => { try { return JSON.parse(localStorage.getItem(GUEST_ORDERS_KEY) || '[]'); } catch(e) { return []; } };
-        const addGuestOrderId = (id) => { const ids = getGuestOrderIds(); if(!ids.includes(id)) { ids.unshift(id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); } };
+        const getGuestOrderIds = () => { try { return JSON.parse(localStorage.getItem(GUEST_ORDERS_KEY) || '[]'); } catch (e) { return []; } };
+        const addGuestOrderId = (id) => { const ids = getGuestOrderIds(); if (!ids.includes(id)) { ids.unshift(id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); } };
         const removeGuestOrderId = (id) => { const ids = getGuestOrderIds().filter(x => x !== id); localStorage.setItem(GUEST_ORDERS_KEY, JSON.stringify(ids)); };
         const formatDate = (dateStr) => new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        
+
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -592,7 +826,7 @@
         function copyToClipboard(text) {
             if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
                 navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard', 'success'))
-                .catch(() => fallbackCopyTextToClipboard(text));
+                    .catch(() => fallbackCopyTextToClipboard(text));
             } else {
                 fallbackCopyTextToClipboard(text);
             }
@@ -635,20 +869,20 @@
                 <h4 class="text-[9px] font-bold uppercase mb-2 ${isDark ? 'text-zinc-400' : 'text-gray-600'} tracking-wider flex items-center gap-2"><i data-lucide="key" class="w-3 h-3 ${isDark ? 'text-zinc-400' : 'text-gray-600'}"></i> Access Details</h4>
                 <div class="space-y-2">
                     ${res.accounts.map((acc, idx) => {
-                        const otp = acc.otpRequest || { status: 'idle', code: null };
-                        let isOnCooldown = false;
-                        let cooldownSeconds = 0;
-                        if(otp.requestedAt) {
-                            const lastRequestTime = new Date(otp.requestedAt).getTime();
-                            const now = new Date().getTime();
-                            const timeSinceLastRequest = (now - lastRequestTime) / 1000; 
-                            const cooldownDuration = 2 * 60; 
-                            if(timeSinceLastRequest < cooldownDuration) {
-                                isOnCooldown = true;
-                                cooldownSeconds = Math.ceil(cooldownDuration - timeSinceLastRequest);
-                            }
-                        }
-                        return `
+                const otp = acc.otpRequest || { status: 'idle', code: null };
+                let isOnCooldown = false;
+                let cooldownSeconds = 0;
+                if (otp.requestedAt) {
+                    const lastRequestTime = new Date(otp.requestedAt).getTime();
+                    const now = new Date().getTime();
+                    const timeSinceLastRequest = (now - lastRequestTime) / 1000;
+                    const cooldownDuration = 2 * 60;
+                    if (timeSinceLastRequest < cooldownDuration) {
+                        isOnCooldown = true;
+                        cooldownSeconds = Math.ceil(cooldownDuration - timeSinceLastRequest);
+                    }
+                }
+                return `
                     <div class="${isDark ? 'bg-zinc-800/30' : 'bg-gray-50'} border ${acc.used ? (isDark ? 'border-zinc-700/50 opacity-50' : 'border-gray-300 opacity-50') : (isDark ? 'border-emerald-500/20' : 'border-emerald-500/40')} p-3 rounded-md">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-[9px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} font-mono">Slot #${idx + 1}</span>
@@ -657,10 +891,10 @@
                             </button>
                         </div>
                         ${(() => {
-                            const sep = (acc.creds || '').indexOf(':');
-                            const email = sep >= 0 ? acc.creds.slice(0, sep) : acc.creds;
-                            const pass = sep >= 0 ? acc.creds.slice(sep + 1) : '';
-                            return `
+                        const sep = (acc.creds || '').indexOf(':');
+                        const email = sep >= 0 ? acc.creds.slice(0, sep) : acc.creds;
+                        const pass = sep >= 0 ? acc.creds.slice(sep + 1) : '';
+                        return `
                         <div class="space-y-1.5 mb-3">
                             <div>
                                 <span class="text-[8px] ${isDark ? 'text-zinc-500' : 'text-gray-600'} uppercase font-bold block mb-0.5">Email</span>
@@ -672,7 +906,7 @@
                                 <span class="font-mono text-xs select-all break-all ${acc.used ? (isDark ? 'line-through text-zinc-600' : 'line-through text-gray-400') : 'text-emerald-500'}">${escapeHtml(pass)}</span>
                             </div>` : ''}
                         </div>`;
-                        })()}
+                    })()}
                         <div class="${isDark ? 'bg-zinc-800/20 border-white/5' : 'bg-gray-100 border-gray-300'} p-2 rounded border">
                             ${otp.status === 'sent' ? `
                             <div class="mb-2">
@@ -720,22 +954,22 @@
                             </div>
                         </div>
                     </div>`;
-                    }).join('')}
+            }).join('')}
                 </div>
             </div>`;
         }
 
-        window.onRecaptchaLoad = function() { window.recaptchaReady = true; };
+        window.onRecaptchaLoad = function () { window.recaptchaReady = true; };
 
         function renderRecaptcha() {
             const container = document.getElementById('captcha-container');
             if (!container || !window.grecaptcha || !window.recaptchaReady) return;
-            if (window.recaptchaWidgetId != null) try { window.grecaptcha.reset(window.recaptchaWidgetId); } catch(e) {}
+            if (window.recaptchaWidgetId != null) try { window.grecaptcha.reset(window.recaptchaWidgetId); } catch (e) { }
             container.innerHTML = '';
             window.recaptchaWidgetId = window.grecaptcha.render(container, {
                 sitekey: RECAPTCHA_SITE_KEY,
                 theme: 'dark',
-                callback: function(token) { state.captchaToken = token; },
+                callback: function (token) { state.captchaToken = token; },
             });
         }
 
@@ -746,7 +980,7 @@
             window.turnstile.render(container, {
                 sitekey: TURNSTILE_SITE_KEY,
                 theme: 'dark',
-                callback: function(token) { state.captchaToken = token; },
+                callback: function (token) { state.captchaToken = token; },
             });
         }
 
@@ -838,7 +1072,7 @@
         async function callGemini(prompt, type) {
             state.aiLoading = true;
             state.aiContent = null;
-            render(false); 
+            render(false);
             try {
                 const { data, error } = await supabaseClient?.functions?.invoke?.('gemini-chat', { body: { prompt } }) || { data: null, error: { message: 'Supabase not configured' } };
                 const text = error ? "Connection error." : (data?.text || "System busy.");
@@ -848,7 +1082,7 @@
                 state.aiContent = { type, text: "Connection error." };
             }
             state.aiLoading = false;
-            render(false); 
+            render(false);
         }
 
         async function submitNewProduct() {
@@ -859,19 +1093,23 @@
             const bulkPrice = document.getElementById('new-prod-bulk-price').value;
             const bulkThresh = document.getElementById('new-prod-bulk-thresh').value;
             const desc = document.getElementById('new-prod-desc').value;
+            const salePrice = document.getElementById('new-prod-sale-price')?.value || '';
 
-            if(!title || !price || !stock) return showToast("Title, Price and Stock are required", "error");
+            if (!title || !price || !stock) return showToast("Title, Price and Stock are required", "error");
 
-            const { error } = await supabaseClient.from('products').insert([{
-                title, tag, price, stock, 
+            const payload = {
+                title, tag, price, stock,
                 bulk_price: bulkPrice || price,
                 bulk_threshold: bulkThresh || 10,
                 description: desc,
                 color: 'bg-zinc-900',
                 enabled: true
-            }]);
+            };
+            if (salePrice !== '') payload.sale_price = parseFloat(salePrice) || null;
 
-            if(error) showToast("Failed to create product", "error");
+            const { error } = await supabaseClient.from('products').insert([payload]);
+
+            if (error) showToast("Failed to create product", "error");
             else {
                 showToast("Product Created", "success");
                 closeAddProductModal();
@@ -887,38 +1125,28 @@
             const bulkThresh = document.getElementById(`prod-bulk-thresh-${id}`)?.value;
             const newUserEnabledEl = document.getElementById(`prod-new-user-enabled-${id}`);
             const newUserPriceEl = document.getElementById(`prod-new-user-price-${id}`);
+            const salePriceEl = document.getElementById(`prod-sale-price-${id}`);
             const enabledEl = document.getElementById(`prod-enabled-${id}`);
 
-            const payload = {
-                title,
-                price,
-                stock
-            };
+            const payload = { title, price, stock };
+            const tagEl = document.getElementById(`prod-tag-${id}`);
+            if (tagEl) payload.tag = tagEl.value.trim();
 
-            if (bulkPrice !== undefined && bulkPrice !== null && bulkPrice !== '') {
-                payload.bulk_price = bulkPrice;
-            }
-            if (bulkThresh !== undefined && bulkThresh !== null && bulkThresh !== '') {
-                payload.bulk_threshold = bulkThresh;
-            }
-            if (newUserEnabledEl) {
-                payload.new_user_enabled = !!newUserEnabledEl.checked;
-            }
-            if (newUserPriceEl && newUserPriceEl.value !== '') {
-                payload.new_user_price = parseFloat(newUserPriceEl.value) || 0;
-            }
-            if (enabledEl) {
-                payload.enabled = !!enabledEl.checked;
-            }
+            if (bulkPrice !== undefined && bulkPrice !== null && bulkPrice !== '') payload.bulk_price = bulkPrice;
+            if (bulkThresh !== undefined && bulkThresh !== null && bulkThresh !== '') payload.bulk_threshold = bulkThresh;
+            if (newUserEnabledEl) payload.new_user_enabled = !!newUserEnabledEl.checked;
+            if (newUserPriceEl && newUserPriceEl.value !== '') payload.new_user_price = parseFloat(newUserPriceEl.value) || 0;
+            if (salePriceEl) payload.sale_price = salePriceEl.value !== '' ? parseFloat(salePriceEl.value) : null;
+            if (enabledEl) payload.enabled = !!enabledEl.checked;
 
             const { error } = await supabaseClient.from('products').update(payload).eq('id', id);
 
-            if(error) showToast("Failed to save changes", "error");
+            if (error) showToast("Failed to save changes", "error");
             else showToast("Changes saved", "success");
         }
 
         async function fetchProducts() {
-            if(!supabaseClient) return;
+            if (!supabaseClient) return;
             const { data, error } = await supabaseClient
                 .from('products')
                 .select('*')
@@ -926,8 +1154,8 @@
 
             if (data) {
                 state.products = data;
-                if(state.view === 'admin' && state.adminTab === 'products') render(false);
-                else if(state.view === 'home') render(false);
+                if (state.view === 'admin' && state.adminTab === 'products') render(false);
+                else if (state.view === 'home') render(false);
             }
         }
 
@@ -972,11 +1200,100 @@
             showToast(`${data ?? 0} account(s) added to pool`, 'success');
             ta.value = '';
             await fetchSheinAccountStats();
+            await fetchSheinAccountsList();
+            render(false);
+        }
+
+        async function fetchSheinAccountsList() {
+            if (!supabaseClient || !state.adminAuth) return;
+            state.sheinAccountsLoading = true;
+            render(false);
+            // Try fetching directly; RLS must allow admin reads
+            const { data, error } = await supabaseClient
+                .from('shein_accounts')
+                .select('*')
+                .limit(200);
+            state.sheinAccountsLoading = false;
+            if (error) {
+                console.error('[fetchSheinAccountsList] error:', error);
+                showToast('Could not load accounts: ' + (error.message || 'unknown error'), 'error');
+                state.sheinAccountsList = [];
+            } else {
+                // Auto-detect schema from first row and normalise each row
+                if (data && data.length > 0) {
+                    const firstRow = data[0];
+                    const cols = Object.keys(firstRow);
+                    console.log('[fetchSheinAccountsList] columns:', cols);
+
+                    // Check if there are separate email + password columns
+                    const emailCol = ['email', 'username', 'user'].find(f => cols.includes(f));
+                    const passCol = ['password', 'pass', 'pw'].find(f => cols.includes(f));
+                    // Check if there's a single combined creds column
+                    const credsCol = ['creds', 'credentials', 'entry', 'account', 'data', 'value', 'text'].find(f => cols.includes(f));
+
+                    if (emailCol && passCol) {
+                        // Two-column schema: merge into email:password
+                        state.sheinAccountsSchema = { type: 'split', emailCol, passCol };
+                        data.forEach(r => { r._creds = (r[emailCol] || '') + ':' + (r[passCol] || ''); });
+                        console.log('[fetchSheinAccountsList] schema: split', emailCol, '+', passCol);
+                    } else if (credsCol) {
+                        // Single-column schema
+                        state.sheinAccountsSchema = { type: 'single', credsCol };
+                        data.forEach(r => { r._creds = r[credsCol] || ''; });
+                        console.log('[fetchSheinAccountsList] schema: single', credsCol);
+                    } else if (emailCol) {
+                        // Only email column found — show as-is
+                        state.sheinAccountsSchema = { type: 'single', credsCol: emailCol };
+                        data.forEach(r => { r._creds = r[emailCol] || ''; });
+                        console.log('[fetchSheinAccountsList] schema: email-only', emailCol);
+                    } else {
+                        // Unknown schema — show all non-id fields
+                        state.sheinAccountsSchema = { type: 'unknown' };
+                        data.forEach(r => { r._creds = cols.filter(k => k !== 'id').map(k => k + ':' + r[k]).join(' | '); });
+                        console.log('[fetchSheinAccountsList] schema: unknown, showing all cols');
+                    }
+                }
+                state.sheinAccountsList = data || [];
+            }
+        }
+
+        async function deleteSheinAccount(id) {
+            showModal('Delete Account?', 'Remove this account from the pool? This cannot be undone.', async () => {
+                const { error } = await supabaseClient.from('shein_accounts').delete().eq('id', id);
+                if (error) return showToast('Failed to delete account', 'error');
+                showToast('Account deleted', 'success');
+                await fetchSheinAccountStats();
+                await fetchSheinAccountsList();
+                render(false);
+            }, 'danger', 'Delete');
+        }
+
+        async function updateSheinAccount(id) {
+            const input = document.getElementById('edit-acc-' + id);
+            if (!input) return;
+            const newCreds = input.value.trim();
+            if (!newCreds) return showToast('Credentials cannot be empty', 'error');
+            const schema = state.sheinAccountsSchema || {};
+            let updatePayload = {};
+            if (schema.type === 'split') {
+                // Split email:password back into separate columns
+                const sep = newCreds.indexOf(':');
+                updatePayload[schema.emailCol] = sep >= 0 ? newCreds.slice(0, sep) : newCreds;
+                updatePayload[schema.passCol] = sep >= 0 ? newCreds.slice(sep + 1) : '';
+            } else if (schema.type === 'single' && schema.credsCol) {
+                updatePayload[schema.credsCol] = newCreds;
+            } else {
+                return showToast('Cannot update: schema not detected. Refresh the list first.', 'error');
+            }
+            const { error } = await supabaseClient.from('shein_accounts').update(updatePayload).eq('id', id);
+            if (error) return showToast('Failed to update: ' + error.message, 'error');
+            showToast('Account updated', 'success');
+            await fetchSheinAccountsList();
             render(false);
         }
 
         async function fetchAllOrders() {
-            if(!supabaseClient || !state.adminAuth) return;
+            if (!supabaseClient || !state.adminAuth) return;
             const { data, error } = await supabaseClient
                 .from('orders')
                 .select('*')
@@ -1018,45 +1335,45 @@
         }
 
         async function fetchUserOrders() {
-            if(!supabaseClient || !state.user) return;
+            if (!supabaseClient || !state.user) return;
             const { data, error } = await supabaseClient
                 .from('orders')
                 .select('*')
                 .eq('user_id', state.user.id)
                 .order('created_at', { ascending: false });
 
-            if(data) state.userOrders = data.map(mapOrderData);
+            if (data) state.userOrders = data.map(mapOrderData);
         }
 
         async function fetchGuestOrders() {
-            if(!supabaseClient) return;
+            if (!supabaseClient) return;
             const ids = getGuestOrderIds();
-            if(ids.length === 0) { state.userOrders = []; return; }
+            if (ids.length === 0) { state.userOrders = []; return; }
             const { data, error } = await supabaseClient
                 .from('orders')
                 .select('*')
                 .in('id', ids)
                 .order('created_at', { ascending: false });
-            if(data) {
+            if (data) {
                 const byId = Object.fromEntries(data.map(o => [o.id, o]));
                 state.userOrders = ids.filter(id => byId[id]).map(id => mapOrderData(byId[id]));
             } else state.userOrders = [];
         }
 
         async function fetchUserProfile() {
-            if(!supabaseClient || !state.user) return;
+            if (!supabaseClient || !state.user) return;
             try {
                 const { data, error } = await supabaseClient
                     .from('profiles')
                     .select('*')
                     .eq('id', state.user.id)
                     .single();
-                
-                if(error && error.code !== 'PGRST116') { 
+
+                if (error && error.code !== 'PGRST116') {
                     console.error('Fetch profile error:', error);
                 }
-                
-                if(data) {
+
+                if (data) {
                     if (typeof data.is_new_user !== 'boolean') {
                         data.is_new_user = true;
                     }
@@ -1070,7 +1387,7 @@
                         is_new_user: true
                     }, { onConflict: 'id' });
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error('Profile fetch exception:', e);
             }
         }
@@ -1106,9 +1423,9 @@
         }
 
         function showOtpNotification(orderId, creds, slotIndex) {
-            try { 
+            try {
                 NOTIFICATION_SOUND.play().catch(e => console.error("Sound play error:", e));
-            } catch(e) {}
+            } catch (e) { }
 
             if (Notification.permission === "granted") {
                 try {
@@ -1141,71 +1458,71 @@
         }
 
         function setupRealtime() {
-            if(!supabaseClient) return;
-            
+            if (!supabaseClient) return;
+
             supabaseClient.channel('public:products')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
-            .subscribe();
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+                .subscribe();
 
             supabaseClient.channel('public:orders')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async payload => {
-                if(state.adminAuth && payload.eventType === 'UPDATE' && payload.new.accounts_data) {
-                    const hasUnread = payload.new.accounts_data.some(acc => 
-                        acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)
-                    );
-                    if(hasUnread) {
-                        try { NOTIFICATION_SOUND.play(); } catch(e) {}
-                    }
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async payload => {
+                    if (state.adminAuth && payload.eventType === 'UPDATE' && payload.new.accounts_data) {
+                        const hasUnread = payload.new.accounts_data.some(acc =>
+                            acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)
+                        );
+                        if (hasUnread) {
+                            try { NOTIFICATION_SOUND.play(); } catch (e) { }
+                        }
 
-                    if (Array.isArray(payload.new.accounts_data)) {
-                        const orderId = payload.new.id;
-                        payload.new.accounts_data.forEach((acc, idx) => {
-                            if (acc && acc.otpRequest && acc.otpRequest.status === 'pending') {
-                                const otpKey = `${orderId}-${acc.id}`;
-                                if (!state.trackedPendingOtps.has(otpKey)) {
-                                    const slotIndex = idx + 1;
-                                    const creds = acc.creds || 'N/A';
-                                    showOtpNotification(orderId, creds, slotIndex);
-                                    state.trackedPendingOtps.add(otpKey);
+                        if (Array.isArray(payload.new.accounts_data)) {
+                            const orderId = payload.new.id;
+                            payload.new.accounts_data.forEach((acc, idx) => {
+                                if (acc && acc.otpRequest && acc.otpRequest.status === 'pending') {
+                                    const otpKey = `${orderId}-${acc.id}`;
+                                    if (!state.trackedPendingOtps.has(otpKey)) {
+                                        const slotIndex = idx + 1;
+                                        const creds = acc.creds || 'N/A';
+                                        showOtpNotification(orderId, creds, slotIndex);
+                                        state.trackedPendingOtps.add(otpKey);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                }
 
-                if(state.adminAuth) await fetchAllOrders();
-                if(state.user) fetchUserOrders().then(() => {
-                    if (state.view === 'my-orders') render(false);
-                });
-                if(!state.user && state.view === 'my-orders') fetchGuestOrders().then(() => render(false));
-                if(state.view === 'tracker' && state.trackerInput) handleTrack(true);
-            })
-            .subscribe();
+                    if (state.adminAuth) await fetchAllOrders();
+                    if (state.user) fetchUserOrders().then(() => {
+                        if (state.view === 'my-orders') render(false);
+                    });
+                    if (!state.user && state.view === 'my-orders') fetchGuestOrders().then(() => render(false));
+                    if (state.view === 'tracker' && state.trackerInput) handleTrack(true);
+                })
+                .subscribe();
         }
 
         async function markMessagesRead(orderId) {
             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
-            if(!data) return;
+            if (!data) return;
 
             let hasUpdates = false;
             const updatedAccounts = data.accounts_data.map(acc => {
-                if(acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)) {
+                if (acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)) {
                     hasUpdates = true;
                     return {
                         ...acc,
-                        messages: acc.messages.map(m => m.sender === 'user' ? {...m, read: true} : m)
+                        messages: acc.messages.map(m => m.sender === 'user' ? { ...m, read: true } : m)
                     };
                 }
                 return acc;
             });
 
-            if(hasUpdates) {
+            if (hasUpdates) {
                 await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
             }
         }
 
         async function initAuth() {
-            if(!supabaseClient) return;
+            if (!supabaseClient) return;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 state.user = session.user;
@@ -1215,7 +1532,7 @@
 
             supabaseClient.auth.onAuthStateChange(async (_event, session) => {
                 state.user = session ? session.user : null;
-                if(state.user) {
+                if (state.user) {
                     await fetchUserOrders();
                     await fetchUserProfile();
                 }
@@ -1226,15 +1543,15 @@
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            if(!email || !pass) return showToast("Please fill all fields", "error");
+            if (!email || !pass) return showToast("Please fill all fields", "error");
 
             state.authLoading = true;
             render(false);
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
             state.authLoading = false;
-            
-            if(error) {
+
+            if (error) {
                 showToast(error.message, "error");
                 render(false);
             } else {
@@ -1248,8 +1565,8 @@
         async function handleRegister() {
             const email = document.getElementById('regEmail').value;
             const pass = document.getElementById('regPass').value;
-            if(!email || !pass) return showToast("Please fill all fields", "error");
-            if(pass.length < 6) return showToast("Password must be 6+ chars", "error");
+            if (!email || !pass) return showToast("Please fill all fields", "error");
+            if (pass.length < 6) return showToast("Password must be 6+ chars", "error");
 
             const acctCount = parseInt(localStorage.getItem('stakz_acct_count') || '0');
             if (acctCount >= 1 && !state.captchaToken) return showToast("Please complete the captcha", "error");
@@ -1260,14 +1577,14 @@
             const { data, error } = await supabaseClient.auth.signUp({ email, password: pass });
             state.authLoading = false;
 
-            if(error) {
+            if (error) {
                 showToast(error.message, "error");
                 render(false);
             } else {
                 showToast("Account created! Logging in...", "success");
                 localStorage.setItem('stakz_acct_count', (acctCount + 1).toString());
-                
-                if(data.user) {
+
+                if (data.user) {
                     await supabaseClient.from('profiles').upsert({
                         id: data.user.id,
                         credits: 0,
@@ -1275,7 +1592,7 @@
                     }, { onConflict: 'id' });
                 }
 
-                if(data.session) {
+                if (data.session) {
                     state.user = data.user;
                     await fetchUserProfile();
                     goHome();
@@ -1288,7 +1605,7 @@
 
         async function handlePasswordReset() {
             const email = document.getElementById('resetEmail').value;
-            if(!email) return showToast("Please enter your email", "error");
+            if (!email) return showToast("Please enter your email", "error");
 
             state.authLoading = true;
             render(false);
@@ -1297,7 +1614,7 @@
             state.authLoading = false;
             render(false);
 
-            if(error) showToast(error.message, "error");
+            if (error) showToast(error.message, "error");
             else {
                 showToast("Password reset link sent to email", "success");
                 setView('login');
@@ -1317,8 +1634,8 @@
         function setView(view) {
             state.view = view;
             if (view !== 'my-orders') state.selectedOrderId = null;
-            if(view === 'home' || view === 'product') {
-                state.discount = 0; 
+            if (view === 'home' || view === 'product') {
+                state.discount = 0;
                 state.quantity = 1;
                 state.captchaToken = null;
                 state.payWithCredits = false;
@@ -1327,6 +1644,7 @@
             if (view === 'admin' && state.adminAuth) {
                 fetchAllOrders();
                 fetchSheinAccountStats();
+                fetchSheinAccountsList();
             }
             if (view === 'my-orders') {
                 if (state.user) fetchUserOrders().then(() => render(false));
@@ -1339,7 +1657,7 @@
             state.selectedProduct = state.products.find(p => p.id === id);
             if (!state.selectedProduct) return;
             if (state.selectedProduct.enabled === false) return showToast("This product is temporarily unavailable", "error");
-            if(state.selectedProduct.stock <= 0) return showToast("Item out of stock", "error");
+            if (state.selectedProduct.stock <= 0) return showToast("Item out of stock", "error");
             state.quantity = 1;
             setView('product');
         }
@@ -1360,14 +1678,14 @@
                 if (!isNaN(promo) && promo > 0) return promo;
             }
 
-            return state.quantity >= state.selectedProduct.bulk_threshold 
-                ? state.selectedProduct.bulk_price 
+            return state.quantity >= state.selectedProduct.bulk_threshold
+                ? state.selectedProduct.bulk_price
                 : state.selectedProduct.price;
         }
 
         function applyDiscount() {
             const input = document.getElementById('discountInput');
-            if(!input) return;
+            if (!input) return;
             const code = input.value.trim();
             if (code === '') {
                 showToast("Please enter a code", "error");
@@ -1512,18 +1830,17 @@
             if (state.sessionOrderCount >= 3 && !state.captchaToken) return showToast("Please complete the captcha", "error");
 
             state.isSubmitting = true;
-            render(false); 
-            
+            render(false);
+
             let isReceiptVerified = false;
             if (state.paymentMethod === 'gcash' && remainingToPay > 0) {
                 try {
                     const mockOrder = { total: remainingToPay, date: new Date().toISOString() };
                     const { verified, testResult } = await verifyReceiptWithGemini(state.checkoutReceiptBase64, mockOrder, state.paymentSettings || {});
                     if (!verified) {
-                        state.receiptTestResult = testResult || { error: 'Unknown error' };
                         state.isSubmitting = false;
                         render(false);
-                        return showToast("Payment verification failed. See test result below.", "error");
+                        return showToast("Payment verification failed. Please ensure you uploaded a clear GCash receipt.", "error");
                     }
                     const ext = testResult?.extracted || {};
                     const rawRef = String(ext.referenceNumber ?? '').trim();
@@ -1533,21 +1850,18 @@
                     const receiverNumber = String(ext.receiverNumber ?? '').trim();
                     const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
                     if (!ts) {
-                        state.receiptTestResult = testResult || {};
-                        state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced. Try a clearer image.';
                         state.isSubmitting = false;
                         render(false);
-                        return showToast("Receipt date/time could not be read.", "error");
+                        return showToast("Receipt date/time could not be read. Please try a clearer image.", "error");
                     }
                     state.receiptTestResult = null;
                     state._lastReceiptRef = ref;
                     state._lastReceiptTs = ts;
                     isReceiptVerified = true;
                 } catch (e) {
-                    state.receiptTestResult = { error: 'Exception: ' + (e.message || String(e)) };
                     state.isSubmitting = false;
                     render(false);
-                    return showToast("Verification system error.", "error");
+                    return showToast("Verification system error. Please try again.", "error");
                 }
             }
 
@@ -1555,11 +1869,9 @@
             if (isReceiptVerified && state._lastReceiptRef && state._lastReceiptTs) {
                 const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: state._lastReceiptRef, p_ts: state._lastReceiptTs, p_order_id: newOrderId });
                 if (claimed !== true) {
-                    state.receiptTestResult = state.receiptTestResult || {};
-                    state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
                     state.isSubmitting = false;
                     render(false);
-                    return showToast("This receipt was already used.", "error");
+                    return showToast("This receipt was already used. Please contact support if you believe this is an error.", "error");
                 }
             }
 
@@ -1571,7 +1883,7 @@
                     .eq('id', state.user.id)
                     .select()
                     .single();
-                if(credErr) {
+                if (credErr) {
                     state.isSubmitting = false;
                     render(false);
                     return showToast("Payment failed", "error");
@@ -1590,12 +1902,12 @@
                 status: 'Processing',
                 accounts_data: [],
                 refund_request: null,
-                user_id: state.user ? state.user.id : null 
+                user_id: state.user ? state.user.id : null
             };
 
             const { error } = await supabaseClient.from('orders').insert([dbPayload]);
 
-            if(error) {
+            if (error) {
                 console.error(error);
                 state.isSubmitting = false;
                 render(false);
@@ -1617,13 +1929,13 @@
 
             state.lastOrderId = newOrderId;
             state.sessionOrderCount++;
-            state.captchaToken = null; 
+            state.captchaToken = null;
             state.checkoutReceiptBase64 = null;
             state._lastReceiptRef = null;
             state._lastReceiptTs = null;
 
-            if(state.user) {
-                fetchUserOrders(); 
+            if (state.user) {
+                fetchUserOrders();
                 fetchUserProfile();
             } else {
                 addGuestOrderId(newOrderId);
@@ -1649,15 +1961,15 @@
 
         async function handleTrack(silent = false) {
             const input = document.getElementById('trackerInputVal');
-            if(input) state.trackerInput = input.value.trim();
-            
-            if(!state.trackerInput && !silent) return showToast("Please enter an Order ID", "error");
+            if (input) state.trackerInput = input.value.trim();
+
+            if (!state.trackerInput && !silent) return showToast("Please enter an Order ID", "error");
 
             const { data, error } = await supabaseClient.from('orders').select('*').eq('id', state.trackerInput).single();
             if (data) state.searchResult = mapOrderData(data);
             else state.searchResult = 'not-found';
-            
-            if(!silent) {
+
+            if (!silent) {
                 setView('tracker');
             } else {
                 render();
@@ -1731,8 +2043,7 @@
                     const order = { orderId, quantity: orderRow.quantity || 1, total: orderRow.total || 0, date: orderRow.created_at };
                     const { verified, testResult } = await verifyReceiptWithGemini(dataUrl, order, state.paymentSettings || {});
                     if (!verified) {
-                        state.receiptTestResult = testResult || { error: 'Unknown error' };
-                        showToast("Receipt could not be verified. See test result below.", "error");
+                        showToast("Receipt could not be verified. Please ensure you uploaded a clear GCash receipt.", "error");
                         render(false);
                         return;
                     }
@@ -1744,18 +2055,14 @@
                     const receiverNumber = String(ext.receiverNumber ?? '').trim();
                     const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
                     if (!ts) {
-                        state.receiptTestResult = testResult || {};
-                        state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced.';
-                        showToast("Receipt date/time could not be read.", "error");
+                        showToast("Receipt date/time could not be read. Please try a clearer image.", "error");
                         render(false);
                         return;
                     }
                     if (ref && ts) {
                         const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: ref, p_ts: ts, p_order_id: orderId });
                         if (claimed !== true) {
-                            state.receiptTestResult = testResult || {};
-                            state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
-                            showToast("This receipt was already used.", "error");
+                            showToast("This receipt was already used. Please contact support if you believe this is an error.", "error");
                             render(false);
                             return;
                         }
@@ -1798,7 +2105,7 @@
                 if (timeDiff > 60000 && !state.adminAuth) return showToast('Cancellation window has expired.', 'error');
 
                 const { error } = await supabaseClient.from('orders').update({ status: 'Cancelled' }).eq('id', id);
-                if(error) return showToast("Error cancelling order", "error");
+                if (error) return showToast("Error cancelling order", "error");
 
                 const creditsToRefund = parseFloat(order.credits_used || 0);
                 if (creditsToRefund > 0 && order.user_id) {
@@ -1813,8 +2120,8 @@
 
         async function deleteOrder(id) {
             const isGuest = !state.user;
-            const msg = isGuest 
-                ? "Remove this order from your local history?" 
+            const msg = isGuest
+                ? "Remove this order from your local history?"
                 : "This will permanently remove this order from your history.";
             showModal('Delete Order?', msg, async () => {
                 if (isGuest) {
@@ -1829,7 +2136,7 @@
                 if (order.status !== 'Cancelled' && order.status !== 'Refunded') return showToast("Only cancelled or refunded orders can be deleted", "error");
 
                 const { error } = await supabaseClient.from('orders').delete().eq('id', id);
-                if(error) showToast("Failed to delete", "error");
+                if (error) showToast("Failed to delete", "error");
                 else {
                     showToast("Order deleted", "success");
                     await fetchUserOrders();
@@ -1846,35 +2153,35 @@
             const payload = { gcashName: name, gcashNumber: number, requestedAt: new Date().toISOString() };
             const { error } = await supabaseClient.from('orders').update({ status: 'Refund Pending', refund_request: payload }).eq('id', orderId);
 
-            if(error) showToast("Failed to submit refund", "error");
+            if (error) showToast("Failed to submit refund", "error");
             else showToast("Refund request submitted", "success");
         }
 
         async function sendAccountMessage(orderId, accId, text, sender) {
-            if(!text || !text.trim()) return;
+            if (!text || !text.trim()) return;
 
             const trimmed = text.trim();
 
             const { data, error: fetchError } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
-            if(fetchError || !data) return showToast("Error fetching order", "error");
+            if (fetchError || !data) return showToast("Error fetching order", "error");
 
             const updatedAccounts = data.accounts_data.map(acc => {
-                if(acc.id === accId) {
+                if (acc.id === accId) {
                     const msgs = acc.messages || [];
-                    return { 
-                        ...acc, 
-                        messages: [...msgs, { text: trimmed, sender: sender, time: new Date().toISOString(), read: false }] 
+                    return {
+                        ...acc,
+                        messages: [...msgs, { text: trimmed, sender: sender, time: new Date().toISOString(), read: false }]
                     };
                 }
                 return acc;
             });
 
             const { error } = await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
-            if(error) showToast("Message failed to send", "error");
+            if (error) showToast("Message failed to send", "error");
             else {
                 showToast("Message sent", "success");
                 const inputEl = document.getElementById(sender === 'admin' ? `admin-msg-${accId}` : `msg-${accId}`);
-                if(inputEl) inputEl.value = '';
+                if (inputEl) inputEl.value = '';
 
                 if (sender === 'user') {
                     notifyAdminBuyerMessage(orderId, accId, trimmed, sender);
@@ -1903,10 +2210,10 @@
         function handleAdminLogout() {
             state.adminAuth = false;
             persistAdminAuth(false);
-            state.orders = []; 
+            state.orders = [];
             state.adminTab = 'orders';
             state.activeFulfillmentId = null;
-            setView('admin'); 
+            setView('admin');
             showToast("Logged out successfully", "success");
         }
 
@@ -1924,14 +2231,37 @@
                 creds: `${email}:${getPassword(index)}`,
                 used: false,
                 otpRequest: { status: 'idle', code: null, requestedAt: null },
-                messages: [] 
+                messages: []
             }));
 
             const { error } = await supabaseClient.from('orders').update({ status: 'Completed', accounts_data: newAccounts }).eq('id', id);
-            if(!error) {
+            if (!error) {
                 state.activeFulfillmentId = null;
                 showToast("Order fulfilled successfully", "success");
             } else showToast("Database Error", "error");
+        }
+
+        async function autoAssignFromPool(orderId, quantity) {
+            const qty = Math.max(1, Math.min(Number(quantity) || 1, 100));
+            showToast('Assigning from pool...', 'success');
+            const { data, error } = await supabaseClient.rpc('allocate_and_fulfill', {
+                p_order_id: orderId,
+                p_quantity: qty
+            });
+            if (error) {
+                return showToast('Auto-assign failed: ' + (error.message || 'unknown error'), 'error');
+            }
+            // Check if the order was actually fulfilled
+            const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', orderId).single();
+            if (ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0) {
+                state.activeFulfillmentId = null;
+                showToast('Accounts auto-assigned from pool!', 'success');
+                await fetchAllOrders();
+                await fetchSheinAccountStats();
+                render(false);
+            } else {
+                showToast('No available accounts in pool. Add more accounts first.', 'error');
+            }
         }
 
         async function adminAction(id, action) {
@@ -1957,7 +2287,7 @@
 
             showModal(title, message, async () => {
                 const { error } = await supabaseClient.from('orders').update(updatePayload).eq('id', id);
-                if(error) showToast("Action failed", "error");
+                if (error) showToast("Action failed", "error");
                 else showToast(`Order ${action}ed`, "success");
             }, btnType, btnText);
         }
@@ -1985,10 +2315,10 @@
             if (r2.error) return showToast(r2.error.message || "Failed to save number", "error");
             await setSetting('payment_receiver_name', receiverName);
 
-            state.paymentSettings = { 
+            state.paymentSettings = {
                 ...(state.paymentSettings || {}),
-                payment_qr_url: url, 
-                payment_number: num, 
+                payment_qr_url: url,
+                payment_number: num,
                 payment_receiver_name: receiverName,
                 captcha_provider: captchaProvider
             };
@@ -2010,29 +2340,29 @@
 
         async function sendOtp(orderId, accId, code) {
             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
-            if(!data) return;
+            if (!data) return;
             const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'sent', code: code } } : acc);
             await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
             showToast("OTP Sent", "success");
         }
-        
+
         async function requestOtp(orderId, accId) {
             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
-            if(!data) return;
-            
+            if (!data) return;
+
             const account = data.accounts_data.find(acc => acc.id === accId);
-            if(account && account.otpRequest && account.otpRequest.requestedAt) {
+            if (account && account.otpRequest && account.otpRequest.requestedAt) {
                 const lastRequestTime = new Date(account.otpRequest.requestedAt).getTime();
                 const now = new Date().getTime();
-                const timeSinceLastRequest = (now - lastRequestTime) / 1000 / 60; 
-                
-                if(timeSinceLastRequest < 2) {
+                const timeSinceLastRequest = (now - lastRequestTime) / 1000 / 60;
+
+                if (timeSinceLastRequest < 2) {
                     const remainingSeconds = Math.ceil((2 - timeSinceLastRequest) * 60);
                     showToast(`Please wait ${remainingSeconds} seconds before requesting again`, "error");
                     return;
                 }
             }
-            
+
             const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc);
             await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
 
@@ -2048,11 +2378,11 @@
         }
 
         async function toggleAccountUsed(orderId, accId) {
-             const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
-            if(!data) return;
+            const { data } = await supabaseClient.from('orders').select('accounts_data').eq('id', orderId).single();
+            if (!data) return;
             const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, used: !acc.used } : acc);
             const { error } = await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
-            if(error) showToast("Update failed", "error");
+            if (error) showToast("Update failed", "error");
         }
 
         function getPendingOtpCount() {
@@ -2074,19 +2404,19 @@
                         <button onclick="window.goHome()" class="font-bold text-lg tracking-tighter italic ${isV2 ? 'text-black dark:text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-500'} pr-2 pb-1">${SITE_NAME}</button>
                     </div>
                     <div class="flex items-center gap-4">
-                        ${state.user 
-                            ? `
+                        ${state.user
+                    ? `
                                <div class="flex items-center gap-1 text-[10px] ${isV2 ? 'font-poppins' : 'font-mono'} text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-sm bg-emerald-500/5">
                                     <span>₱${formatPHP(state.userProfile?.credits || 0).replace('₱', '')}</span>
                                </div>
                                <a href="spin.html" class="text-zinc-400 hover:text-yellow-400 transition-colors animate-pulse-slow"><i data-lucide="gift" class="w-4 h-4"></i></a>
                                <button onclick="window.setView('my-orders')" class="text-zinc-400 hover:text-emerald-500 transition-colors"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
-                            : `
+                    : `
                                <button onclick="window.setView('login')" class="text-[10px] font-bold uppercase hover:text-emerald-500 transition-colors ${isV2 ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-white'}">Login</button>
                                <button onclick="window.setView('my-orders')" class="${isV2 ? 'text-black dark:text-white' : 'text-zinc-400 hover:text-white'} transition-colors" title="Order history"><i data-lucide="package" class="w-4 h-4"></i></button>
                             `
-                        }
+                }
                         ${state.user ? `<button onclick="window.handleUserLogout()" class="text-zinc-400 hover:text-red-400 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>` : ''}
                         
                         <div class="flex items-center gap-2 border-l ${isV2 ? 'border-gray-200 dark:border-white/10' : 'border-white/10'} pl-4">
@@ -2155,25 +2485,36 @@
                     </div>
                     <div class="max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-20">
-                            ${state.products.length === 0 
-                                ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>'
-                                : (enabledProducts.length === 0
-                                    ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
-                                    : enabledProducts.map(p => {
-                                const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
-                                const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
-                                const priceHtml = isNewUserPromo
-                                    ? `<div class="flex flex-col">
+                            ${state.products.length === 0
+                    ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>Loading products...</p></div>'
+                    : (enabledProducts.length === 0
+                        ? '<div class="col-span-full text-center text-zinc-500 py-10"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
+                        : enabledProducts.map(p => {
+                            const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
+                            const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
+                            const hasSale = !isNewUserPromo && parseFloat(p.sale_price || 0) > 0 && parseFloat(p.sale_price) < parseFloat(p.price);
+                            const salePrice = hasSale ? parseFloat(p.sale_price) : null;
+                            const discountPct = hasSale ? Math.round((1 - salePrice / parseFloat(p.price)) * 100) : 0;
+                            const displayPrice = isNewUserPromo ? promoPrice : (hasSale ? salePrice : parseFloat(p.price));
+                            const priceHtml = isNewUserPromo
+                                ? `<div class="flex flex-col">
                                             <span class="text-xs font-bold font-mono text-emerald-400">${formatPHP(promoPrice)}</span>
                                             <span class="text-[10px] font-mono text-zinc-500 line-through">${formatPHP(p.price)}</span>
                                        </div>`
+                                : hasSale
+                                    ? `<div class="flex flex-col">
+                                            <span class="text-xs font-bold font-mono text-red-400">${formatPHP(salePrice)}</span>
+                                            <span class="text-[10px] font-mono text-zinc-500 line-through">${formatPHP(p.price)}</span>
+                                       </div>`
                                     : `<span class="text-xs font-bold font-mono text-white">${formatPHP(p.price)}</span>`;
-                                const badgeHtml = isNewUserPromo
-                                    ? `<div class="absolute top-1 left-1 bg-emerald-500 text-[8px] font-mono text-black px-1.5 py-0.5 rounded-sm uppercase tracking-wide shadow-sm z-20">
+                            const badgeHtml = isNewUserPromo
+                                ? `<div class="absolute top-1 left-1 bg-emerald-500 text-[8px] font-mono text-black px-1.5 py-0.5 rounded-sm uppercase tracking-wide shadow-sm z-20">
                                             NEW USER DEAL
                                        </div>`
+                                : hasSale
+                                    ? `<span class="absolute top-1.5 left-1.5 z-20 inline-flex items-center gap-0.5 bg-red-600 text-[7px] font-black px-1.5 py-[3px] rounded-full tracking-wider leading-none" style="color:#fff">-${discountPct}% OFF</span>`
                                     : '';
-                                return `
+                            return `
                             <div onclick="window.selectProduct(${p.id})" class="group cursor-pointer bg-zinc-900/50 border border-white/5 hover:border-emerald-500/50 hover:bg-zinc-900 transition-all duration-300 p-2.5 relative overflow-hidden h-full rounded-md ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
                                 ${badgeHtml}
                                 <div class="flex flex-col gap-2 h-full justify-between relative z-10">
@@ -2198,7 +2539,7 @@
                                 </div>
                             </div>
                                 `;
-                            }).join(''))}
+                        }).join(''))}
                         </div>
                     </div>
                 </div>
@@ -2207,9 +2548,9 @@
 
         // --- V2 (Modern/Clean) Home Render ---
         function renderHomeV2(animate) {
-             const animClass = animate ? 'animate-enter' : '';
-             const enabledProducts = state.products.filter(p => p.enabled !== false);
-             return `
+            const animClass = animate ? 'animate-enter' : '';
+            const enabledProducts = state.products.filter(p => p.enabled !== false);
+            return `
              <div class="pt-14 pb-12 bg-white dark:bg-black font-poppins ${animClass} min-h-screen">
                 <!-- Safe Banner -->
                 <div class="bg-gray-100 dark:bg-zinc-900 py-1.5 flex justify-center items-center gap-2 text-[9px] uppercase font-semibold tracking-wider text-gray-500 dark:text-zinc-400">
@@ -2271,25 +2612,35 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                         ${state.products.length === 0 
-                            ? '<div class="col-span-2 text-center text-gray-400 dark:text-zinc-500 py-8 text-xs"><p>Loading products...</p></div>'
-                            : (enabledProducts.length === 0
-                                ? '<div class="col-span-2 text-center text-gray-500 dark:text-zinc-500 py-8 text-xs"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
-                                : enabledProducts.filter(p => p.enabled !== false).map((p) => {
-                             const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
-                             const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
-                             const priceHtml = isNewUserPromo
+                         ${state.products.length === 0
+                    ? '<div class="col-span-2 text-center text-gray-400 dark:text-zinc-500 py-8 text-xs"><p>Loading products...</p></div>'
+                    : (enabledProducts.length === 0
+                        ? '<div class="col-span-2 text-center text-gray-500 dark:text-zinc-500 py-8 text-xs"><p>It\'s cut off time and will be open again at 8:00 AM.</p></div>'
+                        : enabledProducts.filter(p => p.enabled !== false).map((p) => {
+                            const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
+                            const promoPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
+                            const hasSale = !isNewUserPromo && parseFloat(p.sale_price || 0) > 0 && parseFloat(p.sale_price) < parseFloat(p.price);
+                            const salePrice = hasSale ? parseFloat(p.sale_price) : null;
+                            const discountPct = hasSale ? Math.round((1 - salePrice / parseFloat(p.price)) * 100) : 0;
+                            const priceHtml = isNewUserPromo
                                 ? `<div class="flex flex-col items-start">
                                         <span class="font-poppins font-semibold text-emerald-600 text-sm tracking-tight">${formatPHPPoppins(promoPrice)}</span>
                                         <span class="font-poppins text-[11px] text-gray-400 dark:text-zinc-500 line-through">${formatPHPPoppins(p.price)}</span>
                                    </div>`
-                                : `<p class="font-poppins font-medium text-gray-900 dark:text-white text-sm tracking-tight">${formatPHPPoppins(p.price)}</p>`;
-                             const badgeHtml = isNewUserPromo
+                                : hasSale
+                                    ? `<div class="flex flex-col items-start">
+                                        <span class="font-poppins font-semibold text-red-500 text-sm tracking-tight">${formatPHPPoppins(salePrice)}</span>
+                                        <span class="font-poppins text-[11px] text-gray-400 dark:text-zinc-500 line-through">${formatPHPPoppins(p.price)}</span>
+                                   </div>`
+                                    : `<p class="font-poppins font-medium text-gray-900 dark:text-white text-sm tracking-tight">${formatPHPPoppins(p.price)}</p>`;
+                            const badgeHtml = isNewUserPromo
                                 ? `<div class="absolute -top-2 left-2 bg-emerald-500 text-[8px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
                                         NEW USER DEAL
                                    </div>`
-                                : '';
-                             return `
+                                : hasSale
+                                    ? `<span class="absolute top-2 left-2 z-20 inline-flex items-center gap-0.5 bg-red-500 text-[7px] font-black px-1.5 py-[3px] rounded-full tracking-wider leading-none" style="color:#fff">-${discountPct}% OFF</span>`
+                                    : '';
+                            return `
                              <div onclick="window.selectProduct(${p.id})" class="bg-gray-50 dark:bg-zinc-900 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border border-transparent hover:border-gray-200 dark:hover:border-white/10 group relative ${p.stock <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}">
                                 ${badgeHtml}
                                 <div class="flex justify-between items-start mb-4">
@@ -2310,7 +2661,7 @@
                                 ${p.stock <= 0 ? '<div class="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center font-bold text-red-500 uppercase tracking-widest text-[10px] border-2 border-red-500 rounded-lg m-1.5">Out of Stock</div>' : ''}
                              </div>
                              `;
-                         }).join(''))}
+                        }).join(''))}
                     </div>
                 </div>
              </div>
@@ -2470,7 +2821,7 @@
             const isV2 = state.uiVariant === 'v2';
             const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
             const promoUnitPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
-            
+
             const bgClass = isV2 ? 'bg-white dark:bg-black' : 'bg-transparent';
             const textMain = isV2 ? 'text-black dark:text-white' : 'text-white';
             const textSub = isV2 ? 'text-gray-500 dark:text-zinc-400' : 'text-zinc-400';
@@ -2590,8 +2941,8 @@
             const finalTotal = subtotal - discountAmount;
             const animClass = animate ? 'animate-enter' : '';
             const showCaptcha = state.sessionOrderCount >= 3;
-            
-            const buttonContent = state.isSubmitting 
+
+            const buttonContent = state.isSubmitting
                 ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> Verifying payment`
                 : (state.paymentMethod === 'gcash' ? `<i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Payment` : `Confirm Payment`);
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
@@ -2693,6 +3044,10 @@
                             <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Gateway</span>
                         </div>
+                        <div class="flex items-center gap-2 bg-amber-50 border border-amber-400 rounded-lg px-3 py-2 mb-3">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
+                            <p class="text-[9px] text-amber-900 font-mono leading-relaxed"><span class="font-bold">GCash to GCash only.</span> Bank transfers are <span class="font-bold text-red-700">NOT accepted</span> and will not be verified.</p>
+                        </div>
                         <div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
                             <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-10"></div>
                             <img src="${getPaymentQrUrl()}" alt="QR" class="w-48 h-48 object-contain" onerror="this.src='${GCASH_QR_URL}'" />
@@ -2713,7 +3068,10 @@
                             <div class="w-full bg-zinc-900 border border-white/10 py-6 px-4 text-center rounded-lg flex flex-col items-center justify-center gap-2">
                                 ${state.isSubmitting ? `
                                 <span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
-                                <p class="text-xs font-mono text-zinc-400">Receipt verification in progress...</p>
+                                <div class="relative h-4 w-full text-center">
+                                    <p class="absolute inset-0 text-xs font-mono text-zinc-400 animate-fade-out-in">Receipt verification in progress...</p>
+                                    <p class="absolute inset-0 text-xs font-mono text-emerald-400/80 animate-fade-in-out opacity-0 mt-[1px]">Takes 10-15s, please be patient...</p>
+                                </div>
                                 ` : `
                                 <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500"></i>
                                 <p class="text-xs font-mono text-emerald-400">Receipt uploaded successfully</p>
@@ -2722,7 +3080,6 @@
                             </div>
                             `}
                             <input type="file" id="checkoutReceiptFile" accept="image/*" class="hidden" onchange="window.handleCheckoutReceiptUpload(event)" />
-                            ${state.receiptTestResult ? getReceiptTestResultHtml() : ''}
                         </div>
                     </div>` : '<div class="mb-6 bg-zinc-900 border border-white/10 p-4 rounded-lg"><p class="text-[10px] text-zinc-400 mb-3">You will be redirected to Stripe to pay securely with card.</p><p class="text-xs font-mono font-bold text-white">' + formatPHP(finalTotal) + '</p></div>'}
                         
@@ -2749,8 +3106,8 @@
                 <h2 class="text-2xl font-bold tracking-tighter mb-2 text-white relative z-10">Order Received</h2>
                 <p class="text-zinc-500 text-[10px] mb-8 max-w-[260px] leading-relaxed font-mono relative z-10">
                     ${fulfilled
-                        ? 'Payment confirmed. Your accounts are ready – check status below.'
-                        : "Payment confirmed. We're currently restocking – your accounts will be delivered within 10–30 minutes. Check status below."}
+                    ? 'Payment confirmed. Your accounts are ready – check status below.'
+                    : "Payment confirmed. We're currently restocking – your accounts will be delivered within 10–30 minutes. Check status below."}
                 </p>
                 
                 <div class="bg-zinc-900 border border-dashed border-zinc-700 p-3 w-full mb-6 relative group max-w-xs">
@@ -2777,20 +3134,20 @@
             const isRefundPending = res.status === 'Refund Pending';
             const isCompleted = res.status === 'Completed';
             const isCancelled = res.status === 'Cancelled';
-            
+
             const timeDiff = new Date() - new Date(res.date);
             const canCancel = isProcessing && timeDiff < 60000;
             const canRequestRefund = isProcessing && timeDiff > 3600000;
             const canDelete = isCancelled || res.status === 'Refunded';
 
             let statusColor = '';
-            if(isCompleted) statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
-            else if(isCancelled) statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
-            else if(isRefundPending) statusColor = 'text-orange-400 bg-orange-500/10 border-orange-500/20';
+            if (isCompleted) statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+            else if (isCancelled) statusColor = 'text-red-400 bg-red-500/10 border-red-500/20';
+            else if (isRefundPending) statusColor = 'text-orange-400 bg-orange-500/10 border-orange-500/20';
             else statusColor = 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
 
             let accountsHtml = '';
-            if(isCompleted && res.accounts && res.accounts.length > 0) {
+            if (isCompleted && res.accounts && res.accounts.length > 0) {
                 if (isMyOrders && state.view === 'my-orders') {
                     accountsHtml = `
                     <div class="mt-4 pt-3 border-t border-white/5">
@@ -2843,8 +3200,14 @@
 
                 ${(isProcessing && res.refNumber && res.refNumber !== 'PAID-VIA-CREDITS' && res.refNumber !== 'VERIFIED-GCASH' && (res.refNumber || '').indexOf('STRIPE-') !== 0 && (res.creditsUsed || 0) === 0) ? `
                 <div class="mt-5 pl-2">
-                    <button type="button" onclick="window.startReceiptVerification('${res.id}')" disabled="${state.receiptVerifying ? 'disabled' : ''}" class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2 ${state.receiptVerifying ? 'opacity-50 cursor-not-allowed' : ''}">
-                        ${state.receiptVerifying ? '<span class="spinner spinner-sm border-white/40 border-t-transparent"></span> Verifying...' : '<i data-lucide="shield-check" class="w-3 h-3"></i> Verify receipt'}
+                    <button type="button" onclick="window.startReceiptVerification('${res.id}')" ${state.receiptVerifying ? 'disabled' : ''} class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2 ${state.receiptVerifying ? 'opacity-50 cursor-not-allowed' : ''}">
+                        ${state.receiptVerifying
+                        ? '<span class="confirm-preloader shrink-0" style="color:#34d399"><span class="dot" style="background:#34d399"></span><span class="dot" style="background:#34d399"></span><span class="dot" style="background:#34d399"></span></span>' +
+                        '<div class="relative h-4 flex-1 text-center overflow-hidden">' +
+                        '<span class="absolute inset-0 flex items-center justify-center text-[9px] font-mono animate-fade-out-in">Verification in progress...</span>' +
+                        '<span class="absolute inset-0 flex items-center justify-center text-[9px] font-mono animate-fade-in-out opacity-0">Takes 10-15s, please wait...</span>' +
+                        '</div>'
+                        : '<i data-lucide="shield-check" class="w-3 h-3"></i> Verify receipt'}
                     </button>
                     <p class="text-[8px] text-zinc-600 text-center mt-2 font-mono">Upload GCash receipt to receive accounts</p>
                 </div>` : ''}
@@ -2878,31 +3241,26 @@
         }
 
         function renderTracker(animate = true) {
+            let trackerContent = '';
+            if (!state.searchResult) {
+                trackerContent = '<div class="text-center py-16 text-zinc-500"><i data-lucide="package-search" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p class="text-xs font-mono">Enter your order ID above to track status</p></div>';
+            } else if (state.searchResult === 'not-found') {
+                trackerContent = '<div class="animate-enter text-center p-6 text-zinc-500 border border-dashed border-zinc-800 bg-zinc-900/30 mt-4"><i data-lucide="search-x" class="w-6 h-6 mx-auto mb-2 opacity-50"></i><p class="text-[10px] font-mono">Error: Order not found</p></div>';
+            } else {
+                trackerContent = renderOrderCard(state.searchResult);
+            }
             return `
             <div class="min-h-screen bg-black font-sans pb-16 pt-14">
                 ${renderTrackerSearchBar()}
                 <div class="p-5 max-w-md mx-auto w-full">
-                    ${state.receiptTestResult ? '<div class="mb-4">' + getReceiptTestResultHtml() + '</div>' : ''}
-                    ${!state.searchResult ? `
-                        <div class="text-center py-16 text-zinc-500">
-                            <i data-lucide="package-search" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-                            <p class="text-xs font-mono">Enter your order ID above to track status</p>
-                        </div>
-                    ` : 
-                      state.searchResult === 'not-found' ? `
-                        <div class="animate-enter text-center p-6 text-zinc-500 border border-dashed border-zinc-800 bg-zinc-900/30 mt-4">
-                            <i data-lucide="search-x" class="w-6 h-6 mx-auto mb-2 opacity-50"></i>
-                            <p class="text-[10px] font-mono">Error: Order not found</p>
-                        </div>
-                      ` : renderOrderCard(state.searchResult)
-                    }
+                    ${trackerContent}
                 </div>
             </div>`;
         }
 
         function renderAdmin() {
             const isDark = document.documentElement.classList.contains('dark');
-            
+
             if (!state.adminAuth) {
                 return `
                 <div class="min-h-screen ${isDark ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'} font-sans flex items-center justify-center p-6 fixed top-0 left-0 w-full z-50">
@@ -2925,7 +3283,7 @@
             const revenue = state.orders
                 .filter(o => o.status === 'Completed')
                 .reduce((acc, cur) => acc + cur.total, 0);
-            
+
             const pendingOtp = getPendingOtpCount();
             const adminBg = isDark ? 'bg-black' : 'bg-gray-50';
             const adminHeaderBg = isDark ? 'bg-black border-white/10' : 'bg-white border-gray-200';
@@ -2942,11 +3300,11 @@
                     <table class="w-full text-left">
                         <tbody class="divide-y ${adminBorder}">
                             ${state.orders.map(order => {
-                                const msgCount = order.accounts 
-                                    ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user' && !m.read).length : 0), 0)
-                                    : 0;
+                    const msgCount = order.accounts
+                        ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user' && !m.read).length : 0), 0)
+                        : 0;
 
-                                return `
+                    return `
                             <tr class="${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} group transition-colors">
                                 <td class="p-3">
                                     <div class="flex items-center gap-2">
@@ -3002,7 +3360,13 @@
                                             `).join('')}
                                         </div>
                                     ` : `
-                                        <h4 class="text-[9px] font-bold uppercase mb-2 ${adminTextMuted} tracking-wider">Add Accounts (one per line)</h4>
+                                        <div class="flex items-center gap-2 mb-4 pb-3 border-b ${adminBorder}">
+                                            <button onclick="window.autoAssignFromPool('${order.id}', '${order.quantity}')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-2 text-[9px] uppercase font-bold tracking-wide flex items-center justify-center gap-2">
+                                                <i data-lucide="zap" class="w-3 h-3"></i>
+                                                Auto-assign from Pool
+                                            </button>
+                                        </div>
+                                        <h4 class="text-[9px] font-bold uppercase mb-2 ${adminTextMuted} tracking-wider">Or enter accounts manually</h4>
                                         <div class="space-y-3 mb-3">
                                             <div>
                                                 <label class="block text-[8px] font-bold uppercase ${adminTextMuted} mb-1 tracking-wider">Email / Username</label>
@@ -3014,8 +3378,8 @@
                                             </div>
                                         </div>
                                         <div class="flex justify-end gap-2">
-                                            <button onclick="state.activeFulfillmentId = null; render()" class="${adminTextMuted} hover:${isDark ? 'text-white' : 'text-gray-900'} text-[10px] font-bold uppercase transition-colors">Cancel</button>
-                                            <button onclick="window.fulfillOrder('${order.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Confirm & Send</button>
+                                            <button onclick="state.activeFulfillmentId = null; render()" class="${adminTextMuted} text-[10px] font-bold uppercase transition-colors">Cancel</button>
+                                            <button onclick="window.fulfillOrder('${order.id}')" class="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1.5 text-[9px] uppercase font-bold tracking-wide">Manual Send</button>
                                         </div>
                                     `}
                                 </td>
@@ -3042,6 +3406,10 @@
                             <div class="mb-3">
                                 <label class="text-[8px] ${adminTextMuted} uppercase font-bold block mb-1">Product Title</label>
                                 <input type="text" id="prod-title-${p.id}" value="${p.title}" class="${adminInput} w-full text-xs p-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="text-[8px] ${adminTextMuted} uppercase font-bold block mb-1">Tagline <span class="normal-case font-normal opacity-60">(e.g. WIDE RANGE, STABLE)</span></label>
+                                <input type="text" id="prod-tag-${p.id}" value="${p.tag || ''}" placeholder="Optional badge text" class="${adminInput} w-full text-xs p-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
                             </div>
                             
                             <div class="grid grid-cols-2 gap-3 mb-3">
@@ -3085,6 +3453,15 @@
                                     <input type="number" id="prod-new-user-price-${p.id}" value="${p.new_user_price || ''}" placeholder="Optional" class="${adminInput} w-full text-xs py-2 pl-6 pr-2 focus:outline-none focus:border-emerald-500 rounded-sm border" />
                                 </div>
                                 <p class="text-[8px] ${adminTextMuted} mt-1">If enabled, first-time buyers will see this special price for this account type.</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="block text-[8px] text-red-400 uppercase font-bold mb-1 flex items-center gap-1"><i data-lucide="tag" class="w-2.5 h-2.5"></i> Sale Price (optional)</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 -translate-y-1/2 ${adminTextMuted} text-xs">₱</span>
+                                    <input type="number" id="prod-sale-price-${p.id}" value="${p.sale_price || ''}" placeholder="Leave empty to disable sale" class="${adminInput} w-full text-xs py-2 pl-6 pr-2 focus:outline-none focus:border-red-500 rounded-sm border" />
+                                </div>
+                                <p class="text-[8px] ${adminTextMuted} mt-1">Shows a sale badge with discount % and strikethrough original price on the homepage. Clear to remove sale.</p>
                             </div>
 
                             <div class="mt-2 mb-2 flex items-center justify-between">
@@ -3180,6 +3557,13 @@
             } else if (state.adminTab === 'account-pool') {
                 const avail = state.sheinAccountStats?.available ?? 0;
                 const sold = state.sheinAccountStats?.sold ?? 0;
+                const accList = state.sheinAccountsList || [];
+                // Support multiple possible column names for sold status
+                const isSold = (a) => !!(a.sold || a.is_sold || a.assigned_order_id || a.assigned);
+                const availAccounts = accList.filter(a => !isSold(a));
+                const soldAccounts = accList.filter(a => isSold(a));
+                const showSold = state.showSoldAccounts || false;
+                const displayList = showSold ? soldAccounts : availAccounts;
                 tabContent = `
                 <div class="${adminCard} border ${adminBorder} rounded-lg overflow-hidden">
                     <div class="p-4 border-b ${adminBorder}">
@@ -3204,6 +3588,44 @@
                             <button onclick="window.addSheinAccounts()" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-4 py-2 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to pool</button>
                         </div>
                     </div>
+                    <div class="p-4 border-t ${adminBorder}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <h4 class="text-[9px] font-bold uppercase ${adminTextMuted} tracking-widest">Account List</h4>
+                                <div class="flex gap-1">
+                                    <button onclick="state.showSoldAccounts = false; render(false);" style="${!showSold ? (isDark ? 'background:#fff;color:#000' : 'background:#111827;color:#fff') : (isDark ? 'background:#27272a;color:#71717a' : 'background:#e5e7eb;color:#4b5563')}" class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-sm transition-all">Available (${availAccounts.length})</button>
+                                    <button onclick="state.showSoldAccounts = true; render(false);" style="${showSold ? (isDark ? 'background:#fff;color:#000' : 'background:#111827;color:#fff') : (isDark ? 'background:#27272a;color:#71717a' : 'background:#e5e7eb;color:#4b5563')}" class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-sm transition-all">Sold (${soldAccounts.length})</button>
+                                </div>
+                            </div>
+                            <button onclick="window.fetchSheinAccountsList().then(()=>render(false))" class="text-[8px] flex items-center gap-1 transition-colors ${isDark ? 'text-zinc-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+                            </button>
+                        </div>
+                        ${state.sheinAccountsLoading ? '<div class="flex items-center justify-center py-8 gap-2 text-zinc-500"><span class="spinner spinner-sm"></span><span class="text-[10px] font-mono">Loading...</span></div>' :
+                        displayList.length === 0
+                            ? '<p class="text-center text-[10px] ' + adminTextMuted + ' py-6 font-mono">No ' + (showSold ? 'sold' : 'available') + ' accounts.</p>'
+                            : '<div class="space-y-2 max-h-96 overflow-y-auto pr-1">' +
+                            displayList.map((acc, idx) => {
+                                const displayCreds = acc._creds || '';
+                                const sep = displayCreds.indexOf(':');
+                                const email = sep >= 0 ? displayCreds.slice(0, sep) : displayCreds;
+                                const pass = sep >= 0 ? displayCreds.slice(sep + 1) : '';
+                                return '<div class="' + (isDark ? 'bg-black/40 border-white/5' : 'bg-gray-50 border-gray-200') + ' border rounded-lg p-3 group">' +
+                                    '<div class="flex items-center gap-2 mb-2">' +
+                                    '<span class="text-[8px] font-bold ' + adminTextMuted + ' font-mono w-6 shrink-0">#' + (idx + 1) + '</span>' +
+                                    '<input type="text" id="edit-acc-' + acc.id + '" value="' + escapeHtml(displayCreds) + '" class="flex-1 ' + adminInput + ' border text-[10px] font-mono px-2 py-1 focus:outline-none focus:border-emerald-500 rounded-sm" />' +
+                                    '<button onclick="window.updateSheinAccount(' + JSON.stringify(acc.id) + ')" class="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-2 py-1 text-[8px] uppercase font-bold rounded-sm transition-colors"><i data-lucide="save" class="w-3 h-3"></i></button>' +
+                                    '<button onclick="window.deleteSheinAccount(' + JSON.stringify(acc.id) + ')" class="shrink-0 text-red-500 hover:text-red-400 px-1 py-1 transition-colors"><i data-lucide="trash-2" class="w-3 h-3"></i></button>' +
+                                    '</div>' +
+                                    '<div class="flex gap-3 pl-8">' +
+                                    '<span class="text-[9px] ' + adminTextMuted + ' font-mono truncate">' + escapeHtml(email) + '</span>' +
+                                    (pass ? '<span class="text-[9px] font-mono text-zinc-300">' + escapeHtml(pass) + '</span>' : '') +
+                                    '</div>' +
+                                    '</div>';
+                            }).join('') +
+                            '</div>'
+                    }
+                    </div>
                 </div>`;
             }
 
@@ -3223,7 +3645,7 @@
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Gross Rev</p><p class="text-lg font-bold font-mono ${adminText}">${formatPHP(revenue)}</p></div>
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Total Tx</p><p class="text-lg font-bold ${adminText}">${state.orders.length}</p></div>
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Pending</p><p class="text-lg font-bold text-yellow-600">${pending}</p></div>
-                        <div onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${(state.sheinAccountStats?.available ?? 0) === 0 ? 'border-amber-500/30' : ''}">
+                        <div onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render()); fetchSheinAccountsList().then(()=>render(false));" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${(state.sheinAccountStats?.available ?? 0) === 0 ? 'border-amber-500/30' : ''}">
                             <p class="text-[8px] ${adminTextMuted} uppercase font-bold flex justify-between tracking-widest">Accounts <i data-lucide="key" class="w-3 h-3"></i></p>
                             <p class="text-lg font-bold text-emerald-500">${state.sheinAccountStats?.available ?? 0}</p>
                         </div>
@@ -3236,7 +3658,7 @@
                     <div class="flex gap-4 mb-5 border-b ${adminBorder} pb-1 px-1 overflow-x-auto">
                         <button onclick="state.adminTab = 'orders'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'orders' ? tabActive : tabInactive}">Orders</button>
                         <button onclick="state.adminTab = 'products'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'products' ? tabActive : tabInactive}">Products</button>
-                        <button onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'account-pool' ? tabActive : tabInactive}">Accounts</button>
+                        <button onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render(false)); fetchSheinAccountsList().then(()=>render(false));" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'account-pool' ? tabActive : tabInactive}">Accounts</button>
                         <button onclick="state.adminTab = 'otp'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest flex items-center gap-2 ${state.adminTab === 'otp' ? tabActive : tabInactive}">OTPs ${pendingOtp > 0 ? `<span class="bg-red-500 text-white px-1.5 rounded-full text-[8px] animate-pulse">${pendingOtp}</span>` : ''}</button>
                         <button onclick="state.adminTab = 'settings'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'settings' ? tabActive : tabInactive}">Settings</button>
                     </div>
@@ -3270,7 +3692,7 @@
 
             app.innerHTML = html;
             lucide.createIcons();
-            
+
             if (state.view === 'checkout' || state.view === 'register') setTimeout(renderCaptcha, 100);
 
             if (window.otpCooldownTimer) {
@@ -3279,14 +3701,14 @@
             }
 
             if (state.view === 'my-orders' && state.userOrders && state.userOrders.length > 0) {
-                const hasActiveCooldown = state.userOrders.some(order => 
+                const hasActiveCooldown = state.userOrders.some(order =>
                     order.accounts && order.accounts.some(acc => {
                         const otp = acc.otpRequest || {};
-                        if(otp.requestedAt) {
+                        if (otp.requestedAt) {
                             const lastRequestTime = new Date(otp.requestedAt).getTime();
                             const now = new Date().getTime();
                             const timeSinceLastRequest = (now - lastRequestTime) / 1000;
-                            return timeSinceLastRequest < 120; 
+                            return timeSinceLastRequest < 120;
                         }
                         return false;
                     })
@@ -3294,10 +3716,10 @@
 
                 if (hasActiveCooldown) {
                     window.otpCooldownTimer = setInterval(() => {
-                        const stillHasCooldown = state.userOrders.some(order => 
+                        const stillHasCooldown = state.userOrders.some(order =>
                             order.accounts && order.accounts.some(acc => {
                                 const otp = acc.otpRequest || {};
-                                if(otp.requestedAt) {
+                                if (otp.requestedAt) {
                                     const lastRequestTime = new Date(otp.requestedAt).getTime();
                                     const now = new Date().getTime();
                                     const timeSinceLastRequest = (now - lastRequestTime) / 1000;
@@ -3338,7 +3760,7 @@
         window.toggleAccountUsed = toggleAccountUsed;
         window.requestOtp = requestOtp;
         window.handleAdminLogin = handleAdminLogin;
-        window.handleAdminLogout = handleAdminLogout; 
+        window.handleAdminLogout = handleAdminLogout;
         window.fulfillOrder = fulfillOrder;
         window.adminAction = adminAction;
         window.savePaymentSettings = savePaymentSettings;
@@ -3361,14 +3783,18 @@
         window.setPaymentMethod = setPaymentMethod;
         window.createStripeCheckoutAndRedirect = createStripeCheckoutAndRedirect;
         window.handleCheckoutReceiptUpload = handleCheckoutReceiptUpload;
-        
+
         // New Expose Functions
         window.openAddProductModal = openAddProductModal;
         window.closeAddProductModal = closeAddProductModal;
         window.submitNewProduct = submitNewProduct;
         window.saveProductChanges = saveProductChanges;
         window.addSheinAccounts = addSheinAccounts;
-        
+        window.fetchSheinAccountsList = fetchSheinAccountsList;
+        window.deleteSheinAccount = deleteSheinAccount;
+        window.updateSheinAccount = updateSheinAccount;
+        window.autoAssignFromPool = autoAssignFromPool;
+
         // Auth Expose
         window.handleLogin = handleLogin;
         window.handleRegister = handleRegister;
@@ -3395,12 +3821,12 @@
                 showToast("Database connection failed", "error");
                 return;
             }
-            
+
             await initAuth();
             state.adminAuth = loadPersistedAdminAuth();
             if (state.adminAuth) {
                 state.trackedPendingOtps.clear();
-                try { await requestNotificationPermission(); } catch (e) {}
+                try { await requestNotificationPermission(); } catch (e) { }
                 await fetchAllOrders();
                 await fetchSheinAccountStats();
             }
@@ -3416,7 +3842,8 @@
         window.startReceiptVerification = startReceiptVerification;
 
         init();
-        
+
     </script>
 </body>
+
 </html>
