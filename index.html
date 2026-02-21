@@ -369,8 +369,7 @@
         const SITE_NAME = "StakzShop";
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
-        const apiKey = "AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo"; // Gemini API Key
-        const GEMINI_API_KEY = "AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo"; // Explicitly defined for the verification function
+        // Gemini API key is stored in Supabase secrets (server-side only). Receipt verification and chat use Edge Functions.
 
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
         // Homepage chat widget (Tawk.to free live chat)
@@ -520,10 +519,12 @@
             quantity: 1,
             paymentMethod: 'gcash', 
             lastOrderId: null,
+            lastOrderFulfilled: null,
             trackerInput: '',
             searchResult: null,
             adminAuth: false,
             adminTab: 'orders',
+            sheinAccountStats: { available: 0, sold: 0 },
             activeFulfillmentId: null,
             fulfillmentText: '',
             aiLoading: false,
@@ -537,7 +538,7 @@
             modalCallback: null,
             sessionOrderCount: 0,
             selectedOrderId: null,
-            paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha' },
+            paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha', receipt_checks: { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true } },
             captchaToken: null,
             payWithCredits: false,
             trackedPendingOtps: new Set(),
@@ -837,24 +838,14 @@
             state.aiLoading = true;
             state.aiContent = null;
             render(false); 
-
             try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                    }
-                );
-                const data = await response.json();
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "System busy.";
+                const { data, error } = await supabaseClient?.functions?.invoke?.('gemini-chat', { body: { prompt } }) || { data: null, error: { message: 'Supabase not configured' } };
+                const text = error ? "Connection error." : (data?.text || "System busy.");
                 state.aiContent = { type, text };
             } catch (e) {
                 console.error(e);
-                state.aiContent = { type, text: "Connection error. Check API Key." };
+                state.aiContent = { type, text: "Connection error." };
             }
-            
             state.aiLoading = false;
             render(false); 
         }
@@ -946,11 +937,17 @@
                 const map = {};
                 data.forEach(r => { map[r.key] = r.value || ''; });
                 const provider = (map.captcha_provider || '').trim().toLowerCase();
+                let receiptChecks = { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true };
+                try {
+                    const rc = map.receipt_checks ? JSON.parse(map.receipt_checks) : null;
+                    if (rc && typeof rc === 'object') receiptChecks = { ...receiptChecks, ...rc };
+                } catch (_) {}
                 state.paymentSettings = {
                     payment_qr_url: map.payment_qr_url || '',
                     payment_number: map.payment_number || '',
                     payment_receiver_name: map.payment_receiver_name || '',
-                    captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha')
+                    captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha'),
+                    receipt_checks: receiptChecks
                 };
             }
         }
@@ -963,6 +960,24 @@
         function getPaymentNumber() {
             const num = (state.paymentSettings?.payment_number || '').trim();
             return num || GCASH_NUMBER;
+        }
+
+        async function fetchSheinAccountStats() {
+            if (!supabaseClient || !state.adminAuth) return;
+            const { data } = await supabaseClient.rpc('get_shein_account_stats');
+            if (data) state.sheinAccountStats = { available: data.available ?? 0, sold: data.sold ?? 0 };
+        }
+
+        async function addSheinAccounts() {
+            const ta = document.getElementById('sheinAccountsBulkInput');
+            const entries = ta ? ta.value.trim() : '';
+            if (!entries) return showToast('Enter email:password lines', 'error');
+            const { data, error } = await supabaseClient.rpc('add_shein_accounts', { p_entries: entries });
+            if (error) return showToast(error.message || 'Failed to add accounts', 'error');
+            showToast(`${data ?? 0} account(s) added to pool`, 'success');
+            ta.value = '';
+            await fetchSheinAccountStats();
+            render(false);
         }
 
         async function fetchAllOrders() {
@@ -1314,7 +1329,10 @@
                 state.payWithCredits = false;
                 state.checkoutReceiptBase64 = null;
             }
-            if (view === 'admin' && state.adminAuth) fetchAllOrders();
+            if (view === 'admin' && state.adminAuth) {
+                fetchAllOrders();
+                fetchSheinAccountStats();
+            }
             if (view === 'my-orders') {
                 if (state.user) fetchUserOrders().then(() => render(false));
                 else fetchGuestOrders().then(() => render(false));
@@ -1355,13 +1373,8 @@
         function applyDiscount() {
             const input = document.getElementById('discountInput');
             if(!input) return;
-            const code = input.value.trim().toUpperCase();
-            if (code === 'TEST1111') {
-                if (state.discount > 0) return showToast("Discount already applied", "info");
-                state.discount = 0.05; 
-                showToast("Voucher Applied: 5% OFF", "success");
-                render(false); 
-            } else if (code === '') {
+            const code = input.value.trim();
+            if (code === '') {
                 showToast("Please enter a code", "error");
             } else {
                 showToast("Invalid Voucher Code", "error");
@@ -1455,6 +1468,7 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.order_id) {
                     state.lastOrderId = data.order_id;
+                    state.lastOrderFulfilled = data.fulfilled === true;
                     notifyAdminNewOrder('stripe', data.order_id, '');
                     if (state.user && state.userProfile && state.userProfile.is_new_user) {
                         try {
@@ -1563,11 +1577,16 @@
                 return;
             }
 
-            if (isReceiptVerified) {
+            const shouldAllocate = isReceiptVerified || remainingToPay <= 0;
+            if (shouldAllocate) {
                 await supabaseClient.rpc('allocate_and_fulfill', {
                     p_order_id: newOrderId,
                     p_quantity: Math.max(1, Math.min(Number(state.quantity) || 1, 100))
                 });
+                const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', newOrderId).single();
+                state.lastOrderFulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
+            } else {
+                state.lastOrderFulfilled = false;
             }
 
             state.lastOrderId = newOrderId;
@@ -1625,82 +1644,31 @@
             if (el) el.click();
         }
 
-        function fuzzyMatchStr(a, b) {
-            if (!a || !b) return false;
-            const n = (s) => String(s).toUpperCase().replace(/[^A-Z0-9*•]/g, '');
-            const n1 = n(a), n2 = n(b);
-            if (/[*•]/.test(n1) || /[*•]/.test(n2)) {
-                try {
-                    const re = new RegExp('^' + n2.replace(/[*•]/g, '.*') + '$', 'i');
-                    if (re.test(n1)) return true;
-                } catch (_) {}
-                return n1 === n2 || n1.includes(n2.replace(/[*•]/g, '')) || n2.includes(n1.replace(/[*•]/g, ''));
-            }
-            return n1 === n2 || n1.includes(n2) || n2.includes(n1);
-        }
-
-        function isNumberMatchStr(ext, tgt) {
-            if (!ext || !tgt) return false;
-            const e = String(ext).replace(/\D/g, ''), t = String(tgt).replace(/\D/g, '');
-            return e === t || (t.length >= 4 && e.endsWith(t.slice(-4)));
-        }
-
         async function verifyReceiptWithGemini(imageBase64, order, paymentSettings) {
-            if (!GEMINI_API_KEY) return { verified: false };
-            const base64Data = imageBase64.indexOf(',') >= 0 ? imageBase64.split(',')[1] : imageBase64;
-            const targetAmount = parseFloat(order.total) || 0;
-            const targetNumber = (paymentSettings.payment_number || '').trim();
-            const targetName = (paymentSettings.payment_receiver_name || '').trim();
-            const orderDate = order.date ? new Date(order.date) : null;
-
-            const schema = {
-                type: 'OBJECT',
-                properties: {
-                    isGCash: { type: 'BOOLEAN', description: 'Is this clearly a GCash receipt?' },
-                    amount: { type: 'NUMBER', description: 'Transaction amount, numbers only.' },
-                    receiverName: { type: 'STRING', description: "Receiver's name as printed." },
-                    receiverNumber: { type: 'STRING', description: "Receiver's number." },
-                    receiptTimestamp: { type: 'STRING', description: 'ISO 8601 YYYY-MM-DDTHH:mm:ss or empty.' },
-                    forensicScore: { type: 'NUMBER', description: 'Integrity score 0-100.' },
-                    isAIEdited: { type: 'BOOLEAN', description: 'Signs of manipulation?' },
-                    anomalies: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Inconsistencies.' },
-                    metaSignature: { type: 'STRING', description: 'VALID if authentic, FORGED if tampered.' }
-                },
-                required: ['isGCash', 'amount', 'receiverName', 'receiverNumber', 'receiptTimestamp', 'forensicScore', 'isAIEdited', 'metaSignature', 'anomalies']
+            const body = {
+                imageBase64,
+                order: { total: order.total, date: order.date, quantity: order.quantity, orderId: order.orderId },
+                paymentSettings: { payment_number: paymentSettings?.payment_number, payment_receiver_name: paymentSettings?.payment_receiver_name },
+                receiptChecks: state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true }
             };
-            const prompt = `Act as an expert digital forensics auditor for financial receipt verification. Strictly extract and audit the image.
-EXTRACTION: Amount (number only). Receiver Name exactly as printed (include asterisks if masked). Receiver Number. Date/time in ISO 8601 (YYYY-MM-DDTHH:mm:ss). Assume current year if missing.
-FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80. If manipulated, score < 50. If flawless, 90-100.`;
-
-            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=' + GEMINI_API_KEY;
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: base64Data } }] }],
-                    generationConfig: { responseMimeType: 'application/json', responseSchema: schema }
-                })
-            });
-            if (!res.ok) return { verified: false };
-            const json = await res.json();
-            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) return { verified: false };
-            let ext;
-            try { ext = JSON.parse(text); } catch (_) { return { verified: false }; }
-
-            const amountOk = ext.amount != null && Math.abs(ext.amount - targetAmount) < 0.01;
-            let timeOk = false;
-            if (ext.receiptTimestamp && orderDate && !isNaN(orderDate.getTime())) {
-                const receiptDate = new Date(ext.receiptTimestamp);
-                if (!isNaN(receiptDate.getTime()))
-                    timeOk = Math.abs(orderDate - receiptDate) / (1000 * 60) <= 10;
+            const testResult = { error: null, extracted: null, checks: {}, expected: {} };
+            if (!supabaseClient?.functions?.invoke) {
+                testResult.error = 'Supabase functions not configured';
+                return { verified: false, testResult };
             }
-            const nameOk = targetName ? fuzzyMatchStr(ext.receiverName, targetName) : true;
-            const numOk = targetNumber ? isNumberMatchStr(ext.receiverNumber, targetNumber) : true;
-            const receiverOk = nameOk && numOk;
-            const authentic = ext.isGCash && (ext.forensicScore ?? 0) >= 85 && ext.metaSignature === 'VALID' && !ext.isAIEdited;
-            const verified = amountOk && timeOk && receiverOk && authentic;
-            return { verified };
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('verify-receipt', { body });
+                if (error) {
+                    testResult.error = error.message || 'Edge function error';
+                    return { verified: false, testResult };
+                }
+                const verified = data?.verified === true;
+                const result = data?.testResult || testResult;
+                return { verified, testResult: result };
+            } catch (e) {
+                testResult.error = 'Exception: ' + (e?.message || String(e));
+                return { verified: false, testResult };
+            }
         }
 
         async function handleReceiptVerifyFile(e) {
@@ -1727,7 +1695,8 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     const order = { orderId, quantity: orderRow.quantity || 1, total: orderRow.total || 0, date: orderRow.created_at };
                     const { verified } = await verifyReceiptWithGemini(dataUrl, order, state.paymentSettings || {});
                     if (!verified) {
-                        showToast("Receipt could not be verified. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
+                        showToast("Receipt could not be verified.", "error");
+                        render(false);
                         return;
                     }
                     const { error: rpcErr } = await supabaseClient.rpc('allocate_and_fulfill', {
@@ -1738,7 +1707,9 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                         showToast("Accounts could not be assigned. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
                         return;
                     }
-                    showToast("Receipt verified. Accounts have been delivered.", "success");
+                    const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', orderId).single();
+                    const fulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
+                    showToast(fulfilled ? "Receipt verified. Accounts have been delivered." : "Receipt verified. We're restocking – your accounts will be delivered in 10–30 minutes.", fulfilled ? "success" : "info");
                     if (state.view === 'tracker' && state.trackerInput === orderId) {
                         const { data: ord } = await supabaseClient.from('orders').select('*').eq('id', orderId).single();
                         if (ord) state.searchResult = mapOrderData(ord);
@@ -1858,7 +1829,8 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                 persistAdminAuth(true);
                 state.trackedPendingOtps.clear();
                 await requestNotificationPermission();
-                fetchAllOrders(); 
+                fetchAllOrders();
+                fetchSheinAccountStats();
                 render();
                 showToast("Welcome back, Admin.", "success");
             } else {
@@ -1952,12 +1924,28 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             await setSetting('payment_receiver_name', receiverName);
 
             state.paymentSettings = { 
+                ...(state.paymentSettings || {}),
                 payment_qr_url: url, 
                 payment_number: num, 
                 payment_receiver_name: receiverName,
                 captcha_provider: captchaProvider
             };
             showToast("Settings saved", "success");
+            render(false);
+        }
+
+        async function saveReceiptChecks() {
+            const ck = state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true };
+            const value = JSON.stringify(ck);
+            const { data: updated, error: updateErr } = await supabaseClient.from('settings').update({ value }).eq('key', 'receipt_checks').select('key');
+            if (!updateErr && updated && updated.length > 0) {
+                showToast("Receipt checks saved", "success");
+                render(false);
+                return;
+            }
+            const { error: insertErr } = await supabaseClient.from('settings').insert([{ key: 'receipt_checks', value }]);
+            if (insertErr) return showToast(insertErr.message || "Failed to save receipt checks", "error");
+            showToast("Receipt checks saved", "success");
             render(false);
         }
 
@@ -2487,7 +2475,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     <div class="mb-10">
                         <label class="block text-[10px] font-bold uppercase ${textSub} mb-2 tracking-wider">Voucher Code</label>
                         <div class="flex gap-2">
-                            <input type="text" id="discountInput" class="w-full ${isV2 ? 'bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-white/10 text-black dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 font-poppins' : 'bg-zinc-900 border-white/10 text-white placeholder-zinc-700 font-mono'} border py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors uppercase" placeholder="ENTER CODE" value="${state.discount > 0 ? 'TEST1111' : ''}" ${state.discount > 0 ? 'disabled' : ''} />
+                            <input type="text" id="discountInput" class="w-full ${isV2 ? 'bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-white/10 text-black dark:text-white placeholder-gray-400 dark:placeholder-zinc-500 font-poppins' : 'bg-zinc-900 border-white/10 text-white placeholder-zinc-700 font-mono'} border py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 transition-colors uppercase" placeholder="ENTER CODE" value="" ${state.discount > 0 ? 'disabled' : ''} />
                             <button onclick="window.applyDiscount()" class="${isV2 ? 'bg-zinc-800 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 voucher-apply-btn' : 'bg-white/10 text-white hover:bg-white/20'} font-bold py-2 px-3 text-[9px] uppercase transition-colors" ${state.discount > 0 ? 'disabled' : ''}>Apply</button>
                         </div>
                         ${state.discount > 0 ? `<p class="text-emerald-500 text-[9px] mt-2 ${isV2 ? 'font-poppins' : 'font-mono'} flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> 5% DISCOUNT APPLIED</p>` : ''}
@@ -2519,8 +2507,8 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const showCaptcha = state.sessionOrderCount >= 3;
             
             const buttonContent = state.isSubmitting 
-                ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> ${state.paymentMethod === 'gcash' ? 'SCANNING & VERIFYING...' : 'VERIFYING...'}`
-                : (state.paymentMethod === 'gcash' ? `<i data-lucide="scan-line" class="w-4 h-4"></i> Scan & Confirm Payment` : `Confirm Payment`);
+                ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> Verifying payment`
+                : (state.paymentMethod === 'gcash' ? `<i data-lucide="check-circle" class="w-4 h-4"></i> Confirm Payment` : `Confirm Payment`);
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
 
             const isDark = document.documentElement.classList.contains('dark');
@@ -2637,10 +2625,15 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                                 <p class="text-xs font-mono text-zinc-400 group-hover:text-white">Click to upload screenshot</p>
                             </div>
                             ` : `
-                            <div class="relative rounded-lg border border-white/10 bg-black/40 p-2 overflow-hidden flex justify-center">
-                                <img src="${state.checkoutReceiptBase64}" class="w-full max-w-sm max-h-48 object-contain rounded-md ${state.isSubmitting ? 'opacity-50' : ''}" />
-                                ${state.isSubmitting ? `<div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 shadow-[0_0_15px_#10b981] animate-[scan-down_2s_linear_infinite_alternate] z-20"></div>` : ''}
-                                ${!state.isSubmitting ? `<button type="button" onclick="state.checkoutReceiptBase64 = null; render(false);" class="absolute top-4 right-4 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-md"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                            <div class="w-full bg-zinc-900 border border-white/10 py-6 px-4 text-center rounded-lg flex flex-col items-center justify-center gap-2">
+                                ${state.isSubmitting ? `
+                                <span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+                                <p class="text-xs font-mono text-zinc-400">Receipt verification in progress...</p>
+                                ` : `
+                                <i data-lucide="check-circle" class="w-6 h-6 text-emerald-500"></i>
+                                <p class="text-xs font-mono text-emerald-400">Receipt uploaded successfully</p>
+                                <button type="button" onclick="state.checkoutReceiptBase64 = null; render(false);" class="text-[9px] text-zinc-500 hover:text-white mt-1">Change receipt</button>
+                                `}
                             </div>
                             `}
                             <input type="file" id="checkoutReceiptFile" accept="image/*" class="hidden" onchange="window.handleCheckoutReceiptUpload(event)" />
@@ -2657,6 +2650,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
         }
 
         function renderSuccess(animate = true) {
+            const fulfilled = state.lastOrderFulfilled === true;
             const animClass = animate ? 'animate-enter' : '';
             return `
             <div class="min-h-screen flex flex-col items-center justify-center p-6 pt-20 text-center bg-black ${animClass} relative overflow-hidden">
@@ -2667,8 +2661,10 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                 </div>
                 
                 <h2 class="text-2xl font-bold tracking-tighter mb-2 text-white relative z-10">Order Received</h2>
-                <p class="text-zinc-500 text-[10px] mb-8 max-w-[220px] leading-relaxed font-mono relative z-10">
-                    We have received your payment reference. Your order is being processed. ETA: 10-30m.
+                <p class="text-zinc-500 text-[10px] mb-8 max-w-[260px] leading-relaxed font-mono relative z-10">
+                    ${fulfilled
+                        ? 'Payment confirmed. Your accounts are ready – check status below.'
+                        : "Payment confirmed. We're currently restocking – your accounts will be delivered within 10–30 minutes. Check status below."}
                 </p>
                 
                 <div class="bg-zinc-900 border border-dashed border-zinc-700 p-3 w-full mb-6 relative group max-w-xs">
@@ -3086,12 +3082,55 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                         <button onclick="window.savePaymentSettings()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save payment settings</button>
                     </div>
                     <div class="${adminCard} border ${adminBorder} p-6">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-2 tracking-widest">Receipt Verification Checks (Testing)</h3>
+                        <p class="text-[8px] ${adminTextMuted} mb-4">Enable/disable individual checks for easier testing. Disabled checks are skipped (treated as pass).</p>
+                        ${(['amount','time','receiverName','receiverNumber','dimension','authentic']).map(k => {
+                            const label = k === 'receiverName' ? 'Receiver name' : k === 'receiverNumber' ? 'Receiver number' : k;
+                            const ck = state.paymentSettings?.receipt_checks || {};
+                            const checked = ck[k] !== false;
+                            return `
+                            <label class="flex items-center gap-2 cursor-pointer py-2 border-b ${adminBorder} last:border-0">
+                                <input type="checkbox" id="receiptCheck_${k}" ${checked ? 'checked' : ''} onchange="const c=state.paymentSettings?.receipt_checks||{}; c['${k}']=!!this.checked; state.paymentSettings.receipt_checks=c; render(false);" class="rounded border-emerald-500/50" />
+                                <span class="text-[9px] ${adminText} capitalize">${label.replace(/([A-Z])/g,' $1').trim()}</span>
+                            </label>`;
+                        }).join('')}
+                        <button onclick="window.saveReceiptChecks()" class="mt-4 ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save receipt checks</button>
+                    </div>
+                    <div class="${adminCard} border ${adminBorder} p-6">
                         <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-4 tracking-widest">Security Settings</h3>
                         <div class="mb-4">
                             <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">New Password</label>
                             <input type="password" id="newAdminPass" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50 transition-colors" />
                         </div>
                         <button onclick="window.updateAdminPassword()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Update Password</button>
+                    </div>
+                </div>`;
+            } else if (state.adminTab === 'account-pool') {
+                const avail = state.sheinAccountStats?.available ?? 0;
+                const sold = state.sheinAccountStats?.sold ?? 0;
+                tabContent = `
+                <div class="${adminCard} border ${adminBorder} rounded-lg overflow-hidden">
+                    <div class="p-4 border-b ${adminBorder}">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} tracking-widest">Account Pool (SHEIN)</h3>
+                        <p class="text-[9px] ${adminTextMuted} mt-1">Available accounts are auto-allocated to orders when payment is confirmed. Add accounts below.</p>
+                    </div>
+                    <div class="p-4 flex gap-4 flex-wrap">
+                        <div class="${isDark ? 'bg-black/50 border-white/5' : 'bg-gray-50 border-gray-200'} border px-4 py-3 rounded-lg">
+                            <p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Available</p>
+                            <p class="text-2xl font-bold text-emerald-500 font-mono">${avail}</p>
+                        </div>
+                        <div class="${isDark ? 'bg-black/50 border-white/5' : 'bg-gray-50 border-gray-200'} border px-4 py-3 rounded-lg">
+                            <p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Sold</p>
+                            <p class="text-2xl font-bold ${adminTextMuted} font-mono">${sold}</p>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t ${adminBorder}">
+                        <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-2 tracking-wider">Add accounts (one per line)</label>
+                        <p class="text-[8px] ${adminTextMuted} mb-2">Format: <code class="${isDark ? 'bg-zinc-800' : 'bg-gray-200'} px-1 rounded">email:password</code> — Lines starting with # are ignored.</p>
+                        <textarea id="sheinAccountsBulkInput" class="${adminInput} w-full border p-3 text-xs font-mono h-32 focus:border-emerald-500 focus:outline-none rounded-sm resize-none" placeholder="user1@email.com:pass123&#10;user2@email.com:pass456"></textarea>
+                        <div class="flex justify-end mt-2">
+                            <button onclick="window.addSheinAccounts()" class="bg-emerald-600 hover:bg-emerald-500 text-white btn-green-light px-4 py-2 text-[9px] uppercase font-bold tracking-wide flex items-center gap-2"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to pool</button>
+                        </div>
                     </div>
                 </div>`;
             }
@@ -3108,10 +3147,14 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     </div>
                 </div>
                 <div class="pt-20 max-w-7xl mx-auto p-4">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Gross Rev</p><p class="text-lg font-bold font-mono ${adminText}">${formatPHP(revenue)}</p></div>
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Total Tx</p><p class="text-lg font-bold ${adminText}">${state.orders.length}</p></div>
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Pending</p><p class="text-lg font-bold text-yellow-600">${pending}</p></div>
+                        <div onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${(state.sheinAccountStats?.available ?? 0) === 0 ? 'border-amber-500/30' : ''}">
+                            <p class="text-[8px] ${adminTextMuted} uppercase font-bold flex justify-between tracking-widest">Account Pool <i data-lucide="key" class="w-3 h-3"></i></p>
+                            <p class="text-lg font-bold text-emerald-500">${state.sheinAccountStats?.available ?? 0}</p>
+                        </div>
                         <div onclick="state.adminTab = 'otp'; render()" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${pendingOtp > 0 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}">
                             <p class="text-[8px] ${adminTextMuted} uppercase font-bold flex justify-between tracking-widest">OTP Requests <i data-lucide="radio" class="w-3 h-3"></i></p>
                             <p class="text-lg font-bold text-red-500">${pendingOtp}</p>
@@ -3120,7 +3163,8 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     
                     <div class="flex gap-4 mb-5 border-b ${adminBorder} pb-1 px-1 overflow-x-auto">
                         <button onclick="state.adminTab = 'orders'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'orders' ? tabActive : tabInactive}">Orders</button>
-                        <button onclick="state.adminTab = 'products'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'products' ? tabActive : tabInactive}">Stocks</button>
+                        <button onclick="state.adminTab = 'products'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'products' ? tabActive : tabInactive}">Products</button>
+                        <button onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'account-pool' ? tabActive : tabInactive}">Account Pool</button>
                         <button onclick="state.adminTab = 'otp'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest flex items-center gap-2 ${state.adminTab === 'otp' ? tabActive : tabInactive}">OTP Codes ${pendingOtp > 0 ? `<span class="bg-red-500 text-white px-1.5 rounded-full text-[8px] animate-pulse">${pendingOtp}</span>` : ''}</button>
                         <button onclick="state.adminTab = 'settings'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'settings' ? tabActive : tabInactive}">Settings</button>
                     </div>
@@ -3226,6 +3270,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
         window.fulfillOrder = fulfillOrder;
         window.adminAction = adminAction;
         window.savePaymentSettings = savePaymentSettings;
+        window.saveReceiptChecks = saveReceiptChecks;
         window.updateAdminPassword = updateAdminPassword;
         window.sendAccountMessage = sendAccountMessage;
         window.sendOtp = sendOtp;
@@ -3251,6 +3296,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
         window.closeAddProductModal = closeAddProductModal;
         window.submitNewProduct = submitNewProduct;
         window.saveProductChanges = saveProductChanges;
+        window.addSheinAccounts = addSheinAccounts;
         
         // Auth Expose
         window.handleLogin = handleLogin;
@@ -3285,6 +3331,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                 state.trackedPendingOtps.clear();
                 try { await requestNotificationPermission(); } catch (e) {}
                 await fetchAllOrders();
+                await fetchSheinAccountStats();
             }
             await fetchProducts();
             await fetchPaymentSettings();
