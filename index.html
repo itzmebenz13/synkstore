@@ -943,12 +943,14 @@
                     const rc = map.receipt_checks ? JSON.parse(map.receipt_checks) : null;
                     if (rc && typeof rc === 'object') receiptChecks = { ...receiptChecks, ...rc };
                 } catch (_) {}
+                const receiptTestMode = (map.receipt_test_mode || '').toLowerCase() === 'true' || (map.receipt_test_mode || '') === '1';
                 state.paymentSettings = {
                     payment_qr_url: map.payment_qr_url || '',
                     payment_number: map.payment_number || '',
                     payment_receiver_name: map.payment_receiver_name || '',
                     captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha'),
-                    receipt_checks: receiptChecks
+                    receipt_checks: receiptChecks,
+                    receipt_test_mode: receiptTestMode
                 };
             }
         }
@@ -1531,7 +1533,22 @@
                         render(false);
                         return showToast("Payment verification failed. See test result below.", "error");
                     }
+                    const testMode = state.paymentSettings?.receipt_test_mode === true;
+                    const ref = String(testResult?.extracted?.referenceNumber ?? '').trim();
+                    const ts = String(testResult?.extracted?.receiptTimestamp ?? '').trim();
+                    if (!testMode && ref && ts) {
+                        const { data: used } = await supabaseClient.rpc('check_receipt_used', { p_ref: ref, p_ts: ts });
+                        if (used === true) {
+                            state.receiptTestResult = testResult || {};
+                            state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
+                            state.isSubmitting = false;
+                            render(false);
+                            return showToast("This receipt was already used.", "error");
+                        }
+                    }
                     state.receiptTestResult = null;
+                    state._lastReceiptRef = ref;
+                    state._lastReceiptTs = ts;
                     isReceiptVerified = true;
                 } catch (e) {
                     state.receiptTestResult = { error: 'Exception: ' + (e.message || String(e)) };
@@ -1590,6 +1607,12 @@
                 });
                 const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', newOrderId).single();
                 state.lastOrderFulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
+                const testMode = state.paymentSettings?.receipt_test_mode === true;
+                const ref = state._lastReceiptRef || '';
+                const ts = state._lastReceiptTs || '';
+                if (!testMode && ref && ts) {
+                    await supabaseClient.rpc('record_receipt_used', { p_ref: ref, p_ts: ts, p_order_id: newOrderId });
+                }
             } else {
                 state.lastOrderFulfilled = false;
             }
@@ -1598,6 +1621,8 @@
             state.sessionOrderCount++;
             state.captchaToken = null; 
             state.checkoutReceiptBase64 = null;
+            state._lastReceiptRef = null;
+            state._lastReceiptTs = null;
 
             if(state.user) {
                 fetchUserOrders(); 
@@ -1714,6 +1739,19 @@
                         render(false);
                         return;
                     }
+                    const testMode = state.paymentSettings?.receipt_test_mode === true;
+                    const ref = String(testResult?.extracted?.referenceNumber ?? '').trim();
+                    const ts = String(testResult?.extracted?.receiptTimestamp ?? '').trim();
+                    if (!testMode && ref && ts) {
+                        const { data: used } = await supabaseClient.rpc('check_receipt_used', { p_ref: ref, p_ts: ts });
+                        if (used === true) {
+                            state.receiptTestResult = testResult || {};
+                            state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
+                            showToast("This receipt was already used.", "error");
+                            render(false);
+                            return;
+                        }
+                    }
                     state.receiptTestResult = null;
                     const { error: rpcErr } = await supabaseClient.rpc('allocate_and_fulfill', {
                         p_order_id: orderId,
@@ -1722,6 +1760,9 @@
                     if (rpcErr) {
                         showToast("Accounts could not be assigned. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
                         return;
+                    }
+                    if (!testMode && ref && ts) {
+                        await supabaseClient.rpc('record_receipt_used', { p_ref: ref, p_ts: ts, p_order_id: orderId });
                     }
                     const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', orderId).single();
                     const fulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
@@ -1951,16 +1992,25 @@
         }
 
         async function saveReceiptChecks() {
+            const testModeEl = document.getElementById('settingsReceiptTestMode');
+            const receiptTestMode = testModeEl ? !!testModeEl.checked : (state.paymentSettings?.receipt_test_mode === true);
+            state.paymentSettings = state.paymentSettings || {};
+            state.paymentSettings.receipt_test_mode = receiptTestMode;
+
             const ck = state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true };
             const value = JSON.stringify(ck);
             const { data: updated, error: updateErr } = await supabaseClient.from('settings').update({ value }).eq('key', 'receipt_checks').select('key');
-            if (!updateErr && updated && updated.length > 0) {
-                showToast("Receipt checks saved", "success");
-                render(false);
-                return;
+            if (!updateErr && updated && updated.length > 0) { /* ok */ } else {
+                const { error: insertErr } = await supabaseClient.from('settings').insert([{ key: 'receipt_checks', value }]);
+                if (insertErr) return showToast(insertErr.message || "Failed to save receipt checks", "error");
             }
-            const { error: insertErr } = await supabaseClient.from('settings').insert([{ key: 'receipt_checks', value }]);
-            if (insertErr) return showToast(insertErr.message || "Failed to save receipt checks", "error");
+
+            const testModeValue = receiptTestMode ? 'true' : 'false';
+            const { data: up2, error: updateErr2 } = await supabaseClient.from('settings').update({ value: testModeValue }).eq('key', 'receipt_test_mode').select('key');
+            if (!updateErr2 && up2 && up2.length > 0) { /* ok */ } else {
+                const { error: insertErr2 } = await supabaseClient.from('settings').insert([{ key: 'receipt_test_mode', value: testModeValue }]);
+                if (insertErr2) return showToast(insertErr2.message || "Failed to save test mode", "error");
+            }
             showToast("Receipt checks saved", "success");
             render(false);
         }
@@ -3150,6 +3200,12 @@
                                 <span class="text-[9px] ${adminText} capitalize">${label.replace(/([A-Z])/g,' $1').trim()}</span>
                             </label>`;
                         }).join('')}
+                        <div class="mt-4 pt-3 border-t ${adminBorder}">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="settingsReceiptTestMode" ${state.paymentSettings?.receipt_test_mode ? 'checked' : ''} onchange="state.paymentSettings.receipt_test_mode=!!this.checked; render(false);" class="rounded border-amber-500/50" />
+                                <span class="text-[9px] ${adminText}">Enable test feature (allow duplicate receipt ref + time; skip strict one-time use)</span>
+                            </label>
+                        </div>
                         <button onclick="window.saveReceiptChecks()" class="mt-4 ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save receipt checks</button>
                     </div>
                     <div class="${adminCard} border ${adminBorder} p-6">
@@ -3167,7 +3223,7 @@
                 tabContent = `
                 <div class="${adminCard} border ${adminBorder} rounded-lg overflow-hidden">
                     <div class="p-4 border-b ${adminBorder}">
-                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} tracking-widest">Account Pool (SHEIN)</h3>
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} tracking-widest">Accounts (SHEIN)</h3>
                         <p class="text-[9px] ${adminTextMuted} mt-1">Available accounts are auto-allocated to orders when payment is confirmed. Add accounts below.</p>
                     </div>
                     <div class="p-4 flex gap-4 flex-wrap">
@@ -3208,7 +3264,7 @@
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Total Tx</p><p class="text-lg font-bold ${adminText}">${state.orders.length}</p></div>
                         <div class="${adminCard} p-3 border"><p class="text-[8px] ${adminTextMuted} uppercase font-bold tracking-widest">Pending</p><p class="text-lg font-bold text-yellow-600">${pending}</p></div>
                         <div onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${(state.sheinAccountStats?.available ?? 0) === 0 ? 'border-amber-500/30' : ''}">
-                            <p class="text-[8px] ${adminTextMuted} uppercase font-bold flex justify-between tracking-widest">Account Pool <i data-lucide="key" class="w-3 h-3"></i></p>
+                            <p class="text-[8px] ${adminTextMuted} uppercase font-bold flex justify-between tracking-widest">Accounts <i data-lucide="key" class="w-3 h-3"></i></p>
                             <p class="text-lg font-bold text-emerald-500">${state.sheinAccountStats?.available ?? 0}</p>
                         </div>
                         <div onclick="state.adminTab = 'otp'; render()" class="${adminCard} p-3 border cursor-pointer hover:border-emerald-500/30 transition-colors ${pendingOtp > 0 ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}">
@@ -3220,8 +3276,8 @@
                     <div class="flex gap-4 mb-5 border-b ${adminBorder} pb-1 px-1 overflow-x-auto">
                         <button onclick="state.adminTab = 'orders'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'orders' ? tabActive : tabInactive}">Orders</button>
                         <button onclick="state.adminTab = 'products'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'products' ? tabActive : tabInactive}">Products</button>
-                        <button onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'account-pool' ? tabActive : tabInactive}">Account Pool</button>
-                        <button onclick="state.adminTab = 'otp'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest flex items-center gap-2 ${state.adminTab === 'otp' ? tabActive : tabInactive}">OTP Codes ${pendingOtp > 0 ? `<span class="bg-red-500 text-white px-1.5 rounded-full text-[8px] animate-pulse">${pendingOtp}</span>` : ''}</button>
+                        <button onclick="state.adminTab = 'account-pool'; fetchSheinAccountStats().then(()=>render())" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'account-pool' ? tabActive : tabInactive}">Accounts</button>
+                        <button onclick="state.adminTab = 'otp'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest flex items-center gap-2 ${state.adminTab === 'otp' ? tabActive : tabInactive}">OTPs ${pendingOtp > 0 ? `<span class="bg-red-500 text-white px-1.5 rounded-full text-[8px] animate-pulse">${pendingOtp}</span>` : ''}</button>
                         <button onclick="state.adminTab = 'settings'; render()" class="text-[9px] font-bold uppercase pb-2 px-1 transition-all tracking-widest ${state.adminTab === 'settings' ? tabActive : tabInactive}">Settings</button>
                     </div>
                     ${tabContent}
