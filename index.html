@@ -538,7 +538,7 @@
             modalCallback: null,
             sessionOrderCount: 0,
             selectedOrderId: null,
-            paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha', receipt_checks: { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true } },
+            paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha' },
             captchaToken: null,
             payWithCredits: false,
             trackedPendingOtps: new Set(),
@@ -938,19 +938,11 @@
                 const map = {};
                 data.forEach(r => { map[r.key] = r.value || ''; });
                 const provider = (map.captcha_provider || '').trim().toLowerCase();
-                let receiptChecks = { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true };
-                try {
-                    const rc = map.receipt_checks ? JSON.parse(map.receipt_checks) : null;
-                    if (rc && typeof rc === 'object') receiptChecks = { ...receiptChecks, ...rc };
-                } catch (_) {}
-                const receiptTestMode = (map.receipt_test_mode || '').toLowerCase() === 'true' || (map.receipt_test_mode || '') === '1';
                 state.paymentSettings = {
                     payment_qr_url: map.payment_qr_url || '',
                     payment_number: map.payment_number || '',
                     payment_receiver_name: map.payment_receiver_name || '',
-                    captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha'),
-                    receipt_checks: receiptChecks,
-                    receipt_test_mode: receiptTestMode
+                    captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha')
                 };
             }
         }
@@ -1533,7 +1525,6 @@
                         render(false);
                         return showToast("Payment verification failed. See test result below.", "error");
                     }
-                    const testMode = state.paymentSettings?.receipt_test_mode === true;
                     const ext = testResult?.extracted || {};
                     const rawRef = String(ext.referenceNumber ?? '').trim();
                     const ts = String(ext.receiptTimestamp ?? '').trim();
@@ -1541,7 +1532,7 @@
                     const receiverName = String(ext.receiverName ?? '').trim();
                     const receiverNumber = String(ext.receiverNumber ?? '').trim();
                     const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
-                    if (!testMode && !ts) {
+                    if (!ts) {
                         state.receiptTestResult = testResult || {};
                         state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced. Try a clearer image.';
                         state.isSubmitting = false;
@@ -1561,7 +1552,7 @@
             }
 
             const newOrderId = generateOrderId();
-            if (isReceiptVerified && state._lastReceiptRef && state._lastReceiptTs && state.paymentSettings?.receipt_test_mode !== true) {
+            if (isReceiptVerified && state._lastReceiptRef && state._lastReceiptTs) {
                 const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: state._lastReceiptRef, p_ts: state._lastReceiptTs, p_order_id: newOrderId });
                 if (claimed !== true) {
                     state.receiptTestResult = state.receiptTestResult || {};
@@ -1685,8 +1676,7 @@
             const body = {
                 imageBase64,
                 order: { total: order.total, date: order.date, quantity: order.quantity, orderId: order.orderId },
-                paymentSettings: { payment_number: paymentSettings?.payment_number, payment_receiver_name: paymentSettings?.payment_receiver_name },
-                receiptChecks: state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true }
+                paymentSettings: { payment_number: paymentSettings?.payment_number, payment_receiver_name: paymentSettings?.payment_receiver_name }
             };
             const testResult = { error: null, extracted: null, checks: {}, expected: {} };
             try {
@@ -1746,7 +1736,6 @@
                         render(false);
                         return;
                     }
-                    const testMode = state.paymentSettings?.receipt_test_mode === true;
                     const ext = testResult?.extracted || {};
                     const rawRef = String(ext.referenceNumber ?? '').trim();
                     const ts = String(ext.receiptTimestamp ?? '').trim();
@@ -1754,14 +1743,14 @@
                     const receiverName = String(ext.receiverName ?? '').trim();
                     const receiverNumber = String(ext.receiverNumber ?? '').trim();
                     const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
-                    if (!testMode && !ts) {
+                    if (!ts) {
                         state.receiptTestResult = testResult || {};
                         state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced.';
                         showToast("Receipt date/time could not be read.", "error");
                         render(false);
                         return;
                     }
-                    if (!testMode && ref && ts) {
+                    if (ref && ts) {
                         const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: ref, p_ts: ts, p_order_id: orderId });
                         if (claimed !== true) {
                             state.receiptTestResult = testResult || {};
@@ -2004,30 +1993,6 @@
                 captcha_provider: captchaProvider
             };
             showToast("Settings saved", "success");
-            render(false);
-        }
-
-        async function saveReceiptChecks() {
-            const testModeEl = document.getElementById('settingsReceiptTestMode');
-            const receiptTestMode = testModeEl ? !!testModeEl.checked : (state.paymentSettings?.receipt_test_mode === true);
-            state.paymentSettings = state.paymentSettings || {};
-            state.paymentSettings.receipt_test_mode = receiptTestMode;
-
-            const ck = state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true };
-            const value = JSON.stringify(ck);
-            const { data: updated, error: updateErr } = await supabaseClient.from('settings').update({ value }).eq('key', 'receipt_checks').select('key');
-            if (!updateErr && updated && updated.length > 0) { /* ok */ } else {
-                const { error: insertErr } = await supabaseClient.from('settings').insert([{ key: 'receipt_checks', value }]);
-                if (insertErr) return showToast(insertErr.message || "Failed to save receipt checks", "error");
-            }
-
-            const testModeValue = receiptTestMode ? 'true' : 'false';
-            const { data: up2, error: updateErr2 } = await supabaseClient.from('settings').update({ value: testModeValue }).eq('key', 'receipt_test_mode').select('key');
-            if (!updateErr2 && up2 && up2.length > 0) { /* ok */ } else {
-                const { error: insertErr2 } = await supabaseClient.from('settings').insert([{ key: 'receipt_test_mode', value: testModeValue }]);
-                if (insertErr2) return showToast(insertErr2.message || "Failed to save test mode", "error");
-            }
-            showToast("Receipt checks saved", "success");
             render(false);
         }
 
@@ -3204,27 +3169,6 @@
                         <button onclick="window.savePaymentSettings()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save payment settings</button>
                     </div>
                     <div class="${adminCard} border ${adminBorder} p-6">
-                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-2 tracking-widest">Receipt Verification Checks (Testing)</h3>
-                        <p class="text-[8px] ${adminTextMuted} mb-4">Enable/disable individual checks for easier testing. Disabled checks are skipped (treated as pass).</p>
-                        ${(['amount','time','receiverName','receiverNumber','dimension','authentic']).map(k => {
-                            const label = k === 'receiverName' ? 'Receiver name' : k === 'receiverNumber' ? 'Receiver number' : k;
-                            const ck = state.paymentSettings?.receipt_checks || {};
-                            const checked = ck[k] !== false;
-                            return `
-                            <label class="flex items-center gap-2 cursor-pointer py-2 border-b ${adminBorder} last:border-0">
-                                <input type="checkbox" id="receiptCheck_${k}" ${checked ? 'checked' : ''} onchange="const c=state.paymentSettings?.receipt_checks||{}; c['${k}']=!!this.checked; state.paymentSettings.receipt_checks=c; render(false);" class="rounded border-emerald-500/50" />
-                                <span class="text-[9px] ${adminText} capitalize">${label.replace(/([A-Z])/g,' $1').trim()}</span>
-                            </label>`;
-                        }).join('')}
-                        <div class="mt-4 pt-3 border-t ${adminBorder}">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="settingsReceiptTestMode" ${state.paymentSettings?.receipt_test_mode ? 'checked' : ''} onchange="state.paymentSettings.receipt_test_mode=!!this.checked; render(false);" class="rounded border-amber-500/50" />
-                                <span class="text-[9px] ${adminText}">Enable test feature (allow duplicate receipt ref + time; skip strict one-time use)</span>
-                            </label>
-                        </div>
-                        <button onclick="window.saveReceiptChecks()" class="mt-4 ${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save receipt checks</button>
-                    </div>
-                    <div class="${adminCard} border ${adminBorder} p-6">
                         <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-4 tracking-widest">Security Settings</h3>
                         <div class="mb-4">
                             <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">New Password</label>
@@ -3398,7 +3342,6 @@
         window.fulfillOrder = fulfillOrder;
         window.adminAction = adminAction;
         window.savePaymentSettings = savePaymentSettings;
-        window.saveReceiptChecks = saveReceiptChecks;
         window.updateAdminPassword = updateAdminPassword;
         window.sendAccountMessage = sendAccountMessage;
         window.sendOtp = sendOtp;
