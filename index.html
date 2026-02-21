@@ -1657,18 +1657,27 @@
                 receiptChecks: state.paymentSettings?.receipt_checks || { amount: true, time: true, receiverName: true, receiverNumber: true, dimension: true, authentic: true }
             };
             const testResult = { error: null, extracted: null, checks: {}, expected: {} };
-            if (!supabaseClient?.functions?.invoke) {
-                testResult.error = 'Supabase functions not configured';
-                return { verified: false, testResult };
-            }
             try {
-                const { data, error } = await supabaseClient.functions.invoke('verify-receipt', { body });
-                if (error) {
-                    testResult.error = error.message || 'Edge function error';
+                const url = STRIPE_FUNCTIONS_BASE + '/verify-receipt';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
+                    body: JSON.stringify(body)
+                });
+                let data = {};
+                try {
+                    const text = await res.text();
+                    data = text ? JSON.parse(text) : {};
+                } catch (_) {
+                    testResult.error = 'Invalid response from server (HTTP ' + res.status + ')';
                     return { verified: false, testResult };
                 }
                 const verified = data?.verified === true;
                 const result = data?.testResult || testResult;
+                if (!res.ok) {
+                    result.error = result.error || ('HTTP ' + res.status + ': ' + (data?.testResult?.error || data?.error || res.statusText));
+                    return { verified: false, testResult: result };
+                }
                 return { verified, testResult: result };
             } catch (e) {
                 testResult.error = 'Exception: ' + (e?.message || String(e));
