@@ -1534,17 +1534,19 @@
                         return showToast("Payment verification failed. See test result below.", "error");
                     }
                     const testMode = state.paymentSettings?.receipt_test_mode === true;
-                    const ref = String(testResult?.extracted?.referenceNumber ?? '').trim();
-                    const ts = String(testResult?.extracted?.receiptTimestamp ?? '').trim();
-                    if (!testMode && ref && ts) {
-                        const { data: used } = await supabaseClient.rpc('check_receipt_used', { p_ref: ref, p_ts: ts });
-                        if (used === true) {
-                            state.receiptTestResult = testResult || {};
-                            state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
-                            state.isSubmitting = false;
-                            render(false);
-                            return showToast("This receipt was already used.", "error");
-                        }
+                    const ext = testResult?.extracted || {};
+                    const rawRef = String(ext.referenceNumber ?? '').trim();
+                    const ts = String(ext.receiptTimestamp ?? '').trim();
+                    const amount = ext.amount != null ? String(ext.amount) : '';
+                    const receiverName = String(ext.receiverName ?? '').trim();
+                    const receiverNumber = String(ext.receiverNumber ?? '').trim();
+                    const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
+                    if (!testMode && !ts) {
+                        state.receiptTestResult = testResult || {};
+                        state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced. Try a clearer image.';
+                        state.isSubmitting = false;
+                        render(false);
+                        return showToast("Receipt date/time could not be read.", "error");
                     }
                     state.receiptTestResult = null;
                     state._lastReceiptRef = ref;
@@ -1555,6 +1557,18 @@
                     state.isSubmitting = false;
                     render(false);
                     return showToast("Verification system error.", "error");
+                }
+            }
+
+            const newOrderId = generateOrderId();
+            if (isReceiptVerified && state._lastReceiptRef && state._lastReceiptTs && state.paymentSettings?.receipt_test_mode !== true) {
+                const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: state._lastReceiptRef, p_ts: state._lastReceiptTs, p_order_id: newOrderId });
+                if (claimed !== true) {
+                    state.receiptTestResult = state.receiptTestResult || {};
+                    state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
+                    state.isSubmitting = false;
+                    render(false);
+                    return showToast("This receipt was already used.", "error");
                 }
             }
 
@@ -1574,7 +1588,6 @@
                 if (updatedProfile) state.userProfile = updatedProfile;
             }
 
-            const newOrderId = generateOrderId();
             const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : 'VERIFIED-GCASH';
             const dbPayload = {
                 id: newOrderId,
@@ -1607,12 +1620,6 @@
                 });
                 const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', newOrderId).single();
                 state.lastOrderFulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
-                const testMode = state.paymentSettings?.receipt_test_mode === true;
-                const ref = state._lastReceiptRef || '';
-                const ts = state._lastReceiptTs || '';
-                if (!testMode && ref && ts) {
-                    await supabaseClient.rpc('record_receipt_used', { p_ref: ref, p_ts: ts, p_order_id: newOrderId });
-                }
             } else {
                 state.lastOrderFulfilled = false;
             }
@@ -1740,11 +1747,23 @@
                         return;
                     }
                     const testMode = state.paymentSettings?.receipt_test_mode === true;
-                    const ref = String(testResult?.extracted?.referenceNumber ?? '').trim();
-                    const ts = String(testResult?.extracted?.receiptTimestamp ?? '').trim();
+                    const ext = testResult?.extracted || {};
+                    const rawRef = String(ext.referenceNumber ?? '').trim();
+                    const ts = String(ext.receiptTimestamp ?? '').trim();
+                    const amount = ext.amount != null ? String(ext.amount) : '';
+                    const receiverName = String(ext.receiverName ?? '').trim();
+                    const receiverNumber = String(ext.receiverNumber ?? '').trim();
+                    const ref = rawRef || (ts ? 'FALLBACK_' + [amount, receiverName, receiverNumber, ts].join('_').replace(/\s+/g, '_').slice(0, 200) : '');
+                    if (!testMode && !ts) {
+                        state.receiptTestResult = testResult || {};
+                        state.receiptTestResult.error = 'Could not extract receipt date/time. One-time use cannot be enforced.';
+                        showToast("Receipt date/time could not be read.", "error");
+                        render(false);
+                        return;
+                    }
                     if (!testMode && ref && ts) {
-                        const { data: used } = await supabaseClient.rpc('check_receipt_used', { p_ref: ref, p_ts: ts });
-                        if (used === true) {
+                        const { data: claimed } = await supabaseClient.rpc('claim_receipt_for_order', { p_ref: ref, p_ts: ts, p_order_id: orderId });
+                        if (claimed !== true) {
                             state.receiptTestResult = testResult || {};
                             state.receiptTestResult.error = 'This receipt was already used (same reference number and date/time).';
                             showToast("This receipt was already used.", "error");
@@ -1760,9 +1779,6 @@
                     if (rpcErr) {
                         showToast("Accounts could not be assigned. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
                         return;
-                    }
-                    if (!testMode && ref && ts) {
-                        await supabaseClient.rpc('record_receipt_used', { p_ref: ref, p_ts: ts, p_order_id: orderId });
                     }
                     const { data: ord } = await supabaseClient.from('orders').select('status, accounts_data').eq('id', orderId).single();
                     const fulfilled = ord?.status === 'Completed' && Array.isArray(ord?.accounts_data) && ord.accounts_data.length > 0;
