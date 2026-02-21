@@ -268,6 +268,14 @@
         .price-poppins {
             font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
         }
+
+        /* Receipt Scanning Animation */
+        @keyframes scan-down {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
     </style>
     <script>
         (function() {
@@ -361,24 +369,21 @@
         const SITE_NAME = "StakzShop";
         const GCASH_QR_URL = "https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"; 
         const GCASH_NUMBER = "0917 123 4567";
-        const apiKey = ""; // Enter Gemini API Key Here
+        const apiKey = "AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo"; // Gemini API Key
+        const GEMINI_API_KEY = "AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo"; // Explicitly defined for the verification function
+
         const NOTIFICATION_SOUND = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU4LjQ1LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAJxgAHCxUVFxceHyEhISIlJioqKi0vMjIyMjU4Ozs7O0BAQ0NDQ0dKSk5OTlFUVVVVVVhZWlpaWl5hYmJiYmRlZmZmZmlsbGxsbG9wc3NzHM/+/wAAACxMYXZjNTguOTEuMTAwAAAAAAAAAAAAAAAAIAGQAAAAAAAAAAAAAA//7UGQAAABpE/X/sUACAaovv/4QAAJ2B/S/s0AAAAA0gAAAAABH//gAAAAAAAAAAAAAAAB9//gAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//+AAAAAAAAAAAAAAA//tQZAAACjWDO/2CgAAAA0gAAAAABJ8X9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAKQYNJ/YSAAAAADSAAAAAAEoxf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACimDR/2EgAAAAA0gAAAAABKEX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAJoX9H/YSAAAAADSAAAAAAEkhf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAACcl/S/2EgAAAAA0gAAAAABIQX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAI4X9L/YSAAAAADSAAAAAAEcBf0v7NAAAAANIAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAA//tQZAAAB8F/S/2EgAAAAA0gAAAAABCgX9L+zQAAAAA0gAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAD/+1BkAAAAAA0gAAAAAAAAADSAAAAAACAAIAAAAAAAgACAAAAAAH//gAAAAAAAAAAAAAAAf/+AAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAH//gAAAAAAAAAAAAAA");
         // Homepage chat widget (Tawk.to free live chat)
-        // 1. Go to https://www.tawk.to, create a free account, add your site.
-        // 2. Copy the PROPERTY_ID and WIDGET_ID from the embed snippet they give you.
-        // 3. Paste them below. When both are set, the chat widget will appear on your site.
         const ENABLE_TAWK_CHAT = true;
-        // Integrated from your provided Tawk.to snippet
         const TAWK_PROPERTY_ID = "687baded7f202b19181ef539";
         const TAWK_WIDGET_ID = "1j0hhuqrh";
 
         // Optional: webhook to notify you (admin) externally when a buyer requests OTP.
-        // Example: Discord webhook URL. Leave empty to disable.
         const ADMIN_OTP_WEBHOOK_URL = "https://discord.com/api/webhooks/1472890172038189261/jeznXFU5s64OZZhlLAlU6dSZtRLiJpRXUnZEFCTj6CB7FNiFB8EipVyNGqfPqgIjln7w";
         const RECAPTCHA_SITE_KEY = "6LcMHmwsAAAAAFu2VXOqspB0JuzGLyHM-oWjTcoX";
         const TURNSTILE_SITE_KEY = "0x4AAAAAACcm7IGyb3q3w9nr";
 
-        // Admin auth persistence (keeps admin logged in after refresh)
+        // Admin auth persistence
         const ADMIN_AUTH_STORAGE_KEY = "stakz_admin_auth_v1";
         const ADMIN_AUTH_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 
@@ -414,11 +419,11 @@
             }
         }
 
-        // Initialize Tawk.to chat widget (homepage / site-wide)
+        // Initialize Tawk.to chat widget
         function initTawkChat() {
             if (!ENABLE_TAWK_CHAT) return;
             if (!TAWK_PROPERTY_ID || !TAWK_WIDGET_ID) return;
-            if (window.Tawk_API) return; // already initialized
+            if (window.Tawk_API) return; 
             window.Tawk_API = window.Tawk_API || {};
             window.Tawk_LoadStart = new Date();
             (function() {
@@ -432,13 +437,12 @@
             })();
         }
 
-        // Notify admin externally when a new order is created.
         async function notifyAdminNewOrder(source, orderId, summary) {
             if (!ADMIN_OTP_WEBHOOK_URL) return;
             try {
                 const lines = [
                     "New order",
-                    `Source: ${source}`,              // "gcash" | "credits" | "stripe"
+                    `Source: ${source}`,              
                     `Order: ${orderId}`,
                     summary || ""
                 ].filter(Boolean);
@@ -455,7 +459,6 @@
             }
         }
 
-        // Notify admin externally when a buyer requests an OTP.
         async function notifyAdminOtpRequest(orderId, accId, creds) {
             if (!ADMIN_OTP_WEBHOOK_URL) return;
             try {
@@ -472,14 +475,12 @@
             }
         }
 
-        // Notify admin externally when a buyer sends a message on an order.
         async function notifyAdminBuyerMessage(orderId, accId, text, sender) {
             if (!ADMIN_OTP_WEBHOOK_URL) return;
             const safeText = (text || "").trim();
             if (!safeText) return;
             try {
                 const prefix = sender === "admin" ? "Admin reply" : "New buyer message";
-                // Keep under Discord's 2000 character limit with some buffer
                 const content = `${prefix}\nOrder: ${orderId}\nAccount: ${accId}\nMessage: ${safeText}`.slice(0, 1800);
                 const body = "content=" + encodeURIComponent(content);
                 await fetch(ADMIN_OTP_WEBHOOK_URL, {
@@ -504,25 +505,20 @@
             console.error("Supabase failed to init:", e);
         }
 
-        // Stripe: base URL for Supabase Edge Functions (same project as SUPABASE_URL)
         const STRIPE_FUNCTIONS_BASE = SUPABASE_URL.replace(/\/$/, '') + '/functions/v1';
-
-        // GCash receipt verification (runs in browser; restrict key by referrer in Google AI Studio)
-        const GEMINI_API_KEY = 'AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo';
 
         // --- State Management ---
         const state = {
             view: 'home',
-            uiVariant: localStorage.getItem('stakz_ui_variant') || 'v2', // 'v1' = Classic, 'v2' = Modern (default)
+            uiVariant: localStorage.getItem('stakz_ui_variant') || 'v2', 
             user: null,
-            userProfile: null, // Stores credits and last spin
+            userProfile: null, 
             products: [],
             orders: [],
             userOrders: [],
             selectedProduct: null,
             quantity: 1,
-            refNumber: '',
-            paymentMethod: 'gcash', // 'gcash' | 'stripe'
+            paymentMethod: 'gcash', 
             lastOrderId: null,
             trackerInput: '',
             searchResult: null,
@@ -544,7 +540,9 @@
             paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha' },
             captchaToken: null,
             payWithCredits: false,
-            trackedPendingOtps: new Set() // Track known pending OTP requests: "orderId-accId"
+            trackedPendingOtps: new Set(),
+            checkoutReceiptBase64: null,
+            checkoutVerifying: false
         };
 
         // --- Helpers ---
@@ -563,7 +561,6 @@
         }
 
         const formatPHP = (amount) => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
-        /* Use "PHP" instead of ₱ so the whole price renders in Poppins (₱ often falls back to serif) */
         const formatPHPPoppins = (amount) => 'PHP ' + new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
         const escapeHtml = (s) => ('' + s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         const generateOrderId = () => 'STKZ-' + Math.random().toString(36).substr(2, 9).toUpperCase();
@@ -637,14 +634,13 @@
                 <div class="space-y-2">
                     ${res.accounts.map((acc, idx) => {
                         const otp = acc.otpRequest || { status: 'idle', code: null };
-                        // Check if on cooldown (applies to all statuses)
                         let isOnCooldown = false;
                         let cooldownSeconds = 0;
                         if(otp.requestedAt) {
                             const lastRequestTime = new Date(otp.requestedAt).getTime();
                             const now = new Date().getTime();
-                            const timeSinceLastRequest = (now - lastRequestTime) / 1000; // seconds
-                            const cooldownDuration = 2 * 60; // 2 minutes in seconds
+                            const timeSinceLastRequest = (now - lastRequestTime) / 1000; 
+                            const cooldownDuration = 2 * 60; 
                             if(timeSinceLastRequest < cooldownDuration) {
                                 isOnCooldown = true;
                                 cooldownSeconds = Math.ceil(cooldownDuration - timeSinceLastRequest);
@@ -772,12 +768,10 @@
             const confirmBtn = document.getElementById('modal-confirm-btn');
             confirmBtn.textContent = confirmText;
             const iconContainer = document.getElementById('modal-icon');
-            // Reset modal-specific forced classes (for light mode overrides)
             confirmBtn.classList.remove('modal-force-white-text');
             iconContainer.classList.remove('modal-icon-default');
             if (type === 'danger') {
                 confirmBtn.className = "flex-1 py-3 text-[10px] font-bold uppercase text-white bg-red-600 hover:bg-red-500 transition-colors rounded-sm tracking-wider shadow-lg shadow-red-900/20";
-                // In light mode, global .text-white is overridden to dark; force white here for contrast
                 confirmBtn.classList.add('modal-force-white-text');
                 iconContainer.className = "w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center mb-3 text-red-500";
                 iconContainer.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5"></i>';
@@ -837,7 +831,7 @@
             setTimeout(() => modal.classList.add('hidden'), 200);
         }
 
-        // --- Core Application Functions (Defined before usage) ---
+        // --- Core Application Functions ---
 
         async function callGemini(prompt, type) {
             state.aiLoading = true;
@@ -979,7 +973,6 @@
                 .order('created_at', { ascending: false });
 
             if (data) {
-                // Build new set of pending OTPs
                 const newPendingOtps = new Set();
                 data.forEach(order => {
                     if (order.accounts_data && Array.isArray(order.accounts_data)) {
@@ -991,12 +984,9 @@
                     }
                 });
 
-                // Detect new OTP requests (in newPendingOtps but not in trackedPendingOtps)
-                // Only check if we have previous tracked state (not initial load)
                 if (state.trackedPendingOtps.size > 0 && state.adminAuth) {
                     newPendingOtps.forEach(key => {
                         if (!state.trackedPendingOtps.has(key)) {
-                            // New OTP request detected
                             const [orderId, accId] = key.split('-');
                             const order = data.find(o => o.id === orderId);
                             if (order && order.accounts_data) {
@@ -1004,7 +994,6 @@
                                 if (acc && acc.otpRequest && acc.otpRequest.status === 'pending') {
                                     const slotIndex = order.accounts_data.findIndex(a => a && a.id === accId) + 1;
                                     const creds = acc.creds || 'N/A';
-                                    console.log("📬 New OTP request detected:", { orderId, accId, slotIndex, creds });
                                     showOtpNotification(orderId, creds, slotIndex);
                                 }
                             }
@@ -1012,7 +1001,6 @@
                     });
                 }
 
-                // Update tracked state
                 state.trackedPendingOtps = newPendingOtps;
                 state.orders = data.map(mapOrderData);
                 render(false);
@@ -1054,18 +1042,16 @@
                     .eq('id', state.user.id)
                     .single();
                 
-                if(error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+                if(error && error.code !== 'PGRST116') { 
                     console.error('Fetch profile error:', error);
                 }
                 
                 if(data) {
-                    // Ensure is_new_user has a boolean value (fallback true if missing)
                     if (typeof data.is_new_user !== 'boolean') {
                         data.is_new_user = true;
                     }
                     state.userProfile = data;
                 } else {
-                    // Create profile if it doesn't exist (ensures credits are recorded)
                     state.userProfile = { id: state.user.id, credits: 0, last_spin_at: null, is_new_user: true };
                     await supabaseClient.from('profiles').upsert({
                         id: state.user.id,
@@ -1095,37 +1081,25 @@
             };
         }
 
-        // Request browser notification permission
         async function requestNotificationPermission() {
             if (!("Notification" in window)) {
-                console.log("This browser does not support notifications");
                 return false;
             }
-
             if (Notification.permission === "granted") {
                 return true;
             }
-
             if (Notification.permission !== "denied") {
                 const permission = await Notification.requestPermission();
                 return permission === "granted";
             }
-
             return false;
         }
 
-        // Show browser notification for OTP request
         function showOtpNotification(orderId, creds, slotIndex) {
-            console.log("🔔 OTP Notification triggered:", { orderId, creds, slotIndex, permission: Notification.permission });
-            
-            // Always play sound regardless of notification permission
             try { 
                 NOTIFICATION_SOUND.play().catch(e => console.error("Sound play error:", e));
-            } catch(e) {
-                console.error("Sound error:", e);
-            }
+            } catch(e) {}
 
-            // Show browser notification if permission is granted
             if (Notification.permission === "granted") {
                 try {
                     const notification = new Notification("New OTP Request", {
@@ -1137,12 +1111,10 @@
                         silent: false
                     });
 
-                    // Auto close notification after 5 seconds
                     setTimeout(() => {
                         notification.close();
                     }, 5000);
 
-                    // Handle notification click
                     notification.onclick = () => {
                         window.focus();
                         if (state.view !== 'admin') {
@@ -1155,8 +1127,6 @@
                 } catch (error) {
                     console.error("Error showing notification:", error);
                 }
-            } else {
-                console.log("Notification permission not granted. Current status:", Notification.permission);
             }
         }
 
@@ -1169,15 +1139,7 @@
 
             supabaseClient.channel('public:orders')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async payload => {
-                console.log("📡 Real-time event:", { 
-                    eventType: payload.eventType, 
-                    orderId: payload.new?.id,
-                    hasAccountsData: !!payload.new?.accounts_data,
-                    adminAuth: state.adminAuth 
-                });
-
                 if(state.adminAuth && payload.eventType === 'UPDATE' && payload.new.accounts_data) {
-                    // Check for unread messages
                     const hasUnread = payload.new.accounts_data.some(acc => 
                         acc.messages && acc.messages.some(m => m.sender === 'user' && !m.read)
                     );
@@ -1185,15 +1147,12 @@
                         try { NOTIFICATION_SOUND.play(); } catch(e) {}
                     }
 
-                    // Direct check for new OTP requests in real-time payload
                     if (Array.isArray(payload.new.accounts_data)) {
                         const orderId = payload.new.id;
                         payload.new.accounts_data.forEach((acc, idx) => {
                             if (acc && acc.otpRequest && acc.otpRequest.status === 'pending') {
                                 const otpKey = `${orderId}-${acc.id}`;
                                 if (!state.trackedPendingOtps.has(otpKey)) {
-                                    // New OTP request detected directly from real-time
-                                    console.log("🚨 NEW OTP detected in real-time:", { orderId, accId: acc.id, slotIndex: idx + 1 });
                                     const slotIndex = idx + 1;
                                     const creds = acc.creds || 'N/A';
                                     showOtpNotification(orderId, creds, slotIndex);
@@ -1204,7 +1163,6 @@
                     }
                 }
 
-                // Always fetch orders when admin is authenticated - fetchAllOrders will handle notification detection
                 if(state.adminAuth) await fetchAllOrders();
                 if(state.user) fetchUserOrders().then(() => {
                     if (state.view === 'my-orders') render(false);
@@ -1299,7 +1257,6 @@
                 showToast("Account created! Logging in...", "success");
                 localStorage.setItem('stakz_acct_count', (acctCount + 1).toString());
                 
-                // Ensure profile is created with credits/last_spin_at (same as spin.html)
                 if(data.user) {
                     await supabaseClient.from('profiles').upsert({
                         id: data.user.id,
@@ -1355,6 +1312,7 @@
                 state.quantity = 1;
                 state.captchaToken = null;
                 state.payWithCredits = false;
+                state.checkoutReceiptBase64 = null;
             }
             if (view === 'admin' && state.adminAuth) fetchAllOrders();
             if (view === 'my-orders') {
@@ -1384,13 +1342,11 @@
         function getPrice() {
             if (!state.selectedProduct) return 0;
 
-            // Per-account-type new user promotion: override unit price if enabled on this product
             if (state.user && state.userProfile && state.userProfile.is_new_user && state.selectedProduct.new_user_enabled) {
                 const promo = parseFloat(state.selectedProduct.new_user_price || 0);
                 if (!isNaN(promo) && promo > 0) return promo;
             }
 
-            // Bulk pricing
             return state.quantity >= state.selectedProduct.bulk_threshold 
                 ? state.selectedProduct.bulk_price 
                 : state.selectedProduct.price;
@@ -1430,7 +1386,6 @@
             const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
             const amountToCharge = finalTotal - creditsUsed;
             if (amountToCharge <= 0) return showToast("Use Confirm Payment for credits-only orders", "info");
-            // Stripe requires total to be at least ~$0.50 USD (~₱30)
             const STRIPE_MIN_PHP = 30;
             if (amountToCharge < STRIPE_MIN_PHP) return showToast("Stripe minimum is ₱" + STRIPE_MIN_PHP + " (~$0.50). Use Manual Transfer for smaller amounts.", "error");
 
@@ -1500,9 +1455,7 @@
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && data.order_id) {
                     state.lastOrderId = data.order_id;
-                    // Fire-and-forget Discord notification for Stripe orders
                     notifyAdminNewOrder('stripe', data.order_id, '');
-                    // After first successful order, mark user as not new anymore
                     if (state.user && state.userProfile && state.userProfile.is_new_user) {
                         try {
                             await supabaseClient.from('profiles').update({ is_new_user: false }).eq('id', state.user.id);
@@ -1524,22 +1477,51 @@
             }
         }
 
+        function handleCheckoutReceiptUpload(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) return showToast("Please select an image file", "error");
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                state.checkoutReceiptBase64 = ev.target.result;
+                render(false);
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function submitOrder() {
-            const refInput = document.getElementById('refNumberInput');
             const baseTotal = getPrice() * state.quantity;
             const finalTotal = baseTotal - (baseTotal * state.discount);
             const credits = parseFloat(state.userProfile?.credits || 0);
             const creditsUsed = state.payWithCredits ? Math.min(credits, finalTotal) : 0;
             const remainingToPay = finalTotal - creditsUsed;
 
-            const refRaw = refInput ? refInput.value.trim() : '';
-            const refDigits = (refRaw || '').replace(/\D/g, '');
-            if (remainingToPay > 0 && refDigits.length < 4) return showToast("Please enter at least the last 4 digits of your payment reference.", "error");
+            if (state.paymentMethod === 'gcash' && remainingToPay > 0) {
+                if (!state.checkoutReceiptBase64) return showToast("Please upload your GCash receipt.", "error");
+            }
             if (state.sessionOrderCount >= 3 && !state.captchaToken) return showToast("Please complete the captcha", "error");
 
             state.isSubmitting = true;
             render(false); 
             
+            let isReceiptVerified = false;
+            if (state.paymentMethod === 'gcash' && remainingToPay > 0) {
+                try {
+                    const mockOrder = { total: remainingToPay, date: new Date().toISOString() };
+                    const { verified } = await verifyReceiptWithGemini(state.checkoutReceiptBase64, mockOrder, state.paymentSettings || {});
+                    if (!verified) {
+                        state.isSubmitting = false;
+                        render(false);
+                        return showToast("Payment verification failed.", "error");
+                    }
+                    isReceiptVerified = true;
+                } catch (e) {
+                    state.isSubmitting = false;
+                    render(false);
+                    return showToast("Verification system error.", "error");
+                }
+            }
+
             if (creditsUsed > 0) {
                 const newCredits = credits - creditsUsed;
                 const { data: updatedProfile, error: credErr } = await supabaseClient
@@ -1557,7 +1539,7 @@
             }
 
             const newOrderId = generateOrderId();
-            const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : (refInput ? refInput.value.trim() : '');
+            const refNumber = remainingToPay <= 0 ? 'PAID-VIA-CREDITS' : 'VERIFIED-GCASH';
             const dbPayload = {
                 id: newOrderId,
                 product_title: state.selectedProduct.title,
@@ -1578,13 +1560,21 @@
                 state.isSubmitting = false;
                 render(false);
                 showToast("Error submitting order. Try again.", "error");
-                // Refund credits if failed? Complexity for another time.
                 return;
+            }
+
+            if (isReceiptVerified) {
+                await supabaseClient.rpc('allocate_and_fulfill', {
+                    p_order_id: newOrderId,
+                    p_quantity: Math.max(1, Math.min(Number(state.quantity) || 1, 100))
+                });
             }
 
             state.lastOrderId = newOrderId;
             state.sessionOrderCount++;
             state.captchaToken = null; 
+            state.checkoutReceiptBase64 = null;
+
             if(state.user) {
                 fetchUserOrders(); 
                 fetchUserProfile();
@@ -1592,12 +1582,10 @@
                 addGuestOrderId(newOrderId);
             }
 
-            // Fire-and-forget Discord notification for GCash / credits orders
             const paymentSource = remainingToPay <= 0 ? 'credits' : 'gcash';
-            const summary = `Product: ${state.selectedProduct.title}\nQty: ${state.quantity}\nTotal: ₱${finalTotal.toFixed(2)}\nRef: ${refNumber || 'N/A'}`;
+            const summary = `Product: ${state.selectedProduct.title}\nQty: ${state.quantity}\nTotal: ₱${finalTotal.toFixed(2)}\nRef: ${refNumber}`;
             notifyAdminNewOrder(paymentSource, newOrderId, summary);
 
-            // After first successful order, mark user as not new anymore
             if (state.user && state.userProfile && state.userProfile.is_new_user) {
                 try {
                     await supabaseClient.from('profiles').update({ is_new_user: false }).eq('id', state.user.id);
@@ -1650,6 +1638,7 @@
             }
             return n1 === n2 || n1.includes(n2) || n2.includes(n1);
         }
+
         function isNumberMatchStr(ext, tgt) {
             if (!ext || !tgt) return false;
             const e = String(ext).replace(/\D/g, ''), t = String(tgt).replace(/\D/g, '');
@@ -1683,7 +1672,7 @@
 EXTRACTION: Amount (number only). Receiver Name exactly as printed (include asterisks if masked). Receiver Number. Date/time in ISO 8601 (YYYY-MM-DDTHH:mm:ss). Assume current year if missing.
 FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80. If manipulated, score < 50. If flawless, 90-100.`;
 
-            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY;
+            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=' + GEMINI_API_KEY;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1854,7 +1843,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                 const inputEl = document.getElementById(sender === 'admin' ? `admin-msg-${accId}` : `msg-${accId}`);
                 if(inputEl) inputEl.value = '';
 
-                // Fire-and-forget Discord notification for buyer messages
                 if (sender === 'user') {
                     notifyAdminBuyerMessage(orderId, accId, trimmed, sender);
                 }
@@ -1868,9 +1856,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             if (data) {
                 state.adminAuth = true;
                 persistAdminAuth(true);
-                // Clear tracked OTPs on login to avoid false positives
                 state.trackedPendingOtps.clear();
-                // Request notification permission when admin logs in
                 await requestNotificationPermission();
                 fetchAllOrders(); 
                 render();
@@ -1898,7 +1884,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const passwords = rawPass ? [rawPass] : [];
             if (emails.length === 0 || passwords.length === 0) return showToast("Please enter at least one email and one password", "error");
 
-            // Use one password for all emails, or pair by index and reuse last password for extras
             const getPassword = (i) => passwords[Math.min(i, passwords.length - 1)] || '';
             const newAccounts = emails.map((email, index) => ({
                 id: `acc-${Date.now()}-${index}`,
@@ -2004,7 +1989,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             if(account && account.otpRequest && account.otpRequest.requestedAt) {
                 const lastRequestTime = new Date(account.otpRequest.requestedAt).getTime();
                 const now = new Date().getTime();
-                const timeSinceLastRequest = (now - lastRequestTime) / 1000 / 60; // minutes
+                const timeSinceLastRequest = (now - lastRequestTime) / 1000 / 60; 
                 
                 if(timeSinceLastRequest < 2) {
                     const remainingSeconds = Math.ceil((2 - timeSinceLastRequest) * 60);
@@ -2016,7 +2001,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const updatedAccounts = data.accounts_data.map(acc => acc.id === accId ? { ...acc, otpRequest: { ...acc.otpRequest, status: 'pending', code: null, requestedAt: new Date().toISOString() } } : acc);
             await supabaseClient.from('orders').update({ accounts_data: updatedAccounts }).eq('id', orderId);
 
-            // Fire external admin notification (e.g. Discord webhook) so you know even when away.
             try {
                 const accForNotify = data.accounts_data.find(acc => acc.id === accId);
                 await notifyAdminOtpRequest(orderId, accId, accForNotify && accForNotify.creds ? accForNotify.creds : null);
@@ -2217,7 +2201,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     </div>
                 </div>
 
-                <!-- Hero: SHOP WITHOUT HASSLE + search vector on same row -->
+                <!-- Hero -->
                 <div class="px-4 py-4 pr-8 max-w-4xl mx-auto overflow-visible">
                     <div class="flex flex-row items-center justify-between gap-4 overflow-visible">
                         <div class="flex-1 min-w-0">
@@ -2226,7 +2210,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                                 Fresh SHEIN accounts with exclusive vouchers delivered to your dashboard. Secure. Fast. Anonymous.
                             </p>
                         </div>
-                        <!-- Search animation vector (right side beside headline) -->
                         <div class="relative w-32 h-28 shrink-0 flex justify-end overflow-visible mr-2">
                             <div class="absolute top-0 right-2 w-20 h-24 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-white/10 rounded-md shadow-sm flex flex-col items-center pt-3 gap-1.5 z-0 transform rotate-3">
                                 <div class="w-12 h-1.5 bg-gray-200 rounded-full"></div>
@@ -2245,7 +2228,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     </div>
                 </div>
 
-                <!-- Popular Accounts (2 per row) -->
+                <!-- Popular Accounts -->
                 <div class="px-4 max-w-5xl mx-auto">
                     <div class="flex items-center gap-2 mb-4">
                         <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-black dark:text-white"></i>
@@ -2300,7 +2283,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
         }
 
         function renderHome(animate = true) {
-            // Check UI Variant
             if (state.uiVariant === 'v2') {
                 return renderHomeV2(animate);
             }
@@ -2453,7 +2435,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const isNewUserPromo = state.user && state.userProfile && state.userProfile.is_new_user && p.new_user_enabled && parseFloat(p.new_user_price || 0) > 0;
             const promoUnitPrice = isNewUserPromo ? parseFloat(p.new_user_price) : null;
             
-            // Adjust styles for V2 Product Page if needed, but keeping it unified for now with conditional colors
             const bgClass = isV2 ? 'bg-white dark:bg-black' : 'bg-transparent';
             const textMain = isV2 ? 'text-black dark:text-white' : 'text-white';
             const textSub = isV2 ? 'text-gray-500 dark:text-zinc-400' : 'text-zinc-400';
@@ -2538,8 +2519,8 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const showCaptcha = state.sessionOrderCount >= 3;
             
             const buttonContent = state.isSubmitting 
-                ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> VERIFYING...`
-                : `Confirm Payment`;
+                ? `<span class="confirm-preloader shrink-0"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span> ${state.paymentMethod === 'gcash' ? 'SCANNING & VERIFYING...' : 'VERIFYING...'}`
+                : (state.paymentMethod === 'gcash' ? `<i data-lucide="scan-line" class="w-4 h-4"></i> Scan & Confirm Payment` : `Confirm Payment`);
             const buttonDisabled = state.isSubmitting ? 'disabled opacity-50 cursor-not-allowed' : 'hover:bg-emerald-400';
 
             const isDark = document.documentElement.classList.contains('dark');
@@ -2633,7 +2614,38 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                         </div>
                     </div>
 
-                    ${state.paymentMethod === 'gcash' ? '<div class="mb-6"><div class="flex items-center gap-2 mb-3"><div class="w-1.5 h-1.5 bg-white rounded-full"></div><span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Gateway</span></div><div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden"><div class="absolute inset-0 bg-[url(\'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+\')] opacity-10"></div><img src="' + getPaymentQrUrl() + '" alt="QR" class="w-48 h-48 object-contain" onerror="this.src=\'' + GCASH_QR_URL + '\'" /><div class="text-center relative z-10"><p class="font-mono text-sm font-bold text-white tracking-widest">' + getPaymentNumber() + '</p><p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p></div></div><div class="mt-4"><label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Reference Number</label><div class="relative"><input type="text" id="refNumberInput" placeholder="Last 4 digits or full reference" class="w-full bg-zinc-900 border border-white/10 py-3 px-3 pl-10 text-xs font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-700" /><i data-lucide="hash" class="w-3 h-3 text-zinc-600 absolute left-3.5 top-1/2 -translate-y-1/2"></i></div></div></div>' : '<div class="mb-6 bg-zinc-900 border border-white/10 p-4 rounded-lg"><p class="text-[10px] text-zinc-400 mb-3">You will be redirected to Stripe to pay securely with card.</p><p class="text-xs font-mono font-bold text-white">' + formatPHP(finalTotal) + '</p></div>'}
+                    ${state.paymentMethod === 'gcash' ? `
+                    <div class="mb-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Payment Gateway</span>
+                        </div>
+                        <div class="bg-zinc-900 border border-white/10 p-4 flex flex-col items-center justify-center gap-3 relative overflow-hidden">
+                            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-10"></div>
+                            <img src="${getPaymentQrUrl()}" alt="QR" class="w-48 h-48 object-contain" onerror="this.src='${GCASH_QR_URL}'" />
+                            <div class="text-center relative z-10">
+                                <p class="font-mono text-sm font-bold text-white tracking-widest">${getPaymentNumber()}</p>
+                                <p class="text-[9px] uppercase text-zinc-500 mt-0.5">Scan to transfer funds</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-[9px] font-bold uppercase text-zinc-500 mb-1.5 tracking-wider">Upload GCash Receipt</label>
+                            ${!state.checkoutReceiptBase64 ? `
+                            <div onclick="document.getElementById('checkoutReceiptFile').click()" class="w-full bg-zinc-900 border-2 border-dashed border-white/10 hover:border-emerald-500/50 py-6 px-4 text-center cursor-pointer transition-colors rounded-lg group">
+                                <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto mb-2 text-zinc-500 group-hover:text-emerald-400"></i>
+                                <p class="text-xs font-mono text-zinc-400 group-hover:text-white">Click to upload screenshot</p>
+                            </div>
+                            ` : `
+                            <div class="relative rounded-lg border border-white/10 bg-black/40 p-2 overflow-hidden flex justify-center">
+                                <img src="${state.checkoutReceiptBase64}" class="w-full max-w-sm max-h-48 object-contain rounded-md ${state.isSubmitting ? 'opacity-50' : ''}" />
+                                ${state.isSubmitting ? `<div class="absolute top-0 left-0 w-full h-1 bg-emerald-500 shadow-[0_0_15px_#10b981] animate-[scan-down_2s_linear_infinite_alternate] z-20"></div>` : ''}
+                                ${!state.isSubmitting ? `<button type="button" onclick="state.checkoutReceiptBase64 = null; render(false);" class="absolute top-4 right-4 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-md"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                            </div>
+                            `}
+                            <input type="file" id="checkoutReceiptFile" accept="image/*" class="hidden" onchange="window.handleCheckoutReceiptUpload(event)" />
+                        </div>
+                    </div>` : '<div class="mb-6 bg-zinc-900 border border-white/10 p-4 rounded-lg"><p class="text-[10px] text-zinc-400 mb-3">You will be redirected to Stripe to pay securely with card.</p><p class="text-xs font-mono font-bold text-white">' + formatPHP(finalTotal) + '</p></div>'}
                         
                         ${state.paymentMethod === 'gcash' ? showCaptcha ? '<div id="captcha-container" class="w-full my-4 min-h-[78px]"></div>' : '' : ''}
 
@@ -2678,7 +2690,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             </div>`;
         }
 
-        // Shared Render Logic for Order Cards (Used in Tracker and User Orders)
         function renderOrderCard(res, isMyOrders = false) {
             const isProcessing = res.status === 'Processing';
             const isRefundPending = res.status === 'Refund Pending';
@@ -2748,7 +2759,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                 </div>
                 ` : ''}
 
-                ${(isProcessing && res.refNumber && res.refNumber !== 'PAID-VIA-CREDITS' && (res.refNumber || '').indexOf('STRIPE-') !== 0 && (res.creditsUsed || 0) === 0) ? `
+                ${(isProcessing && res.refNumber && res.refNumber !== 'PAID-VIA-CREDITS' && res.refNumber !== 'VERIFIED-GCASH' && (res.refNumber || '').indexOf('STRIPE-') !== 0 && (res.creditsUsed || 0) === 0) ? `
                 <div class="mt-5 pl-2">
                     <button type="button" onclick="window.startReceiptVerification('${res.id}')" disabled="${state.receiptVerifying ? 'disabled' : ''}" class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2 ${state.receiptVerifying ? 'opacity-50 cursor-not-allowed' : ''}">
                         ${state.receiptVerifying ? '<span class="spinner spinner-sm border-white/40 border-t-transparent"></span> Verifying...' : '<i data-lucide="shield-check" class="w-3 h-3"></i> Verify receipt'}
@@ -2828,7 +2839,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             }
 
             const pending = state.orders.filter(o => o.status === 'Processing').length;
-            // Updated Revenue Calculation: Only count 'Completed' orders
             const revenue = state.orders
                 .filter(o => o.status === 'Completed')
                 .reduce((acc, cur) => acc + cur.total, 0);
@@ -2842,7 +2852,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             const adminInput = isDark ? 'bg-zinc-900 border-zinc-700 text-white' : 'bg-gray-50 border-gray-300 text-gray-900';
             const adminBorder = isDark ? 'border-white/5' : 'border-gray-200';
 
-            // Orders Tab Content
             let tabContent = '';
             if (state.adminTab === 'orders') {
                 tabContent = `
@@ -2850,7 +2859,6 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                     <table class="w-full text-left">
                         <tbody class="divide-y ${adminBorder}">
                             ${state.orders.map(order => {
-                                // Count User Messages: only unread
                                 const msgCount = order.accounts 
                                     ? order.accounts.reduce((acc, curr) => acc + (curr.messages ? curr.messages.filter(m => m.sender === 'user' && !m.read).length : 0), 0)
                                     : 0;
@@ -3147,16 +3155,13 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             app.innerHTML = html;
             lucide.createIcons();
             
-            // Re-render captcha (reCAPTCHA or Turnstile per admin setting)
             if (state.view === 'checkout' || state.view === 'register') setTimeout(renderCaptcha, 100);
 
-            // Clear existing cooldown timer
             if (window.otpCooldownTimer) {
                 clearInterval(window.otpCooldownTimer);
                 window.otpCooldownTimer = null;
             }
 
-            // Set up cooldown timer for OTP requests
             if (state.view === 'my-orders' && state.userOrders && state.userOrders.length > 0) {
                 const hasActiveCooldown = state.userOrders.some(order => 
                     order.accounts && order.accounts.some(acc => {
@@ -3165,7 +3170,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
                             const lastRequestTime = new Date(otp.requestedAt).getTime();
                             const now = new Date().getTime();
                             const timeSinceLastRequest = (now - lastRequestTime) / 1000;
-                            return timeSinceLastRequest < 120; // 2 minutes
+                            return timeSinceLastRequest < 120; 
                         }
                         return false;
                     })
@@ -3239,6 +3244,7 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
         window.togglePayWithCredits = togglePayWithCredits;
         window.setPaymentMethod = setPaymentMethod;
         window.createStripeCheckoutAndRedirect = createStripeCheckoutAndRedirect;
+        window.handleCheckoutReceiptUpload = handleCheckoutReceiptUpload;
         
         // New Expose Functions
         window.openAddProductModal = openAddProductModal;
@@ -3274,17 +3280,14 @@ FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80
             }
             
             await initAuth();
-            // Restore admin auth from localStorage (prevents logout on refresh)
             state.adminAuth = loadPersistedAdminAuth();
             if (state.adminAuth) {
-                // Baseline: don't spam notifications for already-pending OTPs on restore
                 state.trackedPendingOtps.clear();
                 try { await requestNotificationPermission(); } catch (e) {}
                 await fetchAllOrders();
             }
             await fetchProducts();
             await fetchPaymentSettings();
-            // Initialize external chat widget (Tawk.to) if configured
             initTawkChat();
             setupRealtime();
             const receiptInput = document.getElementById('receiptVerifyFile');
