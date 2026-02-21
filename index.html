@@ -280,6 +280,7 @@
 <body>
 
     <div id="toast-container"></div>
+    <input type="file" id="receiptVerifyFile" accept="image/*" class="hidden" />
 
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
@@ -506,6 +507,9 @@
         // Stripe: base URL for Supabase Edge Functions (same project as SUPABASE_URL)
         const STRIPE_FUNCTIONS_BASE = SUPABASE_URL.replace(/\/$/, '') + '/functions/v1';
 
+        // GCash receipt verification (runs in browser; restrict key by referrer in Google AI Studio)
+        const GEMINI_API_KEY = 'AIzaSyCJ3zzUejTE87P94-eyNuPh5MLKsPG0qDo';
+
         // --- State Management ---
         const state = {
             view: 'home',
@@ -527,6 +531,9 @@
             activeFulfillmentId: null,
             fulfillmentText: '',
             aiLoading: false,
+            receiptVerifyOrderId: null,
+            receiptVerifyOrder: null,
+            receiptVerifying: false,
             aiContent: null,
             discount: 0,
             isSubmitting: false,
@@ -534,7 +541,7 @@
             modalCallback: null,
             sessionOrderCount: 0,
             selectedOrderId: null,
-            paymentSettings: { payment_qr_url: '', payment_number: '', captcha_provider: 'recaptcha' },
+            paymentSettings: { payment_qr_url: '', payment_number: '', payment_receiver_name: '', captcha_provider: 'recaptcha' },
             captchaToken: null,
             payWithCredits: false,
             trackedPendingOtps: new Set() // Track known pending OTP requests: "orderId-accId"
@@ -948,6 +955,7 @@
                 state.paymentSettings = {
                     payment_qr_url: map.payment_qr_url || '',
                     payment_number: map.payment_number || '',
+                    payment_receiver_name: map.payment_receiver_name || '',
                     captcha_provider: (provider === 'turnstile' ? 'turnstile' : 'recaptcha')
                 };
             }
@@ -1621,6 +1629,145 @@
             }
         }
 
+        function startReceiptVerification(orderId) {
+            state.receiptVerifyOrderId = orderId;
+            state.receiptVerifyOrder = null;
+            const el = document.getElementById('receiptVerifyFile');
+            if (el) el.value = '';
+            if (el) el.click();
+        }
+
+        function fuzzyMatchStr(a, b) {
+            if (!a || !b) return false;
+            const n = (s) => String(s).toUpperCase().replace(/[^A-Z0-9*•]/g, '');
+            const n1 = n(a), n2 = n(b);
+            if (/[*•]/.test(n1) || /[*•]/.test(n2)) {
+                try {
+                    const re = new RegExp('^' + n2.replace(/[*•]/g, '.*') + '$', 'i');
+                    if (re.test(n1)) return true;
+                } catch (_) {}
+                return n1 === n2 || n1.includes(n2.replace(/[*•]/g, '')) || n2.includes(n1.replace(/[*•]/g, ''));
+            }
+            return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+        }
+        function isNumberMatchStr(ext, tgt) {
+            if (!ext || !tgt) return false;
+            const e = String(ext).replace(/\D/g, ''), t = String(tgt).replace(/\D/g, '');
+            return e === t || (t.length >= 4 && e.endsWith(t.slice(-4)));
+        }
+
+        async function verifyReceiptWithGemini(imageBase64, order, paymentSettings) {
+            if (!GEMINI_API_KEY) return { verified: false };
+            const base64Data = imageBase64.indexOf(',') >= 0 ? imageBase64.split(',')[1] : imageBase64;
+            const targetAmount = parseFloat(order.total) || 0;
+            const targetNumber = (paymentSettings.payment_number || '').trim();
+            const targetName = (paymentSettings.payment_receiver_name || '').trim();
+            const orderDate = order.date ? new Date(order.date) : null;
+
+            const schema = {
+                type: 'OBJECT',
+                properties: {
+                    isGCash: { type: 'BOOLEAN', description: 'Is this clearly a GCash receipt?' },
+                    amount: { type: 'NUMBER', description: 'Transaction amount, numbers only.' },
+                    receiverName: { type: 'STRING', description: "Receiver's name as printed." },
+                    receiverNumber: { type: 'STRING', description: "Receiver's number." },
+                    receiptTimestamp: { type: 'STRING', description: 'ISO 8601 YYYY-MM-DDTHH:mm:ss or empty.' },
+                    forensicScore: { type: 'NUMBER', description: 'Integrity score 0-100.' },
+                    isAIEdited: { type: 'BOOLEAN', description: 'Signs of manipulation?' },
+                    anomalies: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Inconsistencies.' },
+                    metaSignature: { type: 'STRING', description: 'VALID if authentic, FORGED if tampered.' }
+                },
+                required: ['isGCash', 'amount', 'receiverName', 'receiverNumber', 'receiptTimestamp', 'forensicScore', 'isAIEdited', 'metaSignature', 'anomalies']
+            };
+            const prompt = `Act as an expert digital forensics auditor for financial receipt verification. Strictly extract and audit the image.
+EXTRACTION: Amount (number only). Receiver Name exactly as printed (include asterisks if masked). Receiver Number. Date/time in ISO 8601 (YYYY-MM-DDTHH:mm:ss). Assume current year if missing.
+FORENSIC: Check font consistency, alignment, artifacts. If anomalies, score < 80. If manipulated, score < 50. If flawless, 90-100.`;
+
+            const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: base64Data } }] }],
+                    generationConfig: { responseMimeType: 'application/json', responseSchema: schema }
+                })
+            });
+            if (!res.ok) return { verified: false };
+            const json = await res.json();
+            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) return { verified: false };
+            let ext;
+            try { ext = JSON.parse(text); } catch (_) { return { verified: false }; }
+
+            const amountOk = ext.amount != null && Math.abs(ext.amount - targetAmount) < 0.01;
+            let timeOk = false;
+            if (ext.receiptTimestamp && orderDate && !isNaN(orderDate.getTime())) {
+                const receiptDate = new Date(ext.receiptTimestamp);
+                if (!isNaN(receiptDate.getTime()))
+                    timeOk = Math.abs(orderDate - receiptDate) / (1000 * 60) <= 10;
+            }
+            const nameOk = targetName ? fuzzyMatchStr(ext.receiverName, targetName) : true;
+            const numOk = targetNumber ? isNumberMatchStr(ext.receiverNumber, targetNumber) : true;
+            const receiverOk = nameOk && numOk;
+            const authentic = ext.isGCash && (ext.forensicScore ?? 0) >= 85 && ext.metaSignature === 'VALID' && !ext.isAIEdited;
+            const verified = amountOk && timeOk && receiverOk && authentic;
+            return { verified };
+        }
+
+        async function handleReceiptVerifyFile(e) {
+            const orderId = state.receiptVerifyOrderId;
+            state.receiptVerifyOrderId = null;
+            const file = e.target.files && e.target.files[0];
+            if (!file || !orderId) return;
+            if (!file.type.startsWith('image/')) {
+                showToast("Please select an image file", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const dataUrl = ev.target && ev.target.result;
+                if (!dataUrl || typeof dataUrl !== 'string') return;
+                state.receiptVerifying = true;
+                render(false);
+                try {
+                    const { data: orderRow } = await supabaseClient.from('orders').select('quantity, total, created_at, status').eq('id', orderId).single();
+                    if (!orderRow || orderRow.status !== 'Processing') {
+                        showToast("Order not found or already completed.", "error");
+                        return;
+                    }
+                    const order = { orderId, quantity: orderRow.quantity || 1, total: orderRow.total || 0, date: orderRow.created_at };
+                    const { verified } = await verifyReceiptWithGemini(dataUrl, order, state.paymentSettings || {});
+                    if (!verified) {
+                        showToast("Receipt could not be verified. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
+                        return;
+                    }
+                    const { error: rpcErr } = await supabaseClient.rpc('allocate_and_fulfill', {
+                        p_order_id: orderId,
+                        p_quantity: Math.max(1, Math.min(Number(order.quantity) || 1, 100))
+                    });
+                    if (rpcErr) {
+                        showToast("Accounts could not be assigned. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
+                        return;
+                    }
+                    showToast("Receipt verified. Accounts have been delivered.", "success");
+                    if (state.view === 'tracker' && state.trackerInput === orderId) {
+                        const { data: ord } = await supabaseClient.from('orders').select('*').eq('id', orderId).single();
+                        if (ord) state.searchResult = mapOrderData(ord);
+                    }
+                    if (state.view === 'my-orders') await fetchUserOrders();
+                    render(false);
+                } catch (err) {
+                    showToast("Verification failed. Please contact customer service: https://stakzshop.vercel.app/contact", "error");
+                } finally {
+                    state.receiptVerifying = false;
+                    const inputEl = document.getElementById('receiptVerifyFile');
+                    if (inputEl) inputEl.value = '';
+                    render(false);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function cancelOrder(id) {
             showModal('Cancel Order?', 'Are you sure you want to cancel this order? This action cannot be undone.', async () => {
                 const { data: order, error: fetchErr } = await supabaseClient.from('orders').select('created_at, user_id, credits_used').eq('id', id).single();
@@ -1799,6 +1946,7 @@
         async function savePaymentSettings() {
             const url = (document.getElementById('settingsPaymentQrUrl')?.value || '').trim();
             const num = (document.getElementById('settingsPaymentNumber')?.value || '').trim();
+            const receiverName = (document.getElementById('settingsPaymentReceiverName')?.value || '').trim();
             const providerEl = document.getElementById('settingsCaptchaProvider');
             const captchaProvider = providerEl ? (providerEl.value === 'turnstile' ? 'turnstile' : 'recaptcha') : (state.paymentSettings?.captcha_provider || 'recaptcha');
 
@@ -1816,10 +1964,12 @@
             if (r1.error) return showToast(r1.error.message || "Failed to save QR URL", "error");
             const r2 = await setSetting('payment_number', num);
             if (r2.error) return showToast(r2.error.message || "Failed to save number", "error");
+            await setSetting('payment_receiver_name', receiverName);
 
             state.paymentSettings = { 
                 payment_qr_url: url, 
                 payment_number: num, 
+                payment_receiver_name: receiverName,
                 captcha_provider: captchaProvider
             };
             showToast("Settings saved", "success");
@@ -2598,6 +2748,13 @@
                 </div>
                 ` : ''}
 
+                ${(isProcessing && res.refNumber && res.refNumber !== 'PAID-VIA-CREDITS' && (res.refNumber || '').indexOf('STRIPE-') !== 0 && (res.creditsUsed || 0) === 0) ? `
+                <div class="mt-5 pl-2">
+                    <button type="button" onclick="window.startReceiptVerification('${res.id}')" disabled="${state.receiptVerifying ? 'disabled' : ''}" class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide flex items-center justify-center gap-2 ${state.receiptVerifying ? 'opacity-50 cursor-not-allowed' : ''}">
+                        ${state.receiptVerifying ? '<span class="spinner spinner-sm border-white/40 border-t-transparent"></span> Verifying...' : '<i data-lucide="shield-check" class="w-3 h-3"></i> Verify receipt'}
+                    </button>
+                    <p class="text-[8px] text-zinc-600 text-center mt-2 font-mono">Upload GCash receipt to receive accounts</p>
+                </div>` : ''}
                 ${canCancel ? `
                 <div class="mt-5 pl-2">
                     <button onclick="window.cancelOrder('${res.id}')" class="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold py-2.5 px-3 text-[9px] uppercase transition-colors tracking-wide">
@@ -2888,6 +3045,7 @@
             } else if (state.adminTab === 'settings') {
                 const qrUrl = (state.paymentSettings?.payment_qr_url || '').trim();
                 const payNum = (state.paymentSettings?.payment_number || '').trim();
+                const receiverName = (state.paymentSettings?.payment_receiver_name || '').trim();
                 const captchaProvider = (state.paymentSettings?.captcha_provider || 'recaptcha');
                 tabContent = `
                 <div class="space-y-6 max-w-md">
@@ -2912,6 +3070,10 @@
                         <div class="mb-4">
                             <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">GCash / payment number</label>
                             <input type="text" id="settingsPaymentNumber" placeholder="0917 123 4567" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50" value="${payNum.replace(/"/g, '&quot;')}" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">Receiver name (for receipt verification)</label>
+                            <input type="text" id="settingsPaymentReceiverName" placeholder="JO**O EM*****L D." class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-emerald-500/50" value="${receiverName.replace(/"/g, '&quot;')}" />
                         </div>
                         <button onclick="window.savePaymentSettings()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Save payment settings</button>
                     </div>
@@ -3125,8 +3287,12 @@
             // Initialize external chat widget (Tawk.to) if configured
             initTawkChat();
             setupRealtime();
+            const receiptInput = document.getElementById('receiptVerifyFile');
+            if (receiptInput) receiptInput.addEventListener('change', handleReceiptVerifyFile);
             render();
         }
+
+        window.startReceiptVerification = startReceiptVerification;
 
         init();
         
