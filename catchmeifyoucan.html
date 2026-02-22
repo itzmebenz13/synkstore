@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<title>SHEIN Script Updater Pro</title>
+<script>
+  // Init theme immediately to prevent flashing
+  const savedTheme = localStorage.getItem('shein_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
+
+:root {
+  /* Dark Theme (Default) */
+  --bg: #05070a; --panel: #0b0e14; --border: #1a212d;
+  --accent: #00e5ff; --accent2: #ff4b72; --success: #00ff88;
+  --warn: #ffcc00; --text: #c8d4e0; --dim: #4a5568;
+  --code: #040608; --red: #ff4444; --input-text: #8be9fd;
+  --grid-color: rgba(0,229,255,0.02);
+  --tr-hover: #121822; --shadow: rgba(0,0,0,0.4);
+  --btn-s-hover-bg: rgba(255,255,255,0.08);
+  --btn-s-hover-c: #ffffff; --header-c: #ffffff;
+  --logo-shadow: rgba(0,229,255,0.2);
+}
+
+[data-theme="light"] {
+  /* Light Theme */
+  --bg: #f4f7fb; --panel: #ffffff; --border: #cbd5e1;
+  --accent: #0284c7; --accent2: #e11d48; --success: #059669;
+  --warn: #d97706; --text: #334155; --dim: #64748b;
+  --code: #f8fafc; --red: #dc2626; --input-text: #0f172a;
+  --grid-color: rgba(2,132,199,0.05);
+  --tr-hover: #f1f5f9; --shadow: rgba(0,0,0,0.05);
+  --btn-s-hover-bg: rgba(0,0,0,0.05);
+  --btn-s-hover-c: #0f172a; --header-c: #0f172a;
+  --logo-shadow: rgba(2,132,199,0.3);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;transition:background-color 0.4s ease, color 0.4s ease;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;transition:0.4s ease;}
+
+/* Header */
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:24px 20px 60px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);transition:0.4s ease;}
+.logo{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#000;flex-shrink:0;
+  box-shadow: 0 0 20px var(--logo-shadow); position:relative; overflow:hidden;}
+.logo::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:linear-gradient(transparent,rgba(255,255,255,0.4),transparent);
+  transform:rotate(45deg);animation:shine 3s infinite;}
+@keyframes shine{0%{transform:translateX(-100%) rotate(45deg);}100%{transform:translateX(100%) rotate(45deg);}}
+
+.title-row { display: flex; align-items: center; gap: 12px; }
+header h1{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--header-c);letter-spacing:1px;
+  text-shadow: 0 0 10px var(--logo-shadow);transition:color 0.4s ease;}
+header p{font-size:12px;color:var(--dim);margin-top:4px}
+.hright{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--dim)}
+
+/* Animated Theme Toggle SVG */
+.theme-btn {
+  background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  padding:6px;border-radius:50%;transition:background 0.3s;
+}
+.theme-btn:hover { background:var(--border); }
+.theme-svg { width:24px; height:24px; color:var(--dim); transition:transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), color 0.3s; }
+.theme-btn:hover .theme-svg { color:var(--accent); }
+.sun-body { transition: r 0.4s ease; r: 9; }
+.sun-beams { transition: transform 0.4s ease, opacity 0.4s ease; transform: rotate(-45deg); opacity: 0; }
+.moon-hole { transition: cx 0.4s ease, cy 0.4s ease, r 0.4s ease; cx: 15; cy: 7; r: 5; }
+
+[data-theme="light"] .theme-svg { transform: rotate(90deg); }
+[data-theme="light"] .sun-body { r: 5; }
+[data-theme="light"] .sun-beams { transform: rotate(0deg); opacity: 1; }
+[data-theme="light"] .moon-hole { cx: 24; cy: 10; r: 0; }
+
+.status-badge { display:flex; align-items:center; gap:8px; background:var(--code); padding:6px 12px; border-radius:20px; border:1px solid var(--border); }
+.dot{width:10px;height:10px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:0.3s;}
+.dot.on{background:var(--success);box-shadow:0 0 12px var(--success);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Layout */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+
+/* Panels */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 32px var(--shadow);display:flex;flex-direction:column;transition:background-color 0.4s, border-color 0.4s, box-shadow 0.4s;}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(125,125,125,.02);transition:border-color 0.4s;}
+.pt{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px;}
+
+/* Textarea & Inputs */
+textarea{width:100%;background:var(--code);color:var(--input-text);font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;line-height:1.6;border:none;outline:none;padding:16px;resize:vertical;
+  min-height:280px;tab-size:4;flex:1;transition:background-color 0.4s, color 0.4s;}
+textarea:focus{background:var(--bg);box-shadow:inset 0 0 0 1px var(--accent)}
+input[type="text"]{background:var(--code);color:var(--input-text);font-family:'JetBrains Mono',monospace;
+  font-size:12px;border:1px solid var(--border);border-radius:6px;padding:9px 12px;outline:none;width:100%;transition:0.4s;}
+input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,229,255,.1)}
+
+/* Buttons */
+.br{padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--border);flex-wrap:wrap;background:rgba(125,125,125,0.05);transition:border-color 0.4s;}
+button{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+  padding:9px 16px;border-radius:6px;border:none;cursor:pointer;
+  letter-spacing:.5px;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);display:flex;align-items:center;gap:8px;
+  justify-content:center;}
+button:active{transform:scale(0.96);}
+.btn-p{background:var(--accent);color:#ffffff;flex:1;box-shadow:0 0 15px var(--logo-shadow)}
+[data-theme="dark"] .btn-p { color: #000; } 
+.btn-p:hover{filter:brightness(1.1);box-shadow:0 0 20px var(--logo-shadow);transform:translateY(-2px)}
+.btn-s{background:transparent;color:var(--text);border:1px solid var(--dim)}
+.btn-s:hover{background:var(--btn-s-hover-bg);color:var(--btn-s-hover-c);border-color:var(--btn-s-hover-c);}
+.btn-g{background:rgba(0,255,136,.1);color:var(--success);border:1px solid rgba(0,255,136,.3)}
+.btn-g:hover{background:var(--success);color:#000;box-shadow:0 0 15px rgba(0,255,136,0.3)}
+.btn-o{background:rgba(255,107,53,.1);color:var(--accent2);border:1px solid rgba(255,107,53,.3)}
+.btn-o:hover{background:var(--accent2);color:#fff;box-shadow:0 0 15px rgba(255,107,53,0.3)}
+.btn-rm{background:transparent;color:var(--dim);border:1px solid var(--border);padding:5px 10px;font-size:11px;}
+.btn-rm:hover{background:rgba(255,68,68,.15);color:var(--red);border-color:var(--red);}
+
+/* Badges */
+.b{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;letter-spacing:.5px;}
+.b-blue{background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.3)}
+.b-green{background:rgba(0,255,136,.15);color:var(--success);border:1px solid rgba(0,255,136,.3)}
+.b-orange{background:rgba(255,75,114,.15);color:var(--accent2);border:1px solid rgba(255,75,114,.3)}
+
+/* Tokens Grid */
+.tg{display:flex;flex-direction:column;gap:1px;background:var(--border);flex:1;transition:0.4s;}
+.tr{display:grid;grid-template-columns:140px 1fr;background:var(--panel);transition:background-color 0.2s}
+.tr:hover{background:var(--tr-hover);}
+.tk{padding:10px 14px;font-size:11px;color:var(--accent);border-right:1px solid var(--border);
+  letter-spacing:.5px;display:flex;align-items:center;transition:0.4s;}
+.tv{padding:10px 14px;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:0.4s;}
+.tv.ok{color:var(--success);background:rgba(0,255,136,.05);font-weight:bold;}
+
+/* Saved Scripts Section */
+.s-body{padding:16px;display:flex;flex-direction:column;gap:12px;flex:1;}
+.s-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding-right:4px;}
+.si{display:flex;align-items:center;justify-content:space-between;background:var(--code);
+  border:1px solid var(--border);padding:10px 14px;border-radius:8px;transition:0.2s;}
+.si:hover{border-color:var(--accent);background:var(--tr-hover);}
+.si-name{font-weight:bold;color:var(--header-c);font-size:13px;display:flex;align-items:center;gap:8px;}
+.si-actions{display:flex;gap:6px;}
+
+/* SVG Icons & Animations */
+svg{width:16px;height:16px;flex-shrink:0;}
+.icon-spin{animation:spin 1s linear infinite; transform-origin: center;}
+.icon-pulse{animation:svg-pulse 2s infinite;}
+.icon-float{animation:float 3s ease-in-out infinite;}
+.icon-bounce:hover svg{animation:bounce 0.5s;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes svg-pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.1);opacity:0.7;}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+
+/* Button Loading State */
+.btn-loading { opacity: 0.8; pointer-events: none; }
+
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:8px;
+  font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;
+  transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index:999;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+#toast.on{transform:translateY(0);opacity:1}
+#toast.s{background:var(--success);border:1px solid var(--success);color:#000}
+#toast.e{background:var(--red);border:1px solid var(--red);color:#fff}
+#toast.i{background:var(--accent);border:1px solid var(--accent);color:#000}
+[data-theme="light"] #toast { box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#4a5568;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* =========================================================
+   Mobile Responsiveness & 20% UI Downscale
+   ========================================================= */
+@media (max-width: 768px) {
+  .wrap { padding: 15px 12px 40px; }
+  header { flex-wrap: wrap; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; }
+  .title-row { gap: 10px; }
+  .logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
+  header h1 { font-size: 18px; }
+  header p { font-size: 10px; line-height: 1.4; margin-top: 6px; }
+  
+  .g2 { gap: 12px; margin-bottom: 12px; }
+  .panel { border-radius: 10px; }
+  .ph { padding: 12px 14px; }
+  .pt { font-size: 12.5px; }
+  svg { width: 14px; height: 14px; }
+  
+  textarea { font-size: 10px; padding: 12px; min-height: 200px; }
+  input[type="text"] { font-size: 10.5px; padding: 8px 10px; }
+  
+  .br { padding: 10px 14px; gap: 6px; }
+  button { font-size: 10.5px; padding: 8px 12px; }
+  
+  .tr { grid-template-columns: 100px 1fr; }
+  .tk, .tv { font-size: 9.5px; padding: 8px 10px; }
+  
+  .s-body { padding: 12px; gap: 10px; }
+  .si { padding: 8px 12px; }
+  .si-name { font-size: 11px; }
+  .btn-rm { padding: 4px 8px; font-size: 9.5px; }
+
+  #toast { font-size: 11.5px; padding: 12px 16px; bottom: 16px; right: 16px; left: 16px; justify-content: center; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  header { flex-direction: column; align-items: flex-start; }
+  .hright { margin-left: 0; width: 100%; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+  .br { flex-direction: column; }
+  .br button { width: 100%; }
+  .btn-s#resetbtn { margin-left: 0 !important; }
+  .s-body > div:first-child { flex-direction: column; }
+  .s-body > div:first-child button { width: 100% !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="title-row">
+        <div class="logo">SH</div>
+        <h1>SHEIN SCRIPT UPDATER <span style="color:var(--accent2)">PRO</span></h1>
+      </div>
+      <p>Advanced Token Extraction &amp; Multi-Script Management Environment</p>
+    </div>
+    <div class="hright">
+      <button id="theme-btn" class="theme-btn" aria-label="Toggle Theme">
+        <svg class="theme-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <mask id="moon-mask">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            <circle class="moon-hole" cx="24" cy="10" r="6" fill="black" />
+          </mask>
+          <circle class="sun-body" cx="12" cy="12" r="5" mask="url(#moon-mask)" fill="currentColor" />
+          <g class="sun-beams" stroke="currentColor">
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </g>
+        </svg>
+      </button>
+      <div class="status-badge">
+        <div class="dot" id="dot"></div>
+        <span id="stext">READY TO PARSE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ROW 1: Parse Data & Token Preview -->
+  <div class="g2">
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">
+          <svg class="icon-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          RAW REQUEST INPUT
+        </div>
+      </div>
+      <textarea id="rawin" placeholder="Paste your captured full HTTP request here...
+
+POST /ph/bff-api/user/common_login?...
+smdeviceid: WHJMr...
+x-cs-random: 13d0ed...
+x-gw-auth: a=xjq...
+armortoken: T1_3...
+anti-in: 1_1.9...
+cookie: AT=MDEw..."></textarea>
+      <div class="br">
+        <button class="btn-p icon-bounce" id="parsebtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          PARSE & UPDATE
+        </button>
+        <button class="btn-s" id="clearbtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          CLEAR
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">
+          <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          EXTRACTED TOKENS
+        </div>
+        <span class="b b-blue" id="nchanged" style="display:none">0 UPDATED</span>
+      </div>
+      <div id="tpreview" class="tg">
+        <div class="tr"><div class="tk">SMDEVICE_ID</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">CS_RANDOM</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">GW_AUTH</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">ARMOR_TOKEN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">ANTI_IN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">CSRF_TOKEN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">OEST</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">AD_FLAG</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">COOKIES</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+        <div class="tr"><div class="tk">BLACKBOX</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Saved Scripts & Voucher Bundles Manager -->
+  <div class="g2">
+    <!-- Saved Scripts Manager -->
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">
+          <svg class="icon-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          SAVED SCRIPTS BROWSER
+        </div>
+        <span class="b b-orange" id="scnt">0 Saved</span>
+      </div>
+      <div class="s-body">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="sname" placeholder="Name (e.g., SCRIPT 1)" maxlength="30">
+          <button class="btn-g icon-bounce" id="savebtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            SAVE
+          </button>
+        </div>
+        <div class="s-list" id="slist">
+          <div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse data and save it here!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voucher Bundles Manager -->
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          VOUCHER BUNDLES MANAGER
+        </div>
+        <span class="b b-blue" id="vcnt">0 Bundles</span>
+      </div>
+      <div class="s-body">
+        <div style="display:flex;gap:8px;flex-direction:column;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;">
+          <span style="font-size:10px;color:var(--dim);font-weight:bold;">ADD CUSTOM BUNDLE (MAX 4 CODES)</span>
+          <input id="cb-name" type="text" placeholder="Name (e.g., 90% OFF BUNDLE)">
+          <div style="display:flex;gap:8px;">
+            <input id="cb-codes" type="text" placeholder="Codes (comma-separated)">
+            <button class="btn-p" id="addbundlebtn">ADD</button>
+          </div>
+        </div>
+        <div class="s-list" id="blist" style="max-height:180px;"></div>
+      </div>
+      <div class="br">
+        <button class="btn-g" id="applybtn" style="flex:1;">APPLY BUNDLES TO SCRIPT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Output Script -->
+  <div class="panel">
+    <div class="ph">
+      <div class="pt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        OUTPUT PYTHON SCRIPT
+      </div>
+      <span class="b b-orange" id="obadge">DEFAULT TEMPLATE</span>
+    </div>
+    <textarea id="scriptout" readonly></textarea>
+    <div class="br">
+      <button class="btn-g icon-bounce" id="copybtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        COPY CODE
+      </button>
+      <button class="btn-o icon-bounce" id="dlbtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        DOWNLOAD .py
+      </button>
+      <button class="btn-s" id="resetbtn" style="margin-left:auto;">RESET TO DEFAULT</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">
+  <svg id="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ================================================================
+// THEME TOGGLE LOGIC
+// ================================================================
+document.getElementById('theme-btn').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('shein_theme', next);
+});
+
+// ================================================================
+// THE NEW DYNAMIC MULTI-BUNDLE PYTHON SCRIPT (Safely Encoded)
+// ================================================================
+const ORIG = `#!/usr/bin/env python3
+"""
+SHEIN Login + Coupon Collector
+- Logs in using email/password (prompted in Termux)
+- Extracts session cookies & tokens from login response
+- Collects ALL voucher codes in ONE single bundle request
+- Supports multiple accounts
+- Dynamic Menu to select voucher bundles
+"""
+
+import requests
+import uuid
+import time
+import getpass
+import sys
+import re
+
+# ─────────────────────────────────────────────────────────────
+# BASE TOKENS FROM YOUR LOGIN REQUEST HEADERS
+# ─────────────────────────────────────────────────────────────
+
+SMDEVICE_ID = "WHJMrwNw1k/E/t3MJVJfLc2430HfnIOMfy9nof/nCVXYNFHOASgiVurjnjrCOVHZy6sfn6CrWseodT7L+pJccl8qE506P67L6dCW1tldyDzmQI99+chXEipHau9sLar9ZYp5HxsF710xV3HH8Acmv+xkp+XcdgI9keu8bpbMPuOTJc3aMEBGDbKyOlsVOXoQi+2yltWZPHiNiNVCcw5ywKABbHDKE2ZJX7RoM6Q9BIYUt5rucyzOz7IlxdV1Ju95hz5X4GRW48UNlq8KcChRSfQ==1487582755342"
+CS_RANDOM   = "13d0ed2175cf11dc6ea3852169d0698507cd653c0f3882f436657f65ae9f3ee994b01a9e2a88c2fdc1e1a6c8383bd22683e36b0455337d697ab39ed55a53da63885c23f9c98f7"
+GW_AUTH     = "a=xjqHR52UWJdjKJ0x6QrCsus66rNXR9@2.0.13&b=1771561633164&d=06942fbc37be6a98b8dee877d03ae8f6&e=VFbO4ZTI2ZDJkZWRkOGJiYThmNjllOGUxNGZiNWQ4YWVkNTJmNjIxYTM0MDE0NTgxOTRiOTBiMzAxMDYxZjNlZmU4OA%3D%3D"
+ARMOR_TOKEN = "T1_3.11.1_i7HCNI8sWSUN4Wsff-xWfHI-nGUkwXkUfUidrTxMKMoVEF-S1WyXkFX-jP_okgfvPM6i7teYg2BXJH-oGioqbA16Odb3VSQWPKTDCsgIorIFpVp9YzvXqWup8SggNhKqUuUE1wR1kTo0NXgnnmVHbIA_SW6x-FT2NdIG4fZbnGEsP0HEXACrbK41M56QfNZX_1771561616116"
+ANTI_IN     = "1_1.9.1_3c144d_dUI3NKqhPIg2zfmrNlozLotjogBHMceVXj8ATT8KbzTrHO93BYfoNkh4GwSGH__1RaMshkvM49gBSfffu81jJ16XAQ1rp-2eH92BWPAK-HArVBtKdxKDS1ECkYANKS8DUsQvgHXWexAqxfxm8btC8X9LkKoZUCizl-n-brKcev83pxpv9UcU1MNx-JkuofyQXT4gr2ZM6jxqVQlLe9cqCGitl8luHyjwBt0GfayqpvUutVLRrs7oQQezf0bXfueq121evCytlvQII8juqB7WsLIQd4AKlhg7KaYHr9RAKD915ua0P-C0HuQJaUXbXq4ag25u_S73GxuCJ0q8pkbcLRGvnTEdGsE3zAxrXItIpkSxGuQ3OtmZTMVVZEPdk7BH4OHC1ASYDmgZpBx65mtIkdVGL6xtpEKM1pS5wVaes654MvN4prB9Zld8VjD_Io-WzqpJQYaDmW3sEpDzxbR6wKwnsNICUz6cxR2CJVpiBZx6L2jHOWhInGJBqXBuXSl1AH69Z2hICcVvFl30AvSDyLq5OxKGmAzlKN0GS0BloZVFomhAknaJ9qqZidlUVCQXRgKSJD31SVi4KRU31wuSXIDU2IcJ5N9yrUI1MHXsS0GG7fVtYzOUvO6dirpJRXu1nlLafwjWW7BMSMHDl6dn0EJ5ObbfY2bdm-ZdM0lye66ojqIVk02CBoQ38k-RGabRm1Cp-_9aARpsaKNIvC12YypIDA0vw6jHocv53I46KH4W"
+CSRF_TOKEN  = "V8jlj6MO-GO6iA-uLI7YvM02eY8-FwyIg6zY"
+OEST        = "MUNCNUE4QURfQTQ1NF8yRDA0XzIzREJfNjAxNDlFRTZ8MTc3MTU2MTYzMzE1NnxDOEVD"
+AD_FLAG     = "8FkZa3NuCnoO+IBsqSDbVS0ujpVi/IXf//kOjWMsgnOZ0k+h6+rK67aH0c1E5efGgWYq61YJe9rvWC5xPj7ZVVYoP3i9GVpBfVkWfa8EsrsGa2KgaixOSZmJfGKy6YI874yU0pb2l85B3RSMhSMlbQ=="
+
+PRE_LOGIN_COOKIES = (
+    "armorUuid=202602201224554580cf35940ea5f62ddb4692d7726e2d001630144fffa44f00; "
+    "_cfuvid=5gZVKcVcvlOJM_C04VSwvPaSySy85EdCzQ7ghaSSlgA-1771561495563-0.0.1.1-604800000; "
+    "cf_clearance=pxt2Hv7WNnJlhZfxrzO3RsSDt5JiKsk6PIU9x4vYius-1771561497-1.2.1.1-ZQpyHS_7wj33snTtl5eeij4CYPOIuzHqvJRmxG9DcN.KSiV_jRtaBdthlLE7C74t3cdMoSaVzgLP2WbGmiJTKX0ozQuhHaE5VdOtmrr9sKwwzSh9weK3hZBjkaZS1WPNpGCRaart.sBzQB4dQx3rSPVilgLHtTdzLeP0HF1DBtKW.ho5VurEfVdSwpg7dnFMZ4X3vTR26DK05.JZxZzmQzhqdZ.iX_c5dEm0N1khI7M; "
+    "smidV2=202602201224565baf15796ae2815907c19afa12eb8cf300a45b418e393f5e0; "
+    "zpnvSrwrNdywdz=center; "
+    "_fbp=fb.1.1771561497460.11387546369550696; "
+    "_pin_unauth=dWlkPVlXVXlOemd6Tm1FdE1UWTJaaTAwTlRkaExXSTBZbVV0TXpVeFpqSXlNRE16TlRReA; "
+    "_cbp=fb.1.1771561498107.749494303; "
+    "_gcl_au=1.1.1545618824.1771561498.1332345567.1771561515.1771561602; "
+    "sessionID_shein_m_pwa=s%3AwfBOH1QotW9NuPHqCp8pIP_VWNU_RJcP.JFYvI8aavy%2BQQiqsW06jfc6tkh%2FcpVwuS6WIfrBtdPI; "
+    "AT=MDEwMDE.eyJiIjo3LCJnIjoxNzcxNTYxNjEzLCJyIjoiRzJrQzJsIiwidCI6MX0.fa5a23b356ac8129; "
+    "_uetsid=1d0fb9000e1411f1a4447d963a282122; "
+    "_uetvid=1d1044c00e1411f18c8497dcb9836df7; "
+    "g_state={\\"i_l\\":0,\\"i_ll\\":1771561615172,\\"i_b\\":\\"ppBOZjIDF3s8xk7iUfOAOxvybu5Ha6jtB4hnO60VWv8\\",\\"i_e\\":{\\"enable_itp_optimization\\":0}}; "
+    "cto_bundle=LtvLcV9sJTJGRE1hUmtURlBPd04lMkZPdFBBd1dTYk9CN3NrVjVmS0lhWHR4TFVEd1pZWkRYSWZzdTdwSGlTMndMbjE1SkFwJTJCS2t4a0p5b1pZUzc3UXE2eDRwb1BYRXoxWVY0WEhEY0FxZFp0U0xIcHJ2Q2JzJTJCcDVIMldIZnl3REpvSTBza2tT; "
+    "language=ph"
+)
+
+# ─────────────────────────────────────────────────────────────
+# COUPON BUNDLES
+# ─────────────────────────────────────────────────────────────
+
+# === BUNDLES START ===
+BUNDLES = [
+    {
+        "name": "ALL VOUCHERS",
+        "codes": [
+            "phsf021210",
+            "phsf021209",
+            "phsf021208",
+            "phsf021207",
+            "phsf021206",
+            "phsf021205",
+            "phsf021204",
+            "phsf012604",
+            "phsf012601",
+            "phsf021203"
+        ]
+    },
+    {
+        "name": "73% OFF BUNDLE",
+        "codes": [
+            "phsf021226",
+            "phsf021230",
+            "phsf021204",
+            "phsf021217"
+        ]
+    },
+    {
+        "name": "77% OFF BUNDLE",
+        "codes": [
+            "phsf021206",
+            "phsf021216",
+            "phsf021230",
+            "phsf021230"
+        ]
+    },
+    {
+        "name": "85% OFF BUNDLE",
+        "codes": [
+            "phsf021210",
+            "phsf021217",
+            "phsf021226",
+            "phsf021230"
+        ]
+    }
+]
+# === BUNDLES END ===
+
+# ─────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────
+
+BASE_URL       = "https://m.shein.com/ph"
+LOGIN_URL      = f"{BASE_URL}/bff-api/user/common_login"
+COUPON_URL     = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
+SEND_OTP_URL   = "https://m.shein.com/ph/api/user/center/sendRiskCode/get"
+VERIFY_OTP_URL = "https://m.shein.com/ph/api/user/center/verifyRiskCode/update"
+API_PARAMS     = {"_ver": "1.1.8", "_lang": "en"}
+COUPON_PKG_ID  = "17135535"
+ACCOUNT_DELAY  = 5    # seconds between accounts
+
+# ─────────────────────────────────────────────────────────────
+# LOGIN FUNCTION
+# ─────────────────────────────────────────────────────────────
+
+def shein_login(email, password):
+    session = requests.Session()
+
+    login_headers = {
+        "sec-ch-ua-platform": '"Android"',
+        "smdeviceid":         SMDEVICE_ID,
+        "timezone":           "GMT+8",
+        "sec-ch-ua":          '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+        "sec-ch-ua-mobile":   "?1",
+        "x-requested-with":   "XMLHttpRequest",
+        "x-cs-random":        CS_RANDOM,
+        "accept":             "application/json, text/plain, */*",
+        "x-gw-auth":          GW_AUTH,
+        "armortoken":         ARMOR_TOKEN,
+        "anti-in":            ANTI_IN,
+        "x-csrf-token":       CSRF_TOKEN,
+        "x-oest":             OEST,
+        "x-ad-flag":          AD_FLAG,
+        "user-agent":         "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
+        "webversion":         "14.3.0",
+        "origin":             "https://m.shein.com",
+        "sec-fetch-site":     "same-origin",
+        "sec-fetch-mode":     "cors",
+        "sec-fetch-dest":     "empty",
+        "referer":            f"{BASE_URL}/user/index",
+        "accept-language":    "en-US,en;q=0.9",
+        "Cookie":             PRE_LOGIN_COOKIES,
+    }
+
+    form_data = {
+        "email":            email,
+        "password":         password,
+        "biz_uuid":         "E4757133050954767874",
+        "daId":             "2-8-108",
+        "checkboxSubscrib": "false",
+        "login_from":       "login",
+        "clause_flag":      "0",
+        "blackbox":         "kWPU01771561619FRS27T07oH0",
+        "clause_country_id": "",
+    }
+
+    print(f"\\n  Logging in as: {email}")
+
+    try:
+        resp = session.post(
+            LOGIN_URL, params=API_PARAMS, data=form_data, headers=login_headers, timeout=20
+        )
+        result = resp.json()
+        code   = str(result.get("code", ""))
+        info   = result.get("info", {}) or {}
+
+        if code in ("0", "200"):
+            member_id = info.get("member_id", "") or result.get("info", {}).get("memberId", "")
+            print(f"  ✅ Login successful! Member ID: {member_id}")
+
+            resp_cookies = resp.cookies.get_dict()
+            if resp_cookies:
+                cookie_str = PRE_LOGIN_COOKIES
+                for k, v in resp_cookies.items():
+                    if k in cookie_str:
+                        cookie_str = re.sub(rf'(?<![;\\w]){re.escape(k)}=[^;]*', f'{k}={v}', cookie_str)
+                    else:
+                        cookie_str += f"; {k}={v}"
+                return session, cookie_str
+            return session, PRE_LOGIN_COOKIES
+
+        msg = result.get("msg") or result.get("message") or f"code={code}"
+        if "riskInfo" in str(info) or "verification" in msg.lower() or "complete the following" in msg.lower():
+            risk_info     = info.get("riskInfo") or {}
+            risk_id       = risk_info.get("riskId") or ""
+            captcha_param = (risk_info.get("captcha") or {}).get("param") or {}
+            encrypt_email = captcha_param.get("encrypt_email") or ""
+
+            if not risk_id:
+                print(f"  ❌ Login failed (no risk_id found): {msg}")
+                return None, None
+
+            print(f"  ⚠  Verification required — sending OTP to: {email}")
+
+            cookie_str = PRE_LOGIN_COOKIES
+            for c in session.cookies: cookie_str += f"; {c.name}={c.value}"
+            otp_headers = dict(login_headers)
+            otp_headers.update({"Content-Type": "application/json", "Cookie": cookie_str})
+
+            send_payload = {
+                "scene": "login", "risk_id": risk_id, "channel": "mmp_email",
+                "target": email, "encrypt_email": encrypt_email,
+                "message_type": "login_confirm", "unlogin": True,
+            }
+            try:
+                sr = session.post(SEND_OTP_URL, params=API_PARAMS, json=send_payload, headers=otp_headers, timeout=15)
+                if str(sr.json().get("code", "")) in ("0", "200"): print(f"  ✅ OTP sent! Check inbox: {email}")
+                else: print(f"  ⚠  Send OTP check inbox anyway")
+            except Exception: print(f"  ⚠  Send OTP error check inbox anyway")
+
+            print(f"\\n  ✉  Enter the OTP sent to: {email}")
+            for attempt in range(1, 4):
+                try: otp = input(f"  OTP code (attempt {attempt}/3): ").strip()
+                except: return None, None
+                if not otp: return None, None
+
+                cookie_str = PRE_LOGIN_COOKIES
+                for c in session.cookies: cookie_str += f"; {c.name}={c.value}"
+                otp_headers["Cookie"] = cookie_str
+
+                verify_payload = {"risk_id": risk_id, "content": otp, "unlogin": True}
+                try:
+                    vr = session.post(VERIFY_OTP_URL, params=API_PARAMS, json=verify_payload, headers=otp_headers, timeout=15)
+                    if str(vr.json().get("code", "")) in ("0", "200"):
+                        print(f"  ✅ OTP verified! Completing login...")
+                        verified_form = dict(form_data)
+                        verified_form["risk_id"] = risk_id
+                        post_otp_cookies = PRE_LOGIN_COOKIES
+                        for c in session.cookies:
+                            if c.name in post_otp_cookies: post_otp_cookies = re.sub(rf'(?<![;\\w]){re.escape(c.name)}=[^;]*', f'{c.name}={c.value}', post_otp_cookies)
+                            else: post_otp_cookies += f"; {c.name}={c.value}"
+                        login_headers2 = dict(login_headers)
+                        login_headers2["Cookie"] = post_otp_cookies
+                        
+                        try:
+                            resp2 = session.post(LOGIN_URL, params=API_PARAMS, data=verified_form, headers=login_headers2, timeout=20)
+                            if str(resp2.json().get("code", "")) in ("0", "200"):
+                                print(f"  ✅ Login successful!")
+                                cookie_str = post_otp_cookies
+                                for k, v in resp2.cookies.get_dict().items():
+                                    if k in cookie_str: cookie_str = re.sub(rf'(?<![;\\w]){re.escape(k)}=[^;]*', f'{k}={v}', cookie_str)
+                                    else: cookie_str += f"; {k}={v}"
+                                return session, cookie_str
+                            return session, post_otp_cookies # fallback
+                        except: return None, None
+                    else:
+                        print(f"  ❌ Wrong OTP")
+                except: print(f"  ❌ Verify error")
+            return None, None
+        print(f"  ❌ Login failed: {msg}")
+        return None, None
+    except: return None, None
+
+# ─────────────────────────────────────────────────────────────
+# COLLECT COUPONS
+# ─────────────────────────────────────────────────────────────
+
+def collect_coupons(session, cookie_str, codes):
+    coupon_headers = {
+        "Content-Type":  "application/json",
+        "smdeviceid":    SMDEVICE_ID,
+        "x-cs-random":   CS_RANDOM,
+        "x-gw-auth":     GW_AUTH,
+        "armortoken":    ARMOR_TOKEN,
+        "anti-in":       ANTI_IN,
+        "x-csrf-token":  CSRF_TOKEN,
+        "x-oest":        OEST,
+        "x-ad-flag":     AD_FLAG,
+        "user-agent":    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
+        "Cookie":        cookie_str,
+    }
+
+    print(f"\\n  {'─'*54}")
+    print(f"  Claiming {len(codes)} voucher(s) in one bundle request...")
+    print(f"  Codes: {', '.join(codes)}")
+    print(f"  {'─'*54}")
+
+    payload = {
+        "scene":          "home",
+        "idempotentCode": str(uuid.uuid4()),
+        "couponPackages": [{"couponPackageId": COUPON_PKG_ID, "couponCodes": ",".join(codes)}]
+    }
+
+    try:
+        r = session.post(COUPON_URL, params=API_PARAMS, json=payload, headers=coupon_headers, timeout=15)
+        data = r.json()
+        if str(data.get("code", "")) == "0":
+            fail_list = (data.get("info") or {}).get("failCodeList") or []
+            if not fail_list: print(f"\\n  ✅ All {len(codes)} vouchers claimed!")
+            else: print(f"\\n  ⚠  Partial Failed: {fail_list}")
+        else:
+            print(f"\\n  ❌ Failed: {data.get('msg') or data.get('message')}")
+    except Exception as e:
+        print(f"  ❌ Error: {e}")
+
+    print(f"  Check: {BASE_URL}/user/coupon")
+    print(f"  {'─'*54}")
+
+# ─────────────────────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────────────────────
+
+def main():
+    print("\\n" + "=" * 60)
+    print("   SHEIN COUPON COLLECTOR  —  Multi-Account Mode")
+    print("=" * 60)
+
+    if not BUNDLES:
+        print("  ⚠ No bundles found in the script! Exiting.")
+        sys.exit(1)
+
+    while True:
+        print("\\n  Select the voucher bundle you want to collect:")
+        for idx, b in enumerate(BUNDLES, 1):
+            print(f"  [{idx}] {b['name']} ({len(b['codes'])} codes)")
+        
+        choice = input(f"  Enter 1-{len(BUNDLES)} (Default: 1): ").strip()
+        
+        if choice == "":
+            selected_codes = BUNDLES[0]["codes"]
+            bundle_name = BUNDLES[0]["name"]
+            break
+        elif choice.isdigit() and 1 <= int(choice) <= len(BUNDLES):
+            selected_idx = int(choice) - 1
+            selected_codes = BUNDLES[selected_idx]["codes"]
+            bundle_name = BUNDLES[selected_idx]["name"]
+            break
+        else:
+            print(f"  ⚠ Invalid choice. Please enter a number between 1 and {len(BUNDLES)}.")
+            
+    print(f"  ✓ Selected: {bundle_name}\\n")
+    print("=" * 60)
+    print("  Enter accounts one by one.")
+    print("  Leave email blank when done.")
+    print("=" * 60)
+
+    accounts = []
+    while True:
+        print(f"\\n  Account #{len(accounts) + 1}")
+        try: email = input("  Email (or press Enter to finish): ").strip()
+        except: sys.exit(0)
+        if not email: break
+        
+        try: password = getpass.getpass("  Password: ").strip()
+        except: sys.exit(0)
+        if not password: continue
+        
+        accounts.append({"email": email, "password": password})
+
+    if not accounts: sys.exit(0)
+
+    for i, acc in enumerate(accounts, 1):
+        print(f"\\n{'#'*60}\\n  Account {i}/{len(accounts)}: {acc['email']}\\n{'#'*60}")
+        session, cookie_str = shein_login(acc["email"], acc["password"])
+        if session: collect_coupons(session, cookie_str, selected_codes)
+        if i < len(accounts): time.sleep(ACCOUNT_DELAY)
+
+    print("\\n" + "=" * 60 + "\\n  All done!\\n" + "=" * 60 + "\\n")
+
+if __name__ == "__main__":
+    main()`;
+
+// ================================================================
+// LOCAL STORAGE SCRIPTS MANAGER
+// ================================================================
+function getSavedScripts() {
+  try { return JSON.parse(localStorage.getItem('shein_scripts_db') || '{}'); }
+  catch(e) { return {}; }
+}
+
+function saveCurrentScript() {
+  const nameInput = document.getElementById('sname');
+  let name = nameInput.value.trim();
+  const scripts = getSavedScripts();
+  
+  if(!name) {
+    let count = Object.keys(scripts).length + 1;
+    name = `SCRIPT ${count}`;
+  }
+  
+  // Save plain (unencrypted) script so it can be reloaded and re-edited
+  scripts[name] = getPlainScript() || ORIG;
+  localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
+  nameInput.value = '';
+  renderSavedScripts();
+  toast('s', '💾 Saved as "' + name + '"');
+}
+
+function loadSavedScript(name) {
+  const scripts = getSavedScripts();
+  if(scripts[name]) {
+    setOutput(scripts[name]);
+    document.getElementById('obadge').textContent = `LOADED: ${name}`;
+    document.getElementById('obadge').className = 'b b-blue';
+    loadBundlesFromText(scripts[name]); 
+    updateTokenPreviewFromScript(scripts[name]);
+    toast('i', '📂 Loaded "' + name + '"');
+  }
+}
+
+function deleteSavedScript(name) {
+  if(!confirm(`Delete "${name}" permanently?`)) return;
+  const scripts = getSavedScripts();
+  delete scripts[name];
+  localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
+  renderSavedScripts();
+  toast('e', '🗑️ Deleted "' + name + '"');
+}
+
+function renderSavedScripts() {
+  const scripts = getSavedScripts();
+  const list = document.getElementById('slist');
+  const keys = Object.keys(scripts);
+  document.getElementById('scnt').textContent = `${keys.length} Saved`;
+  
+  if (keys.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse data and save it here!</div>';
+    return;
+  }
+  
+  let html = '';
+  keys.forEach(k => {
+    html += `<div class="si">
+      <div class="si-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> ${esc(k)}</div>
+      <div class="si-actions">
+        <button class="btn-rm" onclick="loadSavedScript('${esc(k)}')">LOAD</button>
+        <button class="btn-rm" onclick="deleteSavedScript('${esc(k)}')">DEL</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+// ================================================================
+// DYNAMIC VOUCHER BUNDLES MANAGER
+// ================================================================
+let appBundles = [];
+
+function loadBundlesFromText(src) {
+  const match = src.match(/# === BUNDLES START ===\nBUNDLES\s*=\s*([\s\S]*?)\n# === BUNDLES END ===/);
+  if (match) {
+    try {
+      let jsonStr = match[1].replace(/'/g, '"'); 
+      appBundles = JSON.parse(jsonStr);
+      renderBundles();
+    } catch(e) {
+      console.error("Error parsing bundles from script", e);
+    }
+  }
+}
+
+function renderBundles() {
+  const list = document.getElementById('blist');
+  document.getElementById('vcnt').textContent = appBundles.length + ' Bundles';
+  
+  if (appBundles.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px;">No bundles found.</div>';
+    return;
+  }
+  
+  let html = '';
+  appBundles.forEach((b, i) => {
+    html += `<div class="si" style="flex-direction:column; align-items:flex-start; gap:6px; padding:10px 12px;">
+      <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+        <span style="color:var(--input-text);font-size:12px;font-weight:700">${i+1}. ${esc(b.name)}</span>
+        <button class="btn-rm" style="padding:2px 8px;font-size:10px" data-i="${i}">🗑️</button>
+      </div>
+      <div style="font-size:10px; color:var(--text); opacity:0.8; word-wrap:break-word; line-height:1.4;">
+        [${b.codes.length} codes]: ${esc(b.codes.join(', '))}
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+  
+  list.querySelectorAll('.btn-rm').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const idx = parseInt(this.getAttribute('data-i'));
+      appBundles.splice(idx, 1);
+      renderBundles();
+    });
+  });
+}
+
+function doAddCustomBundle() {
+  const name = document.getElementById('cb-name').value.trim();
+  const rawCodes = document.getElementById('cb-codes').value.trim();
+  
+  if (!name) { toast('e', 'Enter a bundle name!'); return; }
+  if (!rawCodes) { toast('e', 'Enter comma-separated codes!'); return; }
+  
+  const parts = rawCodes.split(',').map(p => p.trim()).filter(p => p);
+  if (parts.length === 0) { toast('e', 'Invalid codes!'); return; }
+  if (parts.length > 4) { toast('e', 'Maximum 4 vouchers allowed!'); return; }
+  
+  appBundles.push({ name: name, codes: parts });
+  
+  document.getElementById('cb-name').value = '';
+  document.getElementById('cb-codes').value = '';
+  renderBundles();
+  toast('s', 'Bundle added! Apply to inject it.');
+}
+
+function applyBundlesToScript() {
+  if (appBundles.length === 0) { toast('e', 'Add at least one bundle!'); return; }
+  
+  const block = `# === BUNDLES START ===\nBUNDLES = ${JSON.stringify(appBundles, null, 4)}\n# === BUNDLES END ===`;
+  
+  let src = getPlainScript() || ORIG;
+  let updated = src.replace(/# === BUNDLES START ===[\s\S]*?# === BUNDLES END ===/, block);
+  
+  if(src === updated) {
+     toast('e', 'Failed to find BUNDLE inject point in script.');
+     return;
+  }
+  
+  setOutput(updated);
+  document.getElementById('obadge').textContent = 'UPDATED BUNDLES';
+  document.getElementById('obadge').className = 'b b-green';
+  toast('s', '✅ Bundles applied to Python script!');
+}
+
+// ================================================================
+// PRELOADER & PARSER
+// ================================================================
+function triggerParseWithDelay() {
+  const raw = document.getElementById('rawin').value.trim();
+  if (!raw) { toast('e','❌ Paste RAW request first!'); return; }
+  
+  const btn = document.getElementById('parsebtn');
+  const originalHTML = btn.innerHTML;
+  
+  // Set button to loading state
+  btn.classList.add('btn-loading');
+  btn.innerHTML = `<svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> PARSING...`;
+  
+  // Wait 2 seconds, then parse and restore button
+  setTimeout(() => {
+    btn.classList.remove('btn-loading');
+    btn.innerHTML = originalHTML;
+    doParse(raw);
+  }, 2000);
+}
+
+function getHdr(raw, name) {
+  const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
+  const m = raw.match(re);
+  return m ? m[1].trim() : null;
+}
+
+function doParse(raw) {
+  const parsed = {
+    SMDEVICE_ID: getHdr(raw,'smdeviceid'),
+    CS_RANDOM:   getHdr(raw,'x-cs-random'),
+    GW_AUTH:     getHdr(raw,'x-gw-auth'),
+    ARMOR_TOKEN: getHdr(raw,'armortoken'),
+    ANTI_IN:     getHdr(raw,'anti-in'),
+    CSRF_TOKEN:  getHdr(raw,'x-csrf-token'),
+    OEST:        getHdr(raw,'x-oest'),
+    AD_FLAG:     getHdr(raw,'x-ad-flag'),
+  };
+
+  const bbm = raw.match(/name="blackbox"\s*\r?\n\r?\n([^\r\n\-]+)/i);
+  parsed.BLACKBOX = bbm ? bbm[1].trim() : null;
+
+  const cookieMap = {};
+  const cre = /^cookie:\s*(.+)/gim;
+  let cm;
+  while ((cm = cre.exec(raw)) !== null) {
+    const parts = cm[1].trim().split(';');
+    parts.forEach(p => {
+      const eq = p.indexOf('=');
+      if (eq > 0) cookieMap[p.slice(0,eq).trim()] = p.slice(eq+1).trim();
+    });
+  }
+  const hasCookies = Object.keys(cookieMap).length > 0;
+
+  const anyFound = hasCookies || parsed.BLACKBOX || Object.values(parsed).some(v => v);
+  if (!anyFound) { toast('e','❌ No SHEIN tokens found in text.'); return; }
+
+  let script = getPlainScript() || ORIG;
+  let changed = 0;
+
+  function repVar(name, val) {
+    if (!val) return;
+    const re = new RegExp(`(${name}\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))`, 'g');
+    const next = script.replace(re, `$1"${val.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`);
+    if (next !== script) { script = next; changed++; }
+  }
+
+  repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
+  repVar('CS_RANDOM',   parsed.CS_RANDOM);
+  repVar('GW_AUTH',     parsed.GW_AUTH);
+  repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
+  repVar('ANTI_IN',     parsed.ANTI_IN);
+  repVar('CSRF_TOKEN',  parsed.CSRF_TOKEN);
+  repVar('OEST',        parsed.OEST);
+  repVar('AD_FLAG',     parsed.AD_FLAG);
+
+  if (parsed.BLACKBOX) {
+    const bbre = /"blackbox":\s*"[^"]*"/g;
+    const nb = script.replace(bbre, `"blackbox":         "${parsed.BLACKBOX}"`);
+    if (nb !== script) { script = nb; changed++; }
+  }
+
+  if (hasCookies) {
+    let cookLines = '';
+    const ckEntries = Object.entries(cookieMap);
+    ckEntries.forEach(([ck, cv], ci) => {
+      const safeV = cv.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+      cookLines += `    "${ck}=${safeV}${ci < ckEntries.length - 1 ? '; ' : ''}"\n`;
+    });
+    const nc = script.replace(/(PRE_LOGIN_COOKIES\s*=\s*)\([\s\S]*?\n\)/, `$1(\n${cookLines})`);
+    if (nc !== script) { script = nc; changed++; }
+  }
+
+  setOutput(script);
+  updateTokenPreview(parsed, hasCookies);
+
+  const bdg = document.getElementById('obadge');
+  bdg.textContent = 'UPDATED: ' + changed + ' FIELD(S)';
+  bdg.className = 'b b-green';
+  
+  const cc = document.getElementById('nchanged');
+  cc.style.display = 'inline';
+  cc.textContent = changed + ' PARSED';
+  
+  document.getElementById('dot').className = 'dot on';
+  document.getElementById('stext').textContent = 'SYNCED';
+
+  toast('s', '⚡ Parsed and injected ' + changed + ' items!');
+}
+
+function updateTokenPreview(parsed, hasCookies) {
+  const fields = [
+    ['SMDEVICE_ID', parsed.SMDEVICE_ID], ['CS_RANDOM', parsed.CS_RANDOM],
+    ['GW_AUTH', parsed.GW_AUTH], ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
+    ['ANTI_IN', parsed.ANTI_IN], ['CSRF_TOKEN', parsed.CSRF_TOKEN],
+    ['OEST', parsed.OEST], ['AD_FLAG', parsed.AD_FLAG],
+    ['COOKIES', hasCookies ? 'Found in headers' : null],
+    ['BLACKBOX', parsed.BLACKBOX],
+  ];
+
+  let html = '';
+  fields.forEach(([fname, fval]) => {
+    if (!fval) {
+      html += `<div class="tr"><div class="tk">${fname}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
+    } else {
+      const display = fval.length > 50 ? fval.slice(0,47) + '…' : fval;
+      html += `<div class="tr"><div class="tk">${fname}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
+    }
+  });
+  document.getElementById('tpreview').innerHTML = html;
+}
+
+function updateTokenPreviewFromScript(scriptTxt) {
+  const fields = ['SMDEVICE_ID', 'CS_RANDOM', 'GW_AUTH', 'ARMOR_TOKEN', 'ANTI_IN', 'CSRF_TOKEN', 'OEST', 'AD_FLAG'];
+  let html = '';
+  fields.forEach(f => {
+    const m = scriptTxt.match(new RegExp(`${f}\\s*=\\s*"([^"]+)"`));
+    if(m) {
+      const display = m[1].length > 50 ? m[1].slice(0,47) + '…' : m[1];
+      html += `<div class="tr"><div class="tk">${f}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
+    } else {
+       html += `<div class="tr"><div class="tk">${f}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
+    }
+  });
+  html += `<div class="tr"><div class="tk">COOKIES</div><div class="tv ok">✓ Saved in script</div></div>`;
+  html += `<div class="tr"><div class="tk">BLACKBOX</div><div class="tv ok">✓ Saved in script</div></div>`;
+  document.getElementById('tpreview').innerHTML = html;
+}
+
+// ================================================================
+// ENCRYPTION LAYER
+// ================================================================
+// Internal store for the plain (unencrypted) script - used for bundle/token operations
+let _plainScript = '';
+
+function encryptScript(plain) {
+  // Encode the Python source as base64 (UTF-8 safe)
+  const b64 = btoa(unescape(encodeURIComponent(plain)));
+  return `import base64\nexec(compile(base64.b64decode("${b64}").decode("utf-8"), "<encrypted>", "exec"))`;
+}
+
+function setOutput(plainPython) {
+  _plainScript = plainPython;
+  document.getElementById('scriptout').value = encryptScript(plainPython);
+}
+
+function getPlainScript() {
+  return _plainScript;
+}
+
+// ================================================================
+// EXPORTS & INIT
+// ================================================================
+function doCopy() {
+  const txt = document.getElementById('scriptout').value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => toast('i','📋 Copied to clipboard!')).catch(() => fallbackCopy(txt));
+  } else fallbackCopy(txt);
+}
+function fallbackCopy(txt) {
+  document.getElementById('scriptout').select();
+  document.execCommand('copy');
+  toast('i','📋 Copied (fallback)');
+}
+
+function doDownload() {
+  const blob = new Blob([document.getElementById('scriptout').value], {type:'text/x-python'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shein_coupons_multi.py';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast('s','⬇️ Script Downloaded!');
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+let _tt;
+function toast(type, msg) {
+  const t = document.getElementById('toast');
+  const ic = document.getElementById('toast-icon');
+  if(type === 's') ic.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+  else if(type === 'e') ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>';
+  else ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
+  
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'on ' + type;
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.className = '', 3000);
+}
+
+// Wire events
+document.getElementById('parsebtn').addEventListener('click', triggerParseWithDelay);
+document.getElementById('clearbtn').addEventListener('click', () => document.getElementById('rawin').value = '');
+document.getElementById('savebtn').addEventListener('click', saveCurrentScript);
+document.getElementById('addbundlebtn').addEventListener('click', doAddCustomBundle);
+document.getElementById('applybtn').addEventListener('click', applyBundlesToScript);
+document.getElementById('copybtn').addEventListener('click', doCopy);
+document.getElementById('dlbtn').addEventListener('click', doDownload);
+document.getElementById('resetbtn').addEventListener('click', () => {
+  setOutput(ORIG);
+  loadBundlesFromText(ORIG);
+  updateTokenPreviewFromScript(ORIG);
+  document.getElementById('obadge').textContent = 'DEFAULT TEMPLATE';
+  document.getElementById('obadge').className = 'b b-orange';
+  toast('i', 'Reset to Original Template');
+});
+
+// Setup Initial State
+setOutput(ORIG);
+loadBundlesFromText(ORIG);
+renderSavedScripts();
+
+</script>
+</body>
+</html>
