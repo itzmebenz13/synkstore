@@ -3802,6 +3802,23 @@
                         </div>
                         <button onclick="window.updateAdminPassword()" class="${isDark ? 'bg-white text-black hover:bg-zinc-200' : 'bg-gray-900 text-white hover:bg-gray-800 admin-settings-btn'} font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors">Update Password</button>
                     </div>
+                    <div class="${adminCard} border ${adminBorder} p-6">
+                        <h3 class="text-[10px] font-bold uppercase ${adminTextMuted} mb-1 tracking-widest flex items-center gap-2"><i data-lucide="zap" class="w-3 h-3 text-cyan-400"></i> Parse Token Manager</h3>
+                        <p class="text-[9px] ${adminTextMuted} mb-4">Top up parse tokens for a member. 1 token = &#8369;1. Members need 100 tokens per parse on the Script Updater tool.</p>
+                        <div class="mb-3">
+                            <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">Member ID (User UUID)</label>
+                            <input type="text" id="tokenMemberId" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-cyan-500/50 transition-colors" placeholder="e.g. a1b2c3d4-..." />
+                        </div>
+                        <div class="mb-3 flex gap-3 items-end">
+                            <div class="flex-1">
+                                <label class="block text-[9px] font-bold uppercase ${adminTextMuted} mb-1.5 tracking-wider">Tokens to Add</label>
+                                <input type="number" id="tokenAmount" class="${adminInput} w-full py-2.5 px-3 text-xs font-mono focus:outline-none focus:border-cyan-500/50 transition-colors" placeholder="e.g. 500" min="1" />
+                            </div>
+                            <button onclick="window.lookupMemberTokens()" class="${isDark ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} font-bold py-2.5 px-4 text-[9px] uppercase tracking-wider transition-colors rounded-sm">LOOKUP</button>
+                        </div>
+                        <div id="tokenLookupResult" class="text-[10px] ${adminTextMuted} mb-3 font-mono min-h-[18px]"></div>
+                        <button onclick="window.topUpTokens()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 text-[10px] uppercase tracking-wider transition-colors flex items-center gap-2"><i data-lucide="plus" class="w-3 h-3"></i> Top Up Tokens</button>
+                    </div>
                 </div>`;
             } else if (state.adminTab === 'account-pool') {
                 const avail = state.sheinAccountStats?.available ?? 0;
@@ -4051,6 +4068,34 @@
         window.deleteSheinAccount = deleteSheinAccount;
         window.updateSheinAccount = updateSheinAccount;
         window.autoAssignFromPool = autoAssignFromPool;
+
+        async function lookupMemberTokens() {
+            const memberId = (document.getElementById('tokenMemberId')?.value || '').trim();
+            const resultEl = document.getElementById('tokenLookupResult');
+            if (!memberId) { if (resultEl) resultEl.textContent = 'Enter a Member ID first.'; return; }
+            if (resultEl) resultEl.textContent = 'Looking up...';
+            const { data, error } = await supabaseClient.from('profiles').select('parse_tokens, email').eq('id', memberId).single();
+            if (error || !data) { if (resultEl) resultEl.textContent = 'User not found.'; return; }
+            if (resultEl) resultEl.textContent = `Found: ${data.email || memberId} — Current balance: ${data.parse_tokens ?? 0} tokens`;
+        }
+
+        async function topUpTokens() {
+            const memberId = (document.getElementById('tokenMemberId')?.value || '').trim();
+            const amountRaw = parseInt(document.getElementById('tokenAmount')?.value || '0');
+            if (!memberId) { showToast('Enter a Member ID.', 'error'); return; }
+            if (!amountRaw || amountRaw < 1) { showToast('Enter a valid token amount.', 'error'); return; }
+            const { data: profile, error: fetchErr } = await supabaseClient.from('profiles').select('parse_tokens').eq('id', memberId).single();
+            if (fetchErr || !profile) { showToast('Member not found.', 'error'); return; }
+            const newBalance = (profile.parse_tokens ?? 0) + amountRaw;
+            const { error: updateErr } = await supabaseClient.from('profiles').update({ parse_tokens: newBalance }).eq('id', memberId);
+            if (updateErr) { showToast('Failed to top up: ' + updateErr.message, 'error'); return; }
+            const resultEl = document.getElementById('tokenLookupResult');
+            if (resultEl) resultEl.textContent = `✓ Topped up! New balance: ${newBalance} tokens`;
+            showToast(`Added ${amountRaw} tokens. New balance: ${newBalance}`, 'success');
+        }
+        window.lookupMemberTokens = lookupMemberTokens;
+        window.topUpTokens = topUpTokens;
+
 
         // Auth Expose
         window.handleLogin = handleLogin;
