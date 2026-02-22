@@ -1,277 +1,1151 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-<title>SHEIN Script Updater Pro</title>
-<script>
-  // Init theme immediately to prevent flashing
-  const savedTheme = localStorage.getItem('shein_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-</script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>SHEIN Script Updater Pro</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // Init theme immediately to prevent flashing
+    const savedTheme = localStorage.getItem('shein_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
 
-:root {
-  /* Dark Theme (Default) */
-  --bg: #05070a; --panel: #0b0e14; --border: #1a212d;
-  --accent: #00e5ff; --accent2: #ff4b72; --success: #00ff88;
-  --warn: #ffcc00; --text: #c8d4e0; --dim: #4a5568;
-  --code: #040608; --red: #ff4444; --input-text: #8be9fd;
-  --grid-color: rgba(0,229,255,0.02);
-  --tr-hover: #121822; --shadow: rgba(0,0,0,0.4);
-  --btn-s-hover-bg: rgba(255,255,255,0.08);
-  --btn-s-hover-c: #ffffff; --header-c: #ffffff;
-  --logo-shadow: rgba(0,229,255,0.2);
-}
+    :root {
+      /* Dark Theme (Default) */
+      --bg: #05070a;
+      --panel: #0b0e14;
+      --border: #1a212d;
+      --accent: #00e5ff;
+      --accent2: #ff4b72;
+      --success: #00ff88;
+      --warn: #ffcc00;
+      --text: #c8d4e0;
+      --dim: #4a5568;
+      --code: #040608;
+      --red: #ff4444;
+      --input-text: #8be9fd;
+      --grid-color: rgba(0, 229, 255, 0.02);
+      --tr-hover: #121822;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --btn-s-hover-bg: rgba(255, 255, 255, 0.08);
+      --btn-s-hover-c: #ffffff;
+      --header-c: #ffffff;
+      --logo-shadow: rgba(0, 229, 255, 0.2);
+    }
 
-[data-theme="light"] {
-  /* Light Theme */
-  --bg: #f4f7fb; --panel: #ffffff; --border: #cbd5e1;
-  --accent: #0284c7; --accent2: #e11d48; --success: #059669;
-  --warn: #d97706; --text: #334155; --dim: #64748b;
-  --code: #f8fafc; --red: #dc2626; --input-text: #0f172a;
-  --grid-color: rgba(2,132,199,0.05);
-  --tr-hover: #f1f5f9; --shadow: rgba(0,0,0,0.05);
-  --btn-s-hover-bg: rgba(0,0,0,0.05);
-  --btn-s-hover-c: #0f172a; --header-c: #0f172a;
-  --logo-shadow: rgba(2,132,199,0.3);
-}
+    [data-theme="light"] {
+      /* Light Theme */
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --border: #cbd5e1;
+      --accent: #0284c7;
+      --accent2: #e11d48;
+      --success: #059669;
+      --warn: #d97706;
+      --text: #334155;
+      --dim: #64748b;
+      --code: #f8fafc;
+      --red: #dc2626;
+      --input-text: #0f172a;
+      --grid-color: rgba(2, 132, 199, 0.05);
+      --tr-hover: #f1f5f9;
+      --shadow: rgba(0, 0, 0, 0.05);
+      --btn-s-hover-bg: rgba(0, 0, 0, 0.05);
+      --btn-s-hover-c: #0f172a;
+      --header-c: #0f172a;
+      --logo-shadow: rgba(2, 132, 199, 0.3);
+    }
 
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;transition:background-color 0.4s ease, color 0.4s ease;}
-body::before{content:'';position:fixed;inset:0;
-  background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
-  background-size:40px 40px;pointer-events:none;z-index:0;transition:0.4s ease;}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-/* Header */
-.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:24px 20px 60px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);transition:0.4s ease;}
-.logo{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  border-radius:12px;display:flex;align-items:center;justify-content:center;
-  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:#000;flex-shrink:0;
-  box-shadow: 0 0 20px var(--logo-shadow); position:relative; overflow:hidden;}
-.logo::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
-  background:linear-gradient(transparent,rgba(255,255,255,0.4),transparent);
-  transform:rotate(45deg);animation:shine 3s infinite;}
-@keyframes shine{0%{transform:translateX(-100%) rotate(45deg);}100%{transform:translateX(100%) rotate(45deg);}}
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
 
-.title-row { display: flex; align-items: center; gap: 12px; }
-header h1{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--header-c);letter-spacing:1px;
-  text-shadow: 0 0 10px var(--logo-shadow);transition:color 0.4s ease;}
-header p{font-size:12px;color:var(--dim);margin-top:4px}
-.hright{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:12px;color:var(--dim)}
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+      transition: 0.4s ease;
+    }
 
-/* Animated Theme Toggle SVG */
-.theme-btn {
-  background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  padding:6px;border-radius:50%;transition:background 0.3s;
-}
-.theme-btn:hover { background:var(--border); }
-.theme-svg { width:24px; height:24px; color:var(--dim); transition:transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), color 0.3s; }
-.theme-btn:hover .theme-svg { color:var(--accent); }
-.sun-body { transition: r 0.4s ease; r: 9; }
-.sun-beams { transition: transform 0.4s ease, opacity 0.4s ease; transform: rotate(-45deg); opacity: 0; }
-.moon-hole { transition: cx 0.4s ease, cy 0.4s ease, r 0.4s ease; cx: 15; cy: 7; r: 5; }
+    /* Header */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px 20px 60px
+    }
 
-[data-theme="light"] .theme-svg { transform: rotate(90deg); }
-[data-theme="light"] .sun-body { r: 5; }
-[data-theme="light"] .sun-beams { transform: rotate(0deg); opacity: 1; }
-[data-theme="light"] .moon-hole { cx: 24; cy: 10; r: 0; }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      transition: 0.4s ease;
+    }
 
-.status-badge { display:flex; align-items:center; gap:8px; background:var(--code); padding:6px 12px; border-radius:20px; border:1px solid var(--border); }
-.dot{width:10px;height:10px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:0.3s;}
-.dot.on{background:var(--success);box-shadow:0 0 12px var(--success);animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+    .logo {
+      width: 46px;
+      height: 46px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #000;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px var(--logo-shadow);
+      position: relative;
+      overflow: hidden;
+    }
 
-/* Layout */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-@media(max-width:900px){.g2{grid-template-columns:1fr}}
+    .logo::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(transparent, rgba(255, 255, 255, 0.4), transparent);
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
 
-/* Panels */
-.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;
-  box-shadow:0 8px 32px var(--shadow);display:flex;flex-direction:column;transition:background-color 0.4s, border-color 0.4s, box-shadow 0.4s;}
-.ph{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(125,125,125,.02);transition:border-color 0.4s;}
-.pt{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px;}
+    @keyframes shine {
+      0% {
+        transform: translateX(-100%) rotate(45deg);
+      }
 
-/* Textarea & Inputs */
-textarea{width:100%;background:var(--code);color:var(--input-text);font-family:'JetBrains Mono',monospace;
-  font-size:11.5px;line-height:1.6;border:none;outline:none;padding:16px;resize:vertical;
-  min-height:280px;tab-size:4;flex:1;transition:background-color 0.4s, color 0.4s;}
-textarea:focus{background:var(--bg);box-shadow:inset 0 0 0 1px var(--accent)}
-input[type="text"]{background:var(--code);color:var(--input-text);font-family:'JetBrains Mono',monospace;
-  font-size:12px;border:1px solid var(--border);border-radius:6px;padding:9px 12px;outline:none;width:100%;transition:0.4s;}
-input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,229,255,.1)}
+      100% {
+        transform: translateX(100%) rotate(45deg);
+      }
+    }
 
-/* Buttons */
-.br{padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--border);flex-wrap:wrap;background:rgba(125,125,125,0.05);transition:border-color 0.4s;}
-button{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
-  padding:9px 16px;border-radius:6px;border:none;cursor:pointer;
-  letter-spacing:.5px;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);display:flex;align-items:center;gap:8px;
-  justify-content:center;}
-button:active{transform:scale(0.96);}
-.btn-p{background:var(--accent);color:#ffffff;flex:1;box-shadow:0 0 15px var(--logo-shadow)}
-[data-theme="dark"] .btn-p { color: #000; } 
-.btn-p:hover{filter:brightness(1.1);box-shadow:0 0 20px var(--logo-shadow);transform:translateY(-2px)}
-.btn-s{background:transparent;color:var(--text);border:1px solid var(--dim)}
-.btn-s:hover{background:var(--btn-s-hover-bg);color:var(--btn-s-hover-c);border-color:var(--btn-s-hover-c);}
-.btn-g{background:rgba(0,255,136,.1);color:var(--success);border:1px solid rgba(0,255,136,.3)}
-.btn-g:hover{background:var(--success);color:#000;box-shadow:0 0 15px rgba(0,255,136,0.3)}
-.btn-o{background:rgba(255,107,53,.1);color:var(--accent2);border:1px solid rgba(255,107,53,.3)}
-.btn-o:hover{background:var(--accent2);color:#fff;box-shadow:0 0 15px rgba(255,107,53,0.3)}
-.btn-rm{background:transparent;color:var(--dim);border:1px solid var(--border);padding:5px 10px;font-size:11px;}
-.btn-rm:hover{background:rgba(255,68,68,.15);color:var(--red);border-color:var(--red);}
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-/* Badges */
-.b{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;letter-spacing:.5px;}
-.b-blue{background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.3)}
-.b-green{background:rgba(0,255,136,.15);color:var(--success);border:1px solid rgba(0,255,136,.3)}
-.b-orange{background:rgba(255,75,114,.15);color:var(--accent2);border:1px solid rgba(255,75,114,.3)}
+    header h1 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--header-c);
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--logo-shadow);
+      transition: color 0.4s ease;
+    }
 
-/* Tokens Grid */
-.tg{display:flex;flex-direction:column;gap:1px;background:var(--border);flex:1;transition:0.4s;}
-.tr{display:grid;grid-template-columns:140px 1fr;background:var(--panel);transition:background-color 0.2s}
-.tr:hover{background:var(--tr-hover);}
-.tk{padding:10px 14px;font-size:11px;color:var(--accent);border-right:1px solid var(--border);
-  letter-spacing:.5px;display:flex;align-items:center;transition:0.4s;}
-.tv{padding:10px 14px;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:0.4s;}
-.tv.ok{color:var(--success);background:rgba(0,255,136,.05);font-weight:bold;}
+    header p {
+      font-size: 12px;
+      color: var(--dim);
+      margin-top: 4px
+    }
 
-/* Saved Scripts Section */
-.s-body{padding:16px;display:flex;flex-direction:column;gap:12px;flex:1;}
-.s-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;padding-right:4px;}
-.si{display:flex;align-items:center;justify-content:space-between;background:var(--code);
-  border:1px solid var(--border);padding:10px 14px;border-radius:8px;transition:0.2s;}
-.si:hover{border-color:var(--accent);background:var(--tr-hover);}
-.si-name{font-weight:bold;color:var(--header-c);font-size:13px;display:flex;align-items:center;gap:8px;}
-.si-actions{display:flex;gap:6px;}
+    .hright {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--dim)
+    }
 
-/* SVG Icons & Animations */
-svg{width:16px;height:16px;flex-shrink:0;}
-.icon-spin{animation:spin 1s linear infinite; transform-origin: center;}
-.icon-pulse{animation:svg-pulse 2s infinite;}
-.icon-float{animation:float 3s ease-in-out infinite;}
-.icon-bounce:hover svg{animation:bounce 0.5s;}
-@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-@keyframes svg-pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.1);opacity:0.7;}}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
-@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+    /* Animated Theme Toggle SVG */
+    .theme-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      border-radius: 50%;
+      transition: background 0.3s;
+    }
 
-/* Button Loading State */
-.btn-loading { opacity: 0.8; pointer-events: none; }
+    .theme-btn:hover {
+      background: var(--border);
+    }
 
-/* Toast */
-#toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:8px;
-  font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;
-  transform:translateY(100px);opacity:0;transition:all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index:999;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
-#toast.on{transform:translateY(0);opacity:1}
-#toast.s{background:var(--success);border:1px solid var(--success);color:#000}
-#toast.e{background:var(--red);border:1px solid var(--red);color:#fff}
-#toast.i{background:var(--accent);border:1px solid var(--accent);color:#000}
-[data-theme="light"] #toast { box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+    .theme-svg {
+      width: 24px;
+      height: 24px;
+      color: var(--dim);
+      transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), color 0.3s;
+    }
 
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:#4a5568;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+    .theme-btn:hover .theme-svg {
+      color: var(--accent);
+    }
 
-/* =========================================================
+    .sun-body {
+      transition: r 0.4s ease;
+      r: 9;
+    }
+
+    .sun-beams {
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      transform: rotate(-45deg);
+      opacity: 0;
+    }
+
+    .moon-hole {
+      transition: cx 0.4s ease, cy 0.4s ease, r 0.4s ease;
+      cx: 15;
+      cy: 7;
+      r: 5;
+    }
+
+    [data-theme="light"] .theme-svg {
+      transform: rotate(90deg);
+    }
+
+    [data-theme="light"] .sun-body {
+      r: 5;
+    }
+
+    [data-theme="light"] .sun-beams {
+      transform: rotate(0deg);
+      opacity: 1;
+    }
+
+    [data-theme="light"] .moon-hole {
+      cx: 24;
+      cy: 10;
+      r: 0;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--code);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0;
+      transition: 0.3s;
+    }
+
+    .dot.on {
+      background: var(--success);
+      box-shadow: 0 0 12px var(--success);
+      animation: blink 1.5s infinite
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    /* Layout */
+    .g2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px
+    }
+
+    @media(max-width:900px) {
+      .g2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.4s, border-color 0.4s, box-shadow 0.4s;
+    }
+
+    .ph {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(125, 125, 125, .02);
+      transition: border-color 0.4s;
+    }
+
+    .pt {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Textarea & Inputs */
+    textarea {
+      width: 100%;
+      background: var(--code);
+      color: var(--input-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.6;
+      border: none;
+      outline: none;
+      padding: 16px;
+      resize: vertical;
+      min-height: 280px;
+      tab-size: 4;
+      flex: 1;
+      transition: background-color 0.4s, color 0.4s;
+    }
+
+    textarea:focus {
+      background: var(--bg);
+      box-shadow: inset 0 0 0 1px var(--accent)
+    }
+
+    input[type="text"] {
+      background: var(--code);
+      color: var(--input-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 9px 12px;
+      outline: none;
+      width: 100%;
+      transition: 0.4s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0, 229, 255, .1)
+    }
+
+    /* Buttons */
+    .br {
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+      background: rgba(125, 125, 125, 0.05);
+      transition: border-color 0.4s;
+    }
+
+    button {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: .5px;
+      transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .btn-p {
+      background: var(--accent);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 0 15px var(--logo-shadow)
+    }
+
+    [data-theme="dark"] .btn-p {
+      color: #000;
+    }
+
+    .btn-p:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 0 20px var(--logo-shadow);
+      transform: translateY(-2px)
+    }
+
+    .btn-s {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--dim)
+    }
+
+    .btn-s:hover {
+      background: var(--btn-s-hover-bg);
+      color: var(--btn-s-hover-c);
+      border-color: var(--btn-s-hover-c);
+    }
+
+    .btn-g {
+      background: rgba(0, 255, 136, .1);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .3)
+    }
+
+    .btn-g:hover {
+      background: var(--success);
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.3)
+    }
+
+    .btn-o {
+      background: rgba(255, 107, 53, .1);
+      color: var(--accent2);
+      border: 1px solid rgba(255, 107, 53, .3)
+    }
+
+    .btn-o:hover {
+      background: var(--accent2);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 107, 53, 0.3)
+    }
+
+    .btn-rm {
+      background: transparent;
+      color: var(--dim);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      font-size: 11px;
+    }
+
+    .btn-rm:hover {
+      background: rgba(255, 68, 68, .15);
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    /* Badges */
+    .b {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+
+    .b-blue {
+      background: rgba(0, 229, 255, .15);
+      color: var(--accent);
+      border: 1px solid rgba(0, 229, 255, .3)
+    }
+
+    .b-green {
+      background: rgba(0, 255, 136, .15);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .3)
+    }
+
+    .b-orange {
+      background: rgba(255, 75, 114, .15);
+      color: var(--accent2);
+      border: 1px solid rgba(255, 75, 114, .3)
+    }
+
+    /* Tokens Grid */
+    .tg {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--border);
+      flex: 1;
+      transition: 0.4s;
+    }
+
+    .tr {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      background: var(--panel);
+      transition: background-color 0.2s
+    }
+
+    .tr:hover {
+      background: var(--tr-hover);
+    }
+
+    .tk {
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--accent);
+      border-right: 1px solid var(--border);
+      letter-spacing: .5px;
+      display: flex;
+      align-items: center;
+      transition: 0.4s;
+    }
+
+    .tv {
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: 0.4s;
+    }
+
+    .tv.ok {
+      color: var(--success);
+      background: rgba(0, 255, 136, .05);
+      font-weight: bold;
+    }
+
+    /* Saved Scripts Section */
+    .s-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .s-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .si {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--code);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      transition: 0.2s;
+    }
+
+    .si:hover {
+      border-color: var(--accent);
+      background: var(--tr-hover);
+    }
+
+    .si-name {
+      font-weight: bold;
+      color: var(--header-c);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .si-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* SVG Icons & Animations */
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .icon-spin {
+      animation: spin 1s linear infinite;
+      transform-origin: center;
+    }
+
+    .icon-pulse {
+      animation: svg-pulse 2s infinite;
+    }
+
+    .icon-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .icon-bounce:hover svg {
+      animation: bounce 0.5s;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes svg-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    /* Button Loading State */
+    .btn-loading {
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 999;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    #toast.on {
+      transform: translateY(0);
+      opacity: 1
+    }
+
+    #toast.s {
+      background: var(--success);
+      border: 1px solid var(--success);
+      color: #000
+    }
+
+    #toast.e {
+      background: var(--red);
+      border: 1px solid var(--red);
+      color: #fff
+    }
+
+    #toast.i {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #000
+    }
+
+    [data-theme="light"] #toast {
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg)
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #4a5568;
+      border-radius: 3px
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent)
+    }
+
+    /* =========================================================
    Mobile Responsiveness & 20% UI Downscale
    ========================================================= */
-@media (max-width: 768px) {
-  .wrap { padding: 15px 12px 40px; }
-  header { flex-wrap: wrap; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; }
-  .title-row { gap: 10px; }
-  .logo { width: 36px; height: 36px; font-size: 18px; border-radius: 10px; }
-  header h1 { font-size: 18px; }
-  header p { font-size: 10px; line-height: 1.4; margin-top: 6px; }
-  
-  .g2 { gap: 12px; margin-bottom: 12px; }
-  .panel { border-radius: 10px; }
-  .ph { padding: 12px 14px; }
-  .pt { font-size: 12.5px; }
-  svg { width: 14px; height: 14px; }
-  
-  textarea { font-size: 10px; padding: 12px; min-height: 200px; }
-  input[type="text"] { font-size: 10.5px; padding: 8px 10px; }
-  
-  .br { padding: 10px 14px; gap: 6px; }
-  button { font-size: 10.5px; padding: 8px 12px; }
-  
-  .tr { grid-template-columns: 100px 1fr; }
-  .tk, .tv { font-size: 9.5px; padding: 8px 10px; }
-  
-  .s-body { padding: 12px; gap: 10px; }
-  .si { padding: 8px 12px; }
-  .si-name { font-size: 11px; }
-  .btn-rm { padding: 4px 8px; font-size: 9.5px; }
+    @media (max-width: 768px) {
+      .wrap {
+        padding: 15px 12px 40px;
+      }
 
-  #toast { font-size: 11.5px; padding: 12px 16px; bottom: 16px; right: 16px; left: 16px; justify-content: center; text-align: center; }
-}
+      header {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
 
-@media (max-width: 480px) {
-  header { flex-direction: column; align-items: flex-start; }
-  .hright { margin-left: 0; width: 100%; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
-  .br { flex-direction: column; }
-  .br button { width: 100%; }
-  .btn-s#resetbtn { margin-left: 0 !important; }
-  .s-body > div:first-child { flex-direction: column; }
-  .s-body > div:first-child button { width: 100% !important; }
-}
-</style>
+      .title-row {
+        gap: 10px;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+        border-radius: 10px;
+      }
+
+      header h1 {
+        font-size: 18px;
+      }
+
+      header p {
+        font-size: 10px;
+        line-height: 1.4;
+        margin-top: 6px;
+      }
+
+      .g2 {
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .panel {
+        border-radius: 10px;
+      }
+
+      .ph {
+        padding: 12px 14px;
+      }
+
+      .pt {
+        font-size: 12.5px;
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      textarea {
+        font-size: 10px;
+        padding: 12px;
+        min-height: 200px;
+      }
+
+      input[type="text"] {
+        font-size: 10.5px;
+        padding: 8px 10px;
+      }
+
+      .br {
+        padding: 10px 14px;
+        gap: 6px;
+      }
+
+      button {
+        font-size: 10.5px;
+        padding: 8px 12px;
+      }
+
+      .tr {
+        grid-template-columns: 100px 1fr;
+      }
+
+      .tk,
+      .tv {
+        font-size: 9.5px;
+        padding: 8px 10px;
+      }
+
+      .s-body {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .si {
+        padding: 8px 12px;
+      }
+
+      .si-name {
+        font-size: 11px;
+      }
+
+      .btn-rm {
+        padding: 4px 8px;
+        font-size: 9.5px;
+      }
+
+      #toast {
+        font-size: 11.5px;
+        padding: 12px 16px;
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        justify-content: center;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .hright {
+        margin-left: 0;
+        width: 100%;
+        justify-content: space-between;
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        margin-top: 4px;
+      }
+
+      .br {
+        flex-direction: column;
+      }
+
+      .br button {
+        width: 100%;
+      }
+
+      .btn-s#resetbtn {
+        margin-left: 0 !important;
+      }
+
+      .s-body>div:first-child {
+        flex-direction: column;
+      }
+
+      .s-body>div:first-child button {
+        width: 100% !important;
+      }
+    }
+
+    /* =========================================================
+   Auth Overlay & User Info Bar
+   ========================================================= */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #auth-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    #auth-box h2 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    #auth-box p {
+      font-size: 11px;
+      color: var(--dim);
+      margin-bottom: 24px;
+    }
+
+    .auth-field {
+      margin-bottom: 14px;
+    }
+
+    .auth-field label {
+      display: block;
+      font-size: 10px;
+      color: var(--dim);
+      margin-bottom: 6px;
+      letter-spacing: .5px;
+    }
+
+    .auth-field input {
+      width: 100%;
+      background: var(--code);
+      color: var(--input-text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      outline: none;
+    }
+
+    .auth-field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0, 229, 255, .1);
+    }
+
+    #auth-login-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      letter-spacing: .5px;
+      margin-top: 8px;
+      transition: all .2s;
+    }
+
+    [data-theme="dark"] #auth-login-btn {
+      color: #000;
+    }
+
+    #auth-login-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    #auth-login-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #auth-err {
+      color: var(--red);
+      font-size: 11px;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 16px;
+    }
+
+    #auth-register-link {
+      font-size: 10px;
+      color: var(--dim);
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    #auth-register-link a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .user-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+    }
+
+    .user-field {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1px;
+    }
+
+    .user-field-label {
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .user-field-value {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    #token-balance.low {
+      color: var(--red);
+    }
+
+    #token-balance.ok {
+      color: var(--success);
+    }
+
+    .separator {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+    }
+
+    #logout-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 10px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: .3px;
+      transition: .2s;
+    }
+
+    #logout-btn:hover {
+      background: rgba(255, 68, 68, .15);
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    .token-cost-label {
+      font-size: 10px;
+      color: var(--dim);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: rgba(0, 229, 255, .05);
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="wrap">
-  <header>
-    <div>
-      <div class="title-row">
-        <div class="logo">SH</div>
-        <h1>SHEIN SCRIPT UPDATER <span style="color:var(--accent2)">PRO</span></h1>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title-row">
+          <div class="logo">SH</div>
+          <h1>SHEIN SCRIPT UPDATER <span style="color:var(--accent2)">PRO</span></h1>
+        </div>
+        <p>Advanced Token Extraction &amp; Multi-Script Management Environment</p>
       </div>
-      <p>Advanced Token Extraction &amp; Multi-Script Management Environment</p>
-    </div>
-    <div class="hright">
-      <button id="theme-btn" class="theme-btn" aria-label="Toggle Theme">
-        <svg class="theme-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <mask id="moon-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            <circle class="moon-hole" cx="24" cy="10" r="6" fill="black" />
-          </mask>
-          <circle class="sun-body" cx="12" cy="12" r="5" mask="url(#moon-mask)" fill="currentColor" />
-          <g class="sun-beams" stroke="currentColor">
-            <line x1="12" y1="1" x2="12" y2="3" />
-            <line x1="12" y1="21" x2="12" y2="23" />
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-            <line x1="1" y1="12" x2="3" y2="12" />
-            <line x1="21" y1="12" x2="23" y2="12" />
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-          </g>
-        </svg>
-      </button>
-      <div class="status-badge">
-        <div class="dot" id="dot"></div>
-        <span id="stext">READY TO PARSE</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- ROW 1: Parse Data & Token Preview -->
-  <div class="g2">
-    <div class="panel">
-      <div class="ph">
-        <div class="pt">
-          <svg class="icon-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-          RAW REQUEST INPUT
+      <div class="hright">
+        <!-- User Info (shown after login) -->
+        <div id="user-info-bar" class="user-info-bar" style="display:none">
+          <div class="user-field">
+            <span class="user-field-label">User ID</span>
+            <span class="user-field-value" id="user-id-display">—</span>
+          </div>
+          <div class="separator"></div>
+          <div class="user-field">
+            <span class="user-field-label">Tokens</span>
+            <span class="user-field-value" id="token-balance">0</span>
+          </div>
+          <button id="logout-btn">LOGOUT</button>
+        </div>
+        <button id="theme-btn" class="theme-btn" aria-label="Toggle Theme">
+          <svg class="theme-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <mask id="moon-mask">
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              <circle class="moon-hole" cx="24" cy="10" r="6" fill="black" />
+            </mask>
+            <circle class="sun-body" cx="12" cy="12" r="5" mask="url(#moon-mask)" fill="currentColor" />
+            <g class="sun-beams" stroke="currentColor">
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </g>
+          </svg>
+        </button>
+        <div class="status-badge">
+          <div class="dot" id="dot"></div>
+          <span id="stext">READY TO PARSE</span>
         </div>
       </div>
-      <textarea id="rawin" placeholder="Paste your captured full HTTP request here...
+    </header>
+
+    <!-- ROW 1: Parse Data & Token Preview -->
+    <div class="g2">
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">
+            <svg class="icon-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+            </svg>
+            RAW REQUEST INPUT
+          </div>
+        </div>
+        <textarea id="rawin" placeholder="Paste your captured full HTTP request here...
 
 POST /ph/bff-api/user/common_login?...
 smdeviceid: WHJMr...
@@ -280,136 +1154,319 @@ x-gw-auth: a=xjq...
 armortoken: T1_3...
 anti-in: 1_1.9...
 cookie: AT=MDEw..."></textarea>
-      <div class="br">
-        <button class="btn-p icon-bounce" id="parsebtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          PARSE & UPDATE
-        </button>
-        <button class="btn-s" id="clearbtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          CLEAR
-        </button>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="ph">
-        <div class="pt">
-          <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          EXTRACTED TOKENS
-        </div>
-        <span class="b b-blue" id="nchanged" style="display:none">0 UPDATED</span>
-      </div>
-      <div id="tpreview" class="tg">
-        <div class="tr"><div class="tk">SMDEVICE_ID</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">CS_RANDOM</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">GW_AUTH</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">ARMOR_TOKEN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">ANTI_IN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">CSRF_TOKEN</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">OEST</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">AD_FLAG</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">COOKIES</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-        <div class="tr"><div class="tk">BLACKBOX</div><div class="tv dim">&#8212; Awaiting Parse &#8212;</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ROW 2: Saved Scripts & Voucher Bundles Manager -->
-  <div class="g2">
-    <!-- Saved Scripts Manager -->
-    <div class="panel">
-      <div class="ph">
-        <div class="pt">
-          <svg class="icon-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          SAVED SCRIPTS BROWSER
-        </div>
-        <span class="b b-orange" id="scnt">0 Saved</span>
-      </div>
-      <div class="s-body">
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="sname" placeholder="Name (e.g., SCRIPT 1)" maxlength="30">
-          <button class="btn-g icon-bounce" id="savebtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            SAVE
+        <div class="br">
+          <button class="btn-p icon-bounce" id="parsebtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            PARSE & UPDATE
           </button>
-        </div>
-        <div class="s-list" id="slist">
-          <div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse data and save it here!</div>
+          <button class="btn-s" id="clearbtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            CLEAR
+          </button>
+          <span class="token-cost-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            100 tokens / parse
+          </span>
         </div>
       </div>
-    </div>
 
-    <!-- Voucher Bundles Manager -->
-    <div class="panel">
-      <div class="ph">
-        <div class="pt">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-          VOUCHER BUNDLES MANAGER
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">
+            <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            EXTRACTED TOKENS
+          </div>
+          <span class="b b-blue" id="nchanged" style="display:none">0 UPDATED</span>
         </div>
-        <span class="b b-blue" id="vcnt">0 Bundles</span>
-      </div>
-      <div class="s-body">
-        <div style="display:flex;gap:8px;flex-direction:column;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;">
-          <span style="font-size:10px;color:var(--dim);font-weight:bold;">ADD CUSTOM BUNDLE (MAX 4 CODES)</span>
-          <input id="cb-name" type="text" placeholder="Name (e.g., 90% OFF BUNDLE)">
-          <div style="display:flex;gap:8px;">
-            <input id="cb-codes" type="text" placeholder="Codes (comma-separated)">
-            <button class="btn-p" id="addbundlebtn">ADD</button>
+        <div id="tpreview" class="tg">
+          <div class="tr">
+            <div class="tk">SMDEVICE_ID</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">CS_RANDOM</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">GW_AUTH</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">ARMOR_TOKEN</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">ANTI_IN</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">CSRF_TOKEN</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">OEST</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">AD_FLAG</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">COOKIES</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">BLACKBOX</div>
+            <div class="tv dim">&#8212; Awaiting Parse &#8212;</div>
           </div>
         </div>
-        <div class="s-list" id="blist" style="max-height:180px;"></div>
       </div>
+    </div>
+
+    <!-- ROW 2: Saved Scripts & Voucher Bundles Manager -->
+    <div class="g2">
+      <!-- Saved Scripts Manager -->
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">
+            <svg class="icon-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            SAVED SCRIPTS BROWSER
+          </div>
+          <span class="b b-orange" id="scnt">0 Saved</span>
+        </div>
+        <div class="s-body">
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="sname" placeholder="Name (e.g., SCRIPT 1)" maxlength="30">
+            <button class="btn-g icon-bounce" id="savebtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              SAVE
+            </button>
+          </div>
+          <div class="s-list" id="slist">
+            <div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse
+              data and save it here!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voucher Bundles Manager -->
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            VOUCHER BUNDLES MANAGER
+          </div>
+          <span class="b b-blue" id="vcnt">0 Bundles</span>
+        </div>
+        <div class="s-body">
+          <div
+            style="display:flex;gap:8px;flex-direction:column;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:4px;">
+            <span style="font-size:10px;color:var(--dim);font-weight:bold;">ADD CUSTOM BUNDLE (MAX 4 CODES)</span>
+            <input id="cb-name" type="text" placeholder="Name (e.g., 90% OFF BUNDLE)">
+            <div style="display:flex;gap:8px;">
+              <input id="cb-codes" type="text" placeholder="Codes (comma-separated)">
+              <button class="btn-p" id="addbundlebtn">ADD</button>
+            </div>
+          </div>
+          <div class="s-list" id="blist" style="max-height:180px;"></div>
+        </div>
+        <div class="br">
+          <button class="btn-g" id="applybtn" style="flex:1;">APPLY BUNDLES TO SCRIPT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Output Script -->
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          OUTPUT PYTHON SCRIPT
+        </div>
+        <span class="b b-orange" id="obadge">DEFAULT TEMPLATE</span>
+      </div>
+      <textarea id="scriptout" readonly></textarea>
       <div class="br">
-        <button class="btn-g" id="applybtn" style="flex:1;">APPLY BUNDLES TO SCRIPT</button>
+        <button class="btn-g icon-bounce" id="copybtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          COPY CODE
+        </button>
+        <button class="btn-o icon-bounce" id="dlbtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          DOWNLOAD .py
+        </button>
+        <button class="btn-s" id="resetbtn" style="margin-left:auto;">RESET TO DEFAULT</button>
       </div>
     </div>
   </div>
 
-  <!-- ROW 3: Output Script -->
-  <div class="panel">
-    <div class="ph">
-      <div class="pt">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        OUTPUT PYTHON SCRIPT
+  <!-- Auth Overlay -->
+  <div id="auth-overlay">
+    <div id="auth-box">
+      <h2>⚡ SCRIPT UPDATER PRO</h2>
+      <p>Sign in with your StakzShop account to access this tool.</p>
+      <div class="auth-field">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" />
       </div>
-      <span class="b b-orange" id="obadge">DEFAULT TEMPLATE</span>
-    </div>
-    <textarea id="scriptout" readonly></textarea>
-    <div class="br">
-      <button class="btn-g icon-bounce" id="copybtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        COPY CODE
-      </button>
-      <button class="btn-o icon-bounce" id="dlbtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        DOWNLOAD .py
-      </button>
-      <button class="btn-s" id="resetbtn" style="margin-left:auto;">RESET TO DEFAULT</button>
+      <div class="auth-field">
+        <label>PASSWORD</label>
+        <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button id="auth-login-btn">SIGN IN</button>
+      <div id="auth-err"></div>
+      <div id="auth-register-link">Don't have an account? <a href="index.html">Register at StakzShop</a></div>
     </div>
   </div>
-</div>
 
-<div id="toast">
-  <svg id="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
-  <span id="toast-msg"></span>
-</div>
+  <div id="toast">
+    <svg id="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+    <span id="toast-msg"></span>
+  </div>
 
-<script>
-// ================================================================
-// THEME TOGGLE LOGIC
-// ================================================================
-document.getElementById('theme-btn').addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('shein_theme', next);
-});
+  <script>
+    // ================================================================
+    // SUPABASE CONFIG
+    // ================================================================
+    const SUPABASE_URL = 'https://kbecxughnfneiyyxsizb.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZWN4dWdobmZuZWl5eXhzaXpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwODkxOTcsImV4cCI6MjA4NjY2NTE5N30.m4c9DdUsoCbOJ1arpZ_-3Pb8rXwtGamoGtTLE9grdig';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ================================================================
-// THE NEW DYNAMIC MULTI-BUNDLE PYTHON SCRIPT (Safely Encoded)
-// ================================================================
-const ORIG = `#!/usr/bin/env python3
+    let currentUser = null;
+    let currentTokens = 0;
+
+    // ================================================================
+    // AUTH HELPERS
+    // ================================================================
+    async function fetchProfile(userId) {
+      const { data } = await sb.from('profiles').select('parse_tokens').eq('id', userId).single();
+      return data;
+    }
+
+    function showUserInfo(user, tokens) {
+      currentUser = user;
+      currentTokens = tokens ?? 0;
+      // Hide login overlay
+      document.getElementById('auth-overlay').style.display = 'none';
+      // Show user info bar
+      const bar = document.getElementById('user-info-bar');
+      bar.style.display = 'flex';
+      // Short user ID (first 8 chars)
+      document.getElementById('user-id-display').textContent = user.id.slice(0, 8).toUpperCase() + '...';
+      // Token balance with color
+      const tb = document.getElementById('token-balance');
+      tb.textContent = currentTokens;
+      tb.className = currentTokens < 100 ? 'user-field-value low' : 'user-field-value ok';
+    }
+
+    async function refreshTokens() {
+      if (!currentUser) return;
+      const profile = await fetchProfile(currentUser.id);
+      currentTokens = profile?.parse_tokens ?? 0;
+      const tb = document.getElementById('token-balance');
+      tb.textContent = currentTokens;
+      tb.className = currentTokens < 100 ? 'user-field-value low' : 'user-field-value ok';
+    }
+
+    async function initAuth() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        showUserInfo(session.user, profile?.parse_tokens ?? 0);
+      }
+      // Listen for auth changes
+      sb.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const profile = await fetchProfile(session.user.id);
+          showUserInfo(session.user, profile?.parse_tokens ?? 0);
+        } else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          document.getElementById('auth-overlay').style.display = 'flex';
+          document.getElementById('user-info-bar').style.display = 'none';
+        }
+      });
+    }
+
+    // ================================================================
+    // LOGIN FORM
+    // ================================================================
+    document.getElementById('auth-login-btn').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const errEl = document.getElementById('auth-err');
+      const btn = document.getElementById('auth-login-btn');
+      if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+      btn.disabled = true;
+      btn.textContent = 'SIGNING IN...';
+      errEl.textContent = '';
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      btn.disabled = false;
+      btn.textContent = 'SIGN IN';
+      if (error) { errEl.textContent = error.message; }
+    });
+
+    // Allow Enter key in password field
+    document.getElementById('auth-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('auth-login-btn').click();
+    });
+    document.getElementById('auth-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('auth-password').focus();
+    });
+
+    // ================================================================
+    // LOGOUT
+    // ================================================================
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await sb.auth.signOut();
+      toast('i', 'Signed out successfully.');
+    });
+
+    // ================================================================
+    // THEME TOGGLE LOGIC
+    // ================================================================
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('shein_theme', next);
+    });
+
+    // ================================================================
+    // THE NEW DYNAMIC MULTI-BUNDLE PYTHON SCRIPT (Safely Encoded)
+    // ================================================================
+    const ORIG = `#!/usr/bin/env python3
 """
 SHEIN Login + Coupon Collector
 - Logs in using email/password (prompted in Termux)
@@ -773,401 +1830,428 @@ def main():
 if __name__ == "__main__":
     main()`;
 
-// ================================================================
-// LOCAL STORAGE SCRIPTS MANAGER
-// ================================================================
-function getSavedScripts() {
-  try { return JSON.parse(localStorage.getItem('shein_scripts_db') || '{}'); }
-  catch(e) { return {}; }
-}
+    // ================================================================
+    // LOCAL STORAGE SCRIPTS MANAGER
+    // ================================================================
+    function getSavedScripts() {
+      try { return JSON.parse(localStorage.getItem('shein_scripts_db') || '{}'); }
+      catch (e) { return {}; }
+    }
 
-function saveCurrentScript() {
-  const nameInput = document.getElementById('sname');
-  let name = nameInput.value.trim();
-  const scripts = getSavedScripts();
-  
-  if(!name) {
-    let count = Object.keys(scripts).length + 1;
-    name = `SCRIPT ${count}`;
-  }
-  
-  // Save plain (unencrypted) script so it can be reloaded and re-edited
-  scripts[name] = getPlainScript() || ORIG;
-  localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
-  nameInput.value = '';
-  renderSavedScripts();
-  toast('s', '💾 Saved as "' + name + '"');
-}
+    function saveCurrentScript() {
+      const nameInput = document.getElementById('sname');
+      let name = nameInput.value.trim();
+      const scripts = getSavedScripts();
 
-function loadSavedScript(name) {
-  const scripts = getSavedScripts();
-  if(scripts[name]) {
-    setOutput(scripts[name]);
-    document.getElementById('obadge').textContent = `LOADED: ${name}`;
-    document.getElementById('obadge').className = 'b b-blue';
-    loadBundlesFromText(scripts[name]); 
-    updateTokenPreviewFromScript(scripts[name]);
-    toast('i', '📂 Loaded "' + name + '"');
-  }
-}
+      if (!name) {
+        let count = Object.keys(scripts).length + 1;
+        name = `SCRIPT ${count}`;
+      }
 
-function deleteSavedScript(name) {
-  if(!confirm(`Delete "${name}" permanently?`)) return;
-  const scripts = getSavedScripts();
-  delete scripts[name];
-  localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
-  renderSavedScripts();
-  toast('e', '🗑️ Deleted "' + name + '"');
-}
+      // Save plain (unencrypted) script so it can be reloaded and re-edited
+      scripts[name] = getPlainScript() || ORIG;
+      localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
+      nameInput.value = '';
+      renderSavedScripts();
+      toast('s', '💾 Saved as "' + name + '"');
+    }
 
-function renderSavedScripts() {
-  const scripts = getSavedScripts();
-  const list = document.getElementById('slist');
-  const keys = Object.keys(scripts);
-  document.getElementById('scnt').textContent = `${keys.length} Saved`;
-  
-  if (keys.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse data and save it here!</div>';
-    return;
-  }
-  
-  let html = '';
-  keys.forEach(k => {
-    html += `<div class="si">
+    function loadSavedScript(name) {
+      const scripts = getSavedScripts();
+      if (scripts[name]) {
+        setOutput(scripts[name]);
+        document.getElementById('obadge').textContent = `LOADED: ${name}`;
+        document.getElementById('obadge').className = 'b b-blue';
+        loadBundlesFromText(scripts[name]);
+        updateTokenPreviewFromScript(scripts[name]);
+        toast('i', '📂 Loaded "' + name + '"');
+      }
+    }
+
+    function deleteSavedScript(name) {
+      if (!confirm(`Delete "${name}" permanently?`)) return;
+      const scripts = getSavedScripts();
+      delete scripts[name];
+      localStorage.setItem('shein_scripts_db', JSON.stringify(scripts));
+      renderSavedScripts();
+      toast('e', '🗑️ Deleted "' + name + '"');
+    }
+
+    function renderSavedScripts() {
+      const scripts = getSavedScripts();
+      const list = document.getElementById('slist');
+      const keys = Object.keys(scripts);
+      document.getElementById('scnt').textContent = `${keys.length} Saved`;
+
+      if (keys.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--dim);font-size:12px;">No saved scripts yet.<br>Parse data and save it here!</div>';
+        return;
+      }
+
+      let html = '';
+      keys.forEach(k => {
+        html += `<div class="si">
       <div class="si-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> ${esc(k)}</div>
       <div class="si-actions">
         <button class="btn-rm" onclick="loadSavedScript('${esc(k)}')">LOAD</button>
         <button class="btn-rm" onclick="deleteSavedScript('${esc(k)}')">DEL</button>
       </div>
     </div>`;
-  });
-  list.innerHTML = html;
-}
-
-// ================================================================
-// DYNAMIC VOUCHER BUNDLES MANAGER
-// ================================================================
-let appBundles = [];
-
-function loadBundlesFromText(src) {
-  const match = src.match(/# === BUNDLES START ===\nBUNDLES\s*=\s*([\s\S]*?)\n# === BUNDLES END ===/);
-  if (match) {
-    try {
-      let jsonStr = match[1].replace(/'/g, '"'); 
-      appBundles = JSON.parse(jsonStr);
-      renderBundles();
-    } catch(e) {
-      console.error("Error parsing bundles from script", e);
+      });
+      list.innerHTML = html;
     }
-  }
-}
 
-function renderBundles() {
-  const list = document.getElementById('blist');
-  document.getElementById('vcnt').textContent = appBundles.length + ' Bundles';
-  
-  if (appBundles.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px;">No bundles found.</div>';
-    return;
-  }
-  
-  let html = '';
-  appBundles.forEach((b, i) => {
-    html += `<div class="si" style="flex-direction:column; align-items:flex-start; gap:6px; padding:10px 12px;">
+    // ================================================================
+    // DYNAMIC VOUCHER BUNDLES MANAGER
+    // ================================================================
+    let appBundles = [];
+
+    function loadBundlesFromText(src) {
+      const match = src.match(/# === BUNDLES START ===\nBUNDLES\s*=\s*([\s\S]*?)\n# === BUNDLES END ===/);
+      if (match) {
+        try {
+          let jsonStr = match[1].replace(/'/g, '"');
+          appBundles = JSON.parse(jsonStr);
+          renderBundles();
+        } catch (e) {
+          console.error("Error parsing bundles from script", e);
+        }
+      }
+    }
+
+    function renderBundles() {
+      const list = document.getElementById('blist');
+      document.getElementById('vcnt').textContent = appBundles.length + ' Bundles';
+
+      if (appBundles.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px;">No bundles found.</div>';
+        return;
+      }
+
+      let html = '';
+      appBundles.forEach((b, i) => {
+        html += `<div class="si" style="flex-direction:column; align-items:flex-start; gap:6px; padding:10px 12px;">
       <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-        <span style="color:var(--input-text);font-size:12px;font-weight:700">${i+1}. ${esc(b.name)}</span>
+        <span style="color:var(--input-text);font-size:12px;font-weight:700">${i + 1}. ${esc(b.name)}</span>
         <button class="btn-rm" style="padding:2px 8px;font-size:10px" data-i="${i}">🗑️</button>
       </div>
       <div style="font-size:10px; color:var(--text); opacity:0.8; word-wrap:break-word; line-height:1.4;">
         [${b.codes.length} codes]: ${esc(b.codes.join(', '))}
       </div>
     </div>`;
-  });
-  list.innerHTML = html;
-  
-  list.querySelectorAll('.btn-rm').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const idx = parseInt(this.getAttribute('data-i'));
-      appBundles.splice(idx, 1);
+      });
+      list.innerHTML = html;
+
+      list.querySelectorAll('.btn-rm').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const idx = parseInt(this.getAttribute('data-i'));
+          appBundles.splice(idx, 1);
+          renderBundles();
+        });
+      });
+    }
+
+    function doAddCustomBundle() {
+      const name = document.getElementById('cb-name').value.trim();
+      const rawCodes = document.getElementById('cb-codes').value.trim();
+
+      if (!name) { toast('e', 'Enter a bundle name!'); return; }
+      if (!rawCodes) { toast('e', 'Enter comma-separated codes!'); return; }
+
+      const parts = rawCodes.split(',').map(p => p.trim()).filter(p => p);
+      if (parts.length === 0) { toast('e', 'Invalid codes!'); return; }
+      if (parts.length > 4) { toast('e', 'Maximum 4 vouchers allowed!'); return; }
+
+      appBundles.push({ name: name, codes: parts });
+
+      document.getElementById('cb-name').value = '';
+      document.getElementById('cb-codes').value = '';
       renderBundles();
-    });
-  });
-}
-
-function doAddCustomBundle() {
-  const name = document.getElementById('cb-name').value.trim();
-  const rawCodes = document.getElementById('cb-codes').value.trim();
-  
-  if (!name) { toast('e', 'Enter a bundle name!'); return; }
-  if (!rawCodes) { toast('e', 'Enter comma-separated codes!'); return; }
-  
-  const parts = rawCodes.split(',').map(p => p.trim()).filter(p => p);
-  if (parts.length === 0) { toast('e', 'Invalid codes!'); return; }
-  if (parts.length > 4) { toast('e', 'Maximum 4 vouchers allowed!'); return; }
-  
-  appBundles.push({ name: name, codes: parts });
-  
-  document.getElementById('cb-name').value = '';
-  document.getElementById('cb-codes').value = '';
-  renderBundles();
-  toast('s', 'Bundle added! Apply to inject it.');
-}
-
-function applyBundlesToScript() {
-  if (appBundles.length === 0) { toast('e', 'Add at least one bundle!'); return; }
-  
-  const block = `# === BUNDLES START ===\nBUNDLES = ${JSON.stringify(appBundles, null, 4)}\n# === BUNDLES END ===`;
-  
-  let src = getPlainScript() || ORIG;
-  let updated = src.replace(/# === BUNDLES START ===[\s\S]*?# === BUNDLES END ===/, block);
-  
-  if(src === updated) {
-     toast('e', 'Failed to find BUNDLE inject point in script.');
-     return;
-  }
-  
-  setOutput(updated);
-  document.getElementById('obadge').textContent = 'UPDATED BUNDLES';
-  document.getElementById('obadge').className = 'b b-green';
-  toast('s', '✅ Bundles applied to Python script!');
-}
-
-// ================================================================
-// PRELOADER & PARSER
-// ================================================================
-function triggerParseWithDelay() {
-  const raw = document.getElementById('rawin').value.trim();
-  if (!raw) { toast('e','❌ Paste RAW request first!'); return; }
-  
-  const btn = document.getElementById('parsebtn');
-  const originalHTML = btn.innerHTML;
-  
-  // Set button to loading state
-  btn.classList.add('btn-loading');
-  btn.innerHTML = `<svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> PARSING...`;
-  
-  // Wait 2 seconds, then parse and restore button
-  setTimeout(() => {
-    btn.classList.remove('btn-loading');
-    btn.innerHTML = originalHTML;
-    doParse(raw);
-  }, 2000);
-}
-
-function getHdr(raw, name) {
-  const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
-  const m = raw.match(re);
-  return m ? m[1].trim() : null;
-}
-
-function doParse(raw) {
-  const parsed = {
-    SMDEVICE_ID: getHdr(raw,'smdeviceid'),
-    CS_RANDOM:   getHdr(raw,'x-cs-random'),
-    GW_AUTH:     getHdr(raw,'x-gw-auth'),
-    ARMOR_TOKEN: getHdr(raw,'armortoken'),
-    ANTI_IN:     getHdr(raw,'anti-in'),
-    CSRF_TOKEN:  getHdr(raw,'x-csrf-token'),
-    OEST:        getHdr(raw,'x-oest'),
-    AD_FLAG:     getHdr(raw,'x-ad-flag'),
-  };
-
-  const bbm = raw.match(/name="blackbox"\s*\r?\n\r?\n([^\r\n\-]+)/i);
-  parsed.BLACKBOX = bbm ? bbm[1].trim() : null;
-
-  const cookieMap = {};
-  const cre = /^cookie:\s*(.+)/gim;
-  let cm;
-  while ((cm = cre.exec(raw)) !== null) {
-    const parts = cm[1].trim().split(';');
-    parts.forEach(p => {
-      const eq = p.indexOf('=');
-      if (eq > 0) cookieMap[p.slice(0,eq).trim()] = p.slice(eq+1).trim();
-    });
-  }
-  const hasCookies = Object.keys(cookieMap).length > 0;
-
-  const anyFound = hasCookies || parsed.BLACKBOX || Object.values(parsed).some(v => v);
-  if (!anyFound) { toast('e','❌ No SHEIN tokens found in text.'); return; }
-
-  let script = getPlainScript() || ORIG;
-  let changed = 0;
-
-  function repVar(name, val) {
-    if (!val) return;
-    const re = new RegExp(`(${name}\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))`, 'g');
-    const next = script.replace(re, `$1"${val.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`);
-    if (next !== script) { script = next; changed++; }
-  }
-
-  repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
-  repVar('CS_RANDOM',   parsed.CS_RANDOM);
-  repVar('GW_AUTH',     parsed.GW_AUTH);
-  repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
-  repVar('ANTI_IN',     parsed.ANTI_IN);
-  repVar('CSRF_TOKEN',  parsed.CSRF_TOKEN);
-  repVar('OEST',        parsed.OEST);
-  repVar('AD_FLAG',     parsed.AD_FLAG);
-
-  if (parsed.BLACKBOX) {
-    const bbre = /"blackbox":\s*"[^"]*"/g;
-    const nb = script.replace(bbre, `"blackbox":         "${parsed.BLACKBOX}"`);
-    if (nb !== script) { script = nb; changed++; }
-  }
-
-  if (hasCookies) {
-    let cookLines = '';
-    const ckEntries = Object.entries(cookieMap);
-    ckEntries.forEach(([ck, cv], ci) => {
-      const safeV = cv.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
-      cookLines += `    "${ck}=${safeV}${ci < ckEntries.length - 1 ? '; ' : ''}"\n`;
-    });
-    const nc = script.replace(/(PRE_LOGIN_COOKIES\s*=\s*)\([\s\S]*?\n\)/, `$1(\n${cookLines})`);
-    if (nc !== script) { script = nc; changed++; }
-  }
-
-  setOutput(script);
-  updateTokenPreview(parsed, hasCookies);
-
-  const bdg = document.getElementById('obadge');
-  bdg.textContent = 'UPDATED: ' + changed + ' FIELD(S)';
-  bdg.className = 'b b-green';
-  
-  const cc = document.getElementById('nchanged');
-  cc.style.display = 'inline';
-  cc.textContent = changed + ' PARSED';
-  
-  document.getElementById('dot').className = 'dot on';
-  document.getElementById('stext').textContent = 'SYNCED';
-
-  toast('s', '⚡ Parsed and injected ' + changed + ' items!');
-}
-
-function updateTokenPreview(parsed, hasCookies) {
-  const fields = [
-    ['SMDEVICE_ID', parsed.SMDEVICE_ID], ['CS_RANDOM', parsed.CS_RANDOM],
-    ['GW_AUTH', parsed.GW_AUTH], ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
-    ['ANTI_IN', parsed.ANTI_IN], ['CSRF_TOKEN', parsed.CSRF_TOKEN],
-    ['OEST', parsed.OEST], ['AD_FLAG', parsed.AD_FLAG],
-    ['COOKIES', hasCookies ? 'Found in headers' : null],
-    ['BLACKBOX', parsed.BLACKBOX],
-  ];
-
-  let html = '';
-  fields.forEach(([fname, fval]) => {
-    if (!fval) {
-      html += `<div class="tr"><div class="tk">${fname}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
-    } else {
-      const display = fval.length > 50 ? fval.slice(0,47) + '…' : fval;
-      html += `<div class="tr"><div class="tk">${fname}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
+      toast('s', 'Bundle added! Apply to inject it.');
     }
-  });
-  document.getElementById('tpreview').innerHTML = html;
-}
 
-function updateTokenPreviewFromScript(scriptTxt) {
-  const fields = ['SMDEVICE_ID', 'CS_RANDOM', 'GW_AUTH', 'ARMOR_TOKEN', 'ANTI_IN', 'CSRF_TOKEN', 'OEST', 'AD_FLAG'];
-  let html = '';
-  fields.forEach(f => {
-    const m = scriptTxt.match(new RegExp(`${f}\\s*=\\s*"([^"]+)"`));
-    if(m) {
-      const display = m[1].length > 50 ? m[1].slice(0,47) + '…' : m[1];
-      html += `<div class="tr"><div class="tk">${f}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
-    } else {
-       html += `<div class="tr"><div class="tk">${f}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
+    function applyBundlesToScript() {
+      if (appBundles.length === 0) { toast('e', 'Add at least one bundle!'); return; }
+
+      const block = `# === BUNDLES START ===\nBUNDLES = ${JSON.stringify(appBundles, null, 4)}\n# === BUNDLES END ===`;
+
+      let src = getPlainScript() || ORIG;
+      let updated = src.replace(/# === BUNDLES START ===[\s\S]*?# === BUNDLES END ===/, block);
+
+      if (src === updated) {
+        toast('e', 'Failed to find BUNDLE inject point in script.');
+        return;
+      }
+
+      setOutput(updated);
+      document.getElementById('obadge').textContent = 'UPDATED BUNDLES';
+      document.getElementById('obadge').className = 'b b-green';
+      toast('s', '✅ Bundles applied to Python script!');
     }
-  });
-  html += `<div class="tr"><div class="tk">COOKIES</div><div class="tv ok">✓ Saved in script</div></div>`;
-  html += `<div class="tr"><div class="tk">BLACKBOX</div><div class="tv ok">✓ Saved in script</div></div>`;
-  document.getElementById('tpreview').innerHTML = html;
-}
 
-// ================================================================
-// ENCRYPTION LAYER
-// ================================================================
-// Internal store for the plain (unencrypted) script - used for bundle/token operations
-let _plainScript = '';
+    // ================================================================
+    // PRELOADER & PARSER
+    // ================================================================
+    async function triggerParseWithDelay() {
+      // Auth gate
+      if (!currentUser) {
+        toast('e', '🔒 Please sign in to use the parser.');
+        return;
+      }
+      // Token gate
+      if (currentTokens < 100) {
+        toast('e', `⛔ Insufficient tokens! You need 100, you have ${currentTokens}.`);
+        return;
+      }
 
-function encryptScript(plain) {
-  // Encode the Python source as base64 (UTF-8 safe)
-  const b64 = btoa(unescape(encodeURIComponent(plain)));
-  return `import base64\nexec(compile(base64.b64decode("${b64}").decode("utf-8"), "<encrypted>", "exec"))`;
-}
+      const raw = document.getElementById('rawin').value.trim();
+      if (!raw) { toast('e', '❌ Paste RAW request first!'); return; }
 
-function setOutput(plainPython) {
-  _plainScript = plainPython;
-  document.getElementById('scriptout').value = encryptScript(plainPython);
-}
+      const btn = document.getElementById('parsebtn');
+      const originalHTML = btn.innerHTML;
 
-function getPlainScript() {
-  return _plainScript;
-}
+      // Set button to loading state
+      btn.classList.add('btn-loading');
+      btn.innerHTML = `<svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> PARSING...`;
 
-// ================================================================
-// EXPORTS & INIT
-// ================================================================
-function doCopy() {
-  const txt = document.getElementById('scriptout').value;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(txt).then(() => toast('i','📋 Copied to clipboard!')).catch(() => fallbackCopy(txt));
-  } else fallbackCopy(txt);
-}
-function fallbackCopy(txt) {
-  document.getElementById('scriptout').select();
-  document.execCommand('copy');
-  toast('i','📋 Copied (fallback)');
-}
+      // Deduct 100 tokens BEFORE parsing (optimistic deduction)
+      const newTokens = currentTokens - 100;
+      const { error: deductErr } = await sb.from('profiles').update({ parse_tokens: newTokens }).eq('id', currentUser.id);
+      if (deductErr) {
+        btn.classList.remove('btn-loading');
+        btn.innerHTML = originalHTML;
+        toast('e', '❌ Token deduction failed. Try again.');
+        return;
+      }
+      currentTokens = newTokens;
+      const tb = document.getElementById('token-balance');
+      tb.textContent = currentTokens;
+      tb.className = currentTokens < 100 ? 'user-field-value low' : 'user-field-value ok';
 
-function doDownload() {
-  const blob = new Blob([document.getElementById('scriptout').value], {type:'text/x-python'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'shein_coupons_multi.py';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
-  toast('s','⬇️ Script Downloaded!');
-}
+      // Wait 2 seconds, then parse and restore button
+      setTimeout(() => {
+        btn.classList.remove('btn-loading');
+        btn.innerHTML = originalHTML;
+        doParse(raw);
+      }, 2000);
+    }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function getHdr(raw, name) {
+      const re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
+      const m = raw.match(re);
+      return m ? m[1].trim() : null;
+    }
 
-let _tt;
-function toast(type, msg) {
-  const t = document.getElementById('toast');
-  const ic = document.getElementById('toast-icon');
-  if(type === 's') ic.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
-  else if(type === 'e') ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>';
-  else ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
-  
-  document.getElementById('toast-msg').textContent = msg;
-  t.className = 'on ' + type;
-  clearTimeout(_tt);
-  _tt = setTimeout(() => t.className = '', 3000);
-}
+    function doParse(raw) {
+      const parsed = {
+        SMDEVICE_ID: getHdr(raw, 'smdeviceid'),
+        CS_RANDOM: getHdr(raw, 'x-cs-random'),
+        GW_AUTH: getHdr(raw, 'x-gw-auth'),
+        ARMOR_TOKEN: getHdr(raw, 'armortoken'),
+        ANTI_IN: getHdr(raw, 'anti-in'),
+        CSRF_TOKEN: getHdr(raw, 'x-csrf-token'),
+        OEST: getHdr(raw, 'x-oest'),
+        AD_FLAG: getHdr(raw, 'x-ad-flag'),
+      };
 
-// Wire events
-document.getElementById('parsebtn').addEventListener('click', triggerParseWithDelay);
-document.getElementById('clearbtn').addEventListener('click', () => document.getElementById('rawin').value = '');
-document.getElementById('savebtn').addEventListener('click', saveCurrentScript);
-document.getElementById('addbundlebtn').addEventListener('click', doAddCustomBundle);
-document.getElementById('applybtn').addEventListener('click', applyBundlesToScript);
-document.getElementById('copybtn').addEventListener('click', doCopy);
-document.getElementById('dlbtn').addEventListener('click', doDownload);
-document.getElementById('resetbtn').addEventListener('click', () => {
-  setOutput(ORIG);
-  loadBundlesFromText(ORIG);
-  updateTokenPreviewFromScript(ORIG);
-  document.getElementById('obadge').textContent = 'DEFAULT TEMPLATE';
-  document.getElementById('obadge').className = 'b b-orange';
-  toast('i', 'Reset to Original Template');
-});
+      const bbm = raw.match(/name="blackbox"\s*\r?\n\r?\n([^\r\n\-]+)/i);
+      parsed.BLACKBOX = bbm ? bbm[1].trim() : null;
 
-// Setup Initial State
-setOutput(ORIG);
-loadBundlesFromText(ORIG);
-renderSavedScripts();
+      const cookieMap = {};
+      const cre = /^cookie:\s*(.+)/gim;
+      let cm;
+      while ((cm = cre.exec(raw)) !== null) {
+        const parts = cm[1].trim().split(';');
+        parts.forEach(p => {
+          const eq = p.indexOf('=');
+          if (eq > 0) cookieMap[p.slice(0, eq).trim()] = p.slice(eq + 1).trim();
+        });
+      }
+      const hasCookies = Object.keys(cookieMap).length > 0;
 
-</script>
+      const anyFound = hasCookies || parsed.BLACKBOX || Object.values(parsed).some(v => v);
+      if (!anyFound) { toast('e', '❌ No SHEIN tokens found in text.'); return; }
+
+      let script = getPlainScript() || ORIG;
+      let changed = 0;
+
+      function repVar(name, val) {
+        if (!val) return;
+        const re = new RegExp(`(${name}\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))`, 'g');
+        const next = script.replace(re, `$1"${val.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+        if (next !== script) { script = next; changed++; }
+      }
+
+      repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
+      repVar('CS_RANDOM', parsed.CS_RANDOM);
+      repVar('GW_AUTH', parsed.GW_AUTH);
+      repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
+      repVar('ANTI_IN', parsed.ANTI_IN);
+      repVar('CSRF_TOKEN', parsed.CSRF_TOKEN);
+      repVar('OEST', parsed.OEST);
+      repVar('AD_FLAG', parsed.AD_FLAG);
+
+      if (parsed.BLACKBOX) {
+        const bbre = /"blackbox":\s*"[^"]*"/g;
+        const nb = script.replace(bbre, `"blackbox":         "${parsed.BLACKBOX}"`);
+        if (nb !== script) { script = nb; changed++; }
+      }
+
+      if (hasCookies) {
+        let cookLines = '';
+        const ckEntries = Object.entries(cookieMap);
+        ckEntries.forEach(([ck, cv], ci) => {
+          const safeV = cv.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+          cookLines += `    "${ck}=${safeV}${ci < ckEntries.length - 1 ? '; ' : ''}"\n`;
+        });
+        const nc = script.replace(/(PRE_LOGIN_COOKIES\s*=\s*)\([\s\S]*?\n\)/, `$1(\n${cookLines})`);
+        if (nc !== script) { script = nc; changed++; }
+      }
+
+      setOutput(script);
+      updateTokenPreview(parsed, hasCookies);
+
+      const bdg = document.getElementById('obadge');
+      bdg.textContent = 'UPDATED: ' + changed + ' FIELD(S)';
+      bdg.className = 'b b-green';
+
+      const cc = document.getElementById('nchanged');
+      cc.style.display = 'inline';
+      cc.textContent = changed + ' PARSED';
+
+      document.getElementById('dot').className = 'dot on';
+      document.getElementById('stext').textContent = 'SYNCED';
+
+      toast('s', '⚡ Parsed and injected ' + changed + ' items!');
+    }
+
+    function updateTokenPreview(parsed, hasCookies) {
+      const fields = [
+        ['SMDEVICE_ID', parsed.SMDEVICE_ID], ['CS_RANDOM', parsed.CS_RANDOM],
+        ['GW_AUTH', parsed.GW_AUTH], ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
+        ['ANTI_IN', parsed.ANTI_IN], ['CSRF_TOKEN', parsed.CSRF_TOKEN],
+        ['OEST', parsed.OEST], ['AD_FLAG', parsed.AD_FLAG],
+        ['COOKIES', hasCookies ? 'Found in headers' : null],
+        ['BLACKBOX', parsed.BLACKBOX],
+      ];
+
+      let html = '';
+      fields.forEach(([fname, fval]) => {
+        if (!fval) {
+          html += `<div class="tr"><div class="tk">${fname}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
+        } else {
+          const display = fval.length > 50 ? fval.slice(0, 47) + '…' : fval;
+          html += `<div class="tr"><div class="tk">${fname}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
+        }
+      });
+      document.getElementById('tpreview').innerHTML = html;
+    }
+
+    function updateTokenPreviewFromScript(scriptTxt) {
+      const fields = ['SMDEVICE_ID', 'CS_RANDOM', 'GW_AUTH', 'ARMOR_TOKEN', 'ANTI_IN', 'CSRF_TOKEN', 'OEST', 'AD_FLAG'];
+      let html = '';
+      fields.forEach(f => {
+        const m = scriptTxt.match(new RegExp(`${f}\\s*=\\s*"([^"]+)"`));
+        if (m) {
+          const display = m[1].length > 50 ? m[1].slice(0, 47) + '…' : m[1];
+          html += `<div class="tr"><div class="tk">${f}</div><div class="tv ok">✓ ${esc(display)}</div></div>`;
+        } else {
+          html += `<div class="tr"><div class="tk">${f}</div><div class="tv dim">&#8212; Missing &#8212;</div></div>`;
+        }
+      });
+      html += `<div class="tr"><div class="tk">COOKIES</div><div class="tv ok">✓ Saved in script</div></div>`;
+      html += `<div class="tr"><div class="tk">BLACKBOX</div><div class="tv ok">✓ Saved in script</div></div>`;
+      document.getElementById('tpreview').innerHTML = html;
+    }
+
+    // ================================================================
+    // ENCRYPTION LAYER
+    // ================================================================
+    // Internal store for the plain (unencrypted) script - used for bundle/token operations
+    let _plainScript = '';
+
+    function encryptScript(plain) {
+      // Encode the Python source as base64 (UTF-8 safe)
+      const b64 = btoa(unescape(encodeURIComponent(plain)));
+      return `import base64\nexec(compile(base64.b64decode("${b64}").decode("utf-8"), "<encrypted>", "exec"))`;
+    }
+
+    function setOutput(plainPython) {
+      _plainScript = plainPython;
+      document.getElementById('scriptout').value = encryptScript(plainPython);
+    }
+
+    function getPlainScript() {
+      return _plainScript;
+    }
+
+    // ================================================================
+    // EXPORTS & INIT
+    // ================================================================
+    function doCopy() {
+      const txt = document.getElementById('scriptout').value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => toast('i', '📋 Copied to clipboard!')).catch(() => fallbackCopy(txt));
+      } else fallbackCopy(txt);
+    }
+    function fallbackCopy(txt) {
+      document.getElementById('scriptout').select();
+      document.execCommand('copy');
+      toast('i', '📋 Copied (fallback)');
+    }
+
+    function doDownload() {
+      const blob = new Blob([document.getElementById('scriptout').value], { type: 'text/x-python' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'shein_coupons_multi.py';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      toast('s', '⬇️ Script Downloaded!');
+    }
+
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    let _tt;
+    function toast(type, msg) {
+      const t = document.getElementById('toast');
+      const ic = document.getElementById('toast-icon');
+      if (type === 's') ic.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+      else if (type === 'e') ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>';
+      else ic.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
+
+      document.getElementById('toast-msg').textContent = msg;
+      t.className = 'on ' + type;
+      clearTimeout(_tt);
+      _tt = setTimeout(() => t.className = '', 3000);
+    }
+
+    // Wire events
+    document.getElementById('parsebtn').addEventListener('click', triggerParseWithDelay);
+    document.getElementById('clearbtn').addEventListener('click', () => document.getElementById('rawin').value = '');
+    document.getElementById('savebtn').addEventListener('click', saveCurrentScript);
+    document.getElementById('addbundlebtn').addEventListener('click', doAddCustomBundle);
+    document.getElementById('applybtn').addEventListener('click', applyBundlesToScript);
+    document.getElementById('copybtn').addEventListener('click', doCopy);
+    document.getElementById('dlbtn').addEventListener('click', doDownload);
+    document.getElementById('resetbtn').addEventListener('click', () => {
+      setOutput(ORIG);
+      loadBundlesFromText(ORIG);
+      updateTokenPreviewFromScript(ORIG);
+      document.getElementById('obadge').textContent = 'DEFAULT TEMPLATE';
+      document.getElementById('obadge').className = 'b b-orange';
+      toast('i', 'Reset to Original Template');
+    });
+
+    // Setup Initial State
+    setOutput(ORIG);
+    loadBundlesFromText(ORIG);
+    renderSavedScripts();
+    initAuth(); // Initialize Supabase auth
+
+  </script>
 </body>
+
 </html>
