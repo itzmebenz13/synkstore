@@ -1031,6 +1031,15 @@
       font-size: 11px;
     }
 
+    #user-id-display {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     #token-balance.low {
       color: var(--red);
     }
@@ -1094,7 +1103,15 @@
         <div id="user-info-bar" class="user-info-bar" style="display:none">
           <div class="user-field">
             <span class="user-field-label">User ID</span>
-            <span class="user-field-value" id="user-id-display">—</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span class="user-field-value" id="user-id-display">—</span>
+              <button id="copy-uid-btn" title="Copy full User ID" onclick="copyUserId()"
+                style="background:transparent;border:none;cursor:pointer;padding:2px 4px;color:var(--dim);transition:color .2s;flex-shrink:0;"><svg
+                  viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' style='width:11px;height:11px'>
+                  <rect x='9' y='9' width='13' height='13' rx='2' />
+                  <path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1' />
+                </svg></button>
+            </div>
           </div>
           <div class="separator"></div>
           <div class="user-field">
@@ -1378,8 +1395,8 @@ cookie: AT=MDEw..."></textarea>
       // Show user info bar
       const bar = document.getElementById('user-info-bar');
       bar.style.display = 'flex';
-      // Short user ID (first 8 chars)
-      document.getElementById('user-id-display').textContent = user.id.slice(0, 8).toUpperCase() + '...';
+      // Full User ID
+      document.getElementById('user-id-display').textContent = user.id;
       // Token balance with color
       const tb = document.getElementById('token-balance');
       tb.textContent = currentTokens;
@@ -1439,6 +1456,26 @@ cookie: AT=MDEw..."></textarea>
     document.getElementById('auth-email').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('auth-password').focus();
     });
+
+    // ================================================================
+    // COPY USER ID
+    // ================================================================
+    function copyUserId() {
+      const uid = currentUser?.id;
+      if (!uid) return;
+      navigator.clipboard.writeText(uid).then(() => {
+        const btn = document.getElementById('copy-uid-btn');
+        if (btn) {
+          btn.innerHTML = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' style='width:11px;height:11px;color:var(--success)'><polyline points='20 6 9 17 4 12'/></svg>`;
+          btn.style.color = 'var(--success)';
+          setTimeout(() => {
+            btn.innerHTML = `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' style='width:11px;height:11px'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>`;
+            btn.style.color = '';
+          }, 1500);
+        }
+        toast('i', '📋 User ID copied!');
+      }).catch(() => toast('e', 'Copy failed.'));
+    }
 
     // ================================================================
     // LOGOUT
