@@ -51,7 +51,7 @@
             <div class="w-full bg-black/20 border border-supabase-border rounded-lg p-4 mb-8 text-left">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-xs font-medium text-supabase-textMuted uppercase tracking-wider">Project Ref</span>
-                    <span class="text-xs font-mono text-supabase-textBase bg-white/5 px-2 py-1 rounded">abcdefghijklmnop</span>
+                    <span id="project-ref" class="text-xs font-mono text-supabase-textBase bg-white/5 px-2 py-1 rounded">generating...</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-medium text-supabase-textMuted uppercase tracking-wider">Status</span>
@@ -74,5 +74,21 @@
         </div>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Supabase project refs are typically 20 random lowercase characters
+            const generateRef = () => {
+                const chars = 'abcdefghijklmnopqrstuvwxyz';
+                let result = '';
+                for (let i = 0; i < 20; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            };
+
+            // Set the generated string to the element
+            document.getElementById('project-ref').textContent = generateRef();
+        });
+    </script>
 </body>
 </html>
