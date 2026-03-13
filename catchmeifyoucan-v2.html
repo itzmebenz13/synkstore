@@ -1618,14 +1618,24 @@ BUNDLES = [
 # CONFIG
 # ─────────────────────────────────────────────────────────────
 
-BASE_URL       = "https://m.shein.com/ph"
-LOGIN_URL      = f"{BASE_URL}/bff-api/user/common_login"
-COUPON_URL     = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
-SEND_OTP_URL   = "https://m.shein.com/ph/api/user/center/sendRiskCode/get"
-VERIFY_OTP_URL = "https://m.shein.com/ph/api/user/center/verifyRiskCode/update"
+COUNTRIES = {
+    "1": {"name": "Philippines", "code": "ph", "lang": "en-PH,en;q=0.9", "language": "ph"},
+    "2": {"name": "Malaysia",    "code": "my", "lang": "en-MY,en;q=0.9", "language": "my"},
+    "3": {"name": "Thailand",    "code": "th", "lang": "th-TH,th;q=0.9", "language": "th"},
+}
+
 API_PARAMS     = {"_ver": "1.1.8", "_lang": "en"}
 COUPON_PKG_ID  = "17138405"
 ACCOUNT_DELAY  = 5    # seconds between accounts
+
+# Set dynamically based on country selection
+BASE_URL       = "https://m.shein.com/ph"
+LOGIN_URL      = f"{BASE_URL}/bff-api/user/common_login"
+COUPON_URL     = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
+SEND_OTP_URL   = f"{BASE_URL}/api/user/center/sendRiskCode/get"
+VERIFY_OTP_URL = f"{BASE_URL}/api/user/center/verifyRiskCode/update"
+ACTIVE_LANG    = "en-PH,en;q=0.9"
+ACTIVE_LANG_COOKIE = "ph"
 
 # ─────────────────────────────────────────────────────────────
 # LOGIN FUNCTION
@@ -1657,7 +1667,7 @@ def shein_login(email, password):
         "sec-fetch-mode":     "cors",
         "sec-fetch-dest":     "empty",
         "referer":            f"{BASE_URL}/user/setting",
-        "accept-language":    "en-PH,en;q=0.9",
+        "accept-language":    ACTIVE_LANG,
         "Cookie":             PRE_LOGIN_COOKIES,
     }
 
@@ -1799,7 +1809,7 @@ def collect_coupons(session, cookie_str, codes):
         "sec-fetch-mode": "cors",
         "sec-fetch-dest": "empty",
         "referer":       f"{BASE_URL}/user/setting",
-        "accept-language": "en-PH,en;q=0.9",
+        "accept-language": ACTIVE_LANG,
         "Cookie":        cookie_str,
     }
 
@@ -1834,6 +1844,8 @@ def collect_coupons(session, cookie_str, codes):
 # ─────────────────────────────────────────────────────────────
 
 def main():
+    global BASE_URL, LOGIN_URL, COUPON_URL, SEND_OTP_URL, VERIFY_OTP_URL, ACTIVE_LANG, ACTIVE_LANG_COOKIE
+
     print("\\n" + "=" * 60)
     print("   SHEIN COUPON COLLECTOR  —  Multi-Account Mode")
     print("=" * 60)
@@ -1841,6 +1853,27 @@ def main():
     if not BUNDLES:
         print("  ⚠ No bundles found in the script! Exiting.")
         sys.exit(1)
+
+    # ── COUNTRY SELECTION ──
+    while True:
+        print("\\n  Select country/region:")
+        for k, v in COUNTRIES.items():
+            print(f"  [{k}] {v['name']}")
+        c = input(f"  Enter 1-{len(COUNTRIES)} (Default: 1): ").strip()
+        if c == "": c = "1"
+        if c in COUNTRIES:
+            country = COUNTRIES[c]
+            BASE_URL       = f"https://m.shein.com/{country['code']}"
+            LOGIN_URL      = f"{BASE_URL}/bff-api/user/common_login"
+            COUPON_URL     = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
+            SEND_OTP_URL   = f"{BASE_URL}/api/user/center/sendRiskCode/get"
+            VERIFY_OTP_URL = f"{BASE_URL}/api/user/center/verifyRiskCode/update"
+            ACTIVE_LANG    = country['lang']
+            ACTIVE_LANG_COOKIE = country['language']
+            print(f"  ✓ Region set to: {country['name']} ({BASE_URL})")
+            break
+        else:
+            print(f"  ⚠ Invalid choice.")
 
     while True:
         print("\\n  Select the voucher bundle you want to collect:")
