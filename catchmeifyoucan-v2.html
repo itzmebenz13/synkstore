@@ -1605,12 +1605,10 @@ BUNDLES = [
         ]
     },
     {
-        "name": "⚡ QUAD 85 (x4 Same Account)",
+        "name": "255 & 428 (Beta)",
         "codes": [
-            "phsf021210",
-            "phsf021210",
-            "phsf021210",
-            "phsf021210"
+            "gm0pha11",
+            "gmphi3652-1"
         ]
     }
 ]
@@ -1626,7 +1624,7 @@ COUPON_URL     = f"{BASE_URL}/bff-api/promotion/coupon/bind_coupon"
 SEND_OTP_URL   = "https://m.shein.com/ph/api/user/center/sendRiskCode/get"
 VERIFY_OTP_URL = "https://m.shein.com/ph/api/user/center/verifyRiskCode/update"
 API_PARAMS     = {"_ver": "1.1.8", "_lang": "en"}
-COUPON_PKG_ID  = "17137280"
+COUPON_PKG_ID  = "17138405"
 ACCOUNT_DELAY  = 5    # seconds between accounts
 
 # ─────────────────────────────────────────────────────────────
@@ -1643,6 +1641,7 @@ def shein_login(email, password):
         "sec-ch-ua":          '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
         "sec-ch-ua-mobile":   "?1",
         "x-requested-with":   "XMLHttpRequest",
+        "uber-trace-id":      "fff7f10b6756b679:fff7f10b6756b679:0:0",
         "x-cs-random":        CS_RANDOM,
         "accept":             "application/json, text/plain, */*",
         "x-gw-auth":          GW_AUTH,
@@ -1652,13 +1651,13 @@ def shein_login(email, password):
         "x-oest":             OEST,
         "x-ad-flag":          AD_FLAG,
         "user-agent":         "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
-        "webversion":         "14.3.0",
+        "webversion":         "14.3.8",
         "origin":             "https://m.shein.com",
         "sec-fetch-site":     "same-origin",
         "sec-fetch-mode":     "cors",
         "sec-fetch-dest":     "empty",
-        "referer":            f"{BASE_URL}/user/index",
-        "accept-language":    "en-US,en;q=0.9",
+        "referer":            f"{BASE_URL}/user/setting",
+        "accept-language":    "en-PH,en;q=0.9",
         "Cookie":             PRE_LOGIN_COOKIES,
     }
 
@@ -1778,8 +1777,15 @@ def shein_login(email, password):
 def collect_coupons(session, cookie_str, codes):
     coupon_headers = {
         "Content-Type":  "application/json",
+        "sec-ch-ua-platform": '"Android"',
         "smdeviceid":    SMDEVICE_ID,
+        "timezone":      "GMT+8",
+        "sec-ch-ua":     '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+        "sec-ch-ua-mobile": "?1",
+        "uber-trace-id": "fff7f10b6756b679:fff7f10b6756b679:0:0",
+        "x-requested-with": "XMLHttpRequest",
         "x-cs-random":   CS_RANDOM,
+        "accept":        "application/json, text/plain, */*",
         "x-gw-auth":     GW_AUTH,
         "armortoken":    ARMOR_TOKEN,
         "anti-in":       ANTI_IN,
@@ -1787,6 +1793,13 @@ def collect_coupons(session, cookie_str, codes):
         "x-oest":        OEST,
         "x-ad-flag":     AD_FLAG,
         "user-agent":    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
+        "webversion":    "14.3.8",
+        "origin":        "https://m.shein.com",
+        "sec-fetch-site": "same-origin",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-dest": "empty",
+        "referer":       f"{BASE_URL}/user/setting",
+        "accept-language": "en-PH,en;q=0.9",
         "Cookie":        cookie_str,
     }
 
