@@ -1207,6 +1207,7 @@ function vaultSave() {
     device_info:_lastParsed.DEVICE_INFO|| '',
     label:      'Account ' + (_vault.length + 1)
   });
+  vaultPersist();
   renderVault();
   toast('s', '✓ Saved to vault as #' + _vault.length);
 }
