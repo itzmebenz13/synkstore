@@ -214,6 +214,17 @@ COUPON_PKG_ID = "17139475"
 ACCOUNT_DELAY = 3   # seconds between accounts
 
 # ─────────────────────────────────────────────────────────────────────────────
+# GM0PHA DELIVERY MODE CONFIG
+# Uses the delivery-material API (auto_bind) instead of bind_coupon
+# Set GM0PHA_MODE = True to use this mode
+# ─────────────────────────────────────────────────────────────────────────────
+
+GM0PHA_MODE      = False        # Set True to use delivery API mode
+GM0PHA_MID       = "4142402"   # Material/delivery ID
+GM0PHA_SITE      = "andshph"   # Site UID
+GM0PHA_DEVICE_ID = "shein_3be5c0ff-9628-3d14-a923-7541c2494e60"  # Device ID for delivery API
+
+# ─────────────────────────────────────────────────────────────────────────────
 # BRUTE-FORCE CONFIG
 # Set BRUTE_MODE = True to scan a packageId range instead of COUPON_PKG_ID
 # ─────────────────────────────────────────────────────────────────────────────
@@ -598,6 +609,132 @@ def run_brute_force():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# GM0PHA DELIVERY CLAIM
+# Uses delivery-material/material_list with auto_bind=True
+# ─────────────────────────────────────────────────────────────────────────────
+
+DELIVERY_URL = "https://api-shein.shein.com/deliveryapi/delivery-material/material_list"
+
+def collect_delivery(token):
+    """Claim gm0pha coupons via delivery-material auto_bind API."""
+    headers = {
+        "host":              "api-shein.shein.com",
+        "content-type":      "application/json",
+        "accept":            "application/json, text/plain, */*",
+        "appname":           "shein app",
+        "apptype":           "shein",
+        "brand":             "shein",
+        "channel":           "h5",
+        "siteuid":           GM0PHA_SITE,
+        "localcountry":      CLAIM_COUNTRY,
+        "currency":          CLAIM_CURRENCY,
+        "appcurrency":       CLAIM_CURRENCY,
+        "applanguage":       LANGUAGE,
+        "language":          LANGUAGE,
+        "timezone":          "GMT+8",
+        "appversion":        APP_VERSION,
+        "deviceid":          GM0PHA_DEVICE_ID,
+        "smdeviceid":        SMDEVICE_ID,
+        "ugid":              UGID,
+        "armortoken":        ARMOR_TOKEN,
+        "x-gw-auth":         GW_AUTH,
+        "token":             token,
+        "x-request-by":      "bridgeX",
+        "route-bff":         "TRUE",
+        "user-agent":        f"Mozilla/5.0 (Linux; Android 14; {DEVICE_INFO} Build/UKQ1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36 SheinApp(shein/{APP_VERSION}) TTID/shein Wing/1.0.1",
+        "referer":           "https://api-shein.shein.com/ark/11504?app=shein&device_type=android&language=en&site_uid=andshph&region=PH",
+        "origin":            "https://api-shein.shein.com",
+        "sec-fetch-site":    "same-origin",
+        "sec-fetch-mode":    "cors",
+        "sec-fetch-dest":    "empty",
+        "accept-encoding":   "gzip, deflate, br",
+        "accept-language":   "en-PH,en-US;q=0.9,en;q=0.8",
+    }
+
+    payload = {
+        "client_info": {
+            "app_version":  APP_VERSION,
+            "client_id":    100,
+            "currency":     CLAIM_CURRENCY,
+            "dev_id":       GM0PHA_DEVICE_ID,
+            "language":     LANGUAGE,
+            "site_uid":     GM0PHA_SITE,
+            "token":        token,
+            "brand":        "shein",
+        },
+        "material_request_info": {
+            "mid":      GM0PHA_MID,
+            "param_map": {
+                "coupon_common_req": {
+                    "coupon_type":     2,
+                    "coupon_sequence": 3,
+                },
+                "auto_bind": True,
+            },
+            "data_type":        "SwiftCouponOnePlugin",
+            "data_scene":       0,
+            "data_scene_flag":  "0_SwiftCouponOnePlugin",
+        },
+        "ext_map": {},
+    }
+
+    params = {"sw_site": GM0PHA_SITE, "sw_lang": LANGUAGE}
+
+    print(f"\n  {'─'*54}")
+    print(f"  Mode     : DELIVERY API (auto_bind)")
+    print(f"  MID      : {GM0PHA_MID}")
+    print(f"  Country  : {CLAIM_COUNTRY} ({CLAIM_CURRENCY})")
+    print(f"  {'─'*54}")
+
+    claimed = 0
+    try:
+        r = requests.post(DELIVERY_URL, json=payload, headers=headers, params=params, timeout=15, verify=False)
+        try:
+            data = r.json()
+        except Exception:
+            data = {}
+
+        code = str(data.get("code", ""))
+        if code not in ("0", "200"):
+            print(f"  ❌ API error: {data.get('msg', 'Unknown')}")
+            return 0
+
+        info       = data.get("info") or {}
+        coupon_info = info.get("coupon_info") or {}
+        bind_result = coupon_info.get("bind_result") or {}
+        bind_data   = bind_result.get("bindResult") or {}
+        success_list = bind_data.get("successList") or []
+        fail_list    = bind_data.get("failList") or []
+        hit_coupon   = coupon_info.get("hit_coupon") or []
+        recv_coupon  = coupon_info.get("received_coupon") or []
+
+        if success_list:
+            print(f"  ✅ {len(success_list)} claimed, {len(fail_list)} failed")
+            for c in success_list:
+                print(f"     ✓ {c.get('couponCode','?')} (id:{c.get('couponId','?')})")
+            claimed = len(success_list)
+        elif hit_coupon:
+            print(f"  ⚠️  Already claimed — {len(hit_coupon)} coupon(s) already in account")
+        elif recv_coupon:
+            print(f"  ✅ {len(recv_coupon)} already received")
+            claimed = len(recv_coupon)
+        else:
+            bind_code = bind_result.get("bindCode", "")
+            detail    = info.get("detail_msg") or data.get("msg") or "No result"
+            print(f"  ❓ No bind result — bindCode={bind_code} detail={detail}")
+
+    except requests.exceptions.Timeout:
+        print(f"  ❌ Request timed out")
+    except requests.exceptions.ConnectionError as e:
+        print(f"  ❌ Connection error: {e}")
+    except Exception as e:
+        print(f"  ❌ Error: {e}")
+
+    print(f"  {'─'*54}")
+    return claimed
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -619,7 +756,10 @@ def main():
         print(f"\n{'#'*60}")
         print(f"  Account {i}/{len(TOKENS)}  [...{token[-20:]}]")
         print(f"{'#'*60}")
-        collect_coupons(token, CODES)
+        if GM0PHA_MODE:
+            collect_delivery(token)
+        else:
+            collect_coupons(token, CODES)
         if i < len(TOKENS):
             print(f"\n  Waiting {ACCOUNT_DELAY}s before next account...")
             time.sleep(ACCOUNT_DELAY)
@@ -716,6 +856,8 @@ dev-id: shein_8a47..."></textarea>
       <span class="batch-label">&#9656; BATCH:</span>
       <button class="btn-batch" data-batch="ph0313">ph0313 <span class="badge-status badge-test">TESTING</span></button>
       <button class="btn-batch active" data-batch="phsf0212">phsf0212 <span class="badge-status badge-active">ACTIVE</span></button>
+      <button class="btn-batch" data-batch="gm0pha">gm0pha <span class="badge-status badge-test">TESTING</span></button>
+      <button class="btn-batch" data-batch="phsf0212ultra">phsf0212 ULTRA <span class="badge-status badge-test">TESTING</span></button>
     </div>
     <div class="vbody">
       <div class="vadd">
@@ -1076,11 +1218,24 @@ function doReset() {
 var CODE_BATCHES = {
   'ph0313': {
     codes: ['ph0313n3','ph0313n4','ph0313n5','ph0313n6'],
-    pkgId: '17138625'
+    pkgId: '17138625',
+    type: 'bind'
   },
   'phsf0212': {
     codes: ['phsf021210','phsf021209','phsf021208','phsf021207'],
-    pkgId: '17139475'
+    pkgId: '17139475',
+    type: 'bind'
+  },
+  'gm0pha': {
+    codes: ['gm0pha11','gm0pha12','gm0pha13','gm0pha14'],
+    pkgId: '17131185',
+    mid:   '4142402',
+    type:  'delivery'
+  },
+  'phsf0212ultra': {
+    codes: ['phsf021210','phsf021209','phsf021208','phsf021207','phsf021206','phsf021205','phsf021204','phsf021203'],
+    pkgId: '17139475',
+    type:  'bind'
   }
 };
 var _activeBatch = 'phsf0212';
@@ -1093,14 +1248,22 @@ document.querySelectorAll('.btn-batch').forEach(function(btn){
     // Load batch codes into vouchers list
     vouchers = batch.codes.slice();
     renderVouchers();
-    // Patch COUPON_PKG_ID in output script
+    // Patch script
     var src = document.getElementById('scriptout').value;
-    var updated = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + batch.pkgId + '"');
-    document.getElementById('scriptout').value = updated;
+    // Patch COUPON_PKG_ID
+    src = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + batch.pkgId + '"');
+    // Patch GM0PHA_MODE and GM0PHA_MID
+    var isDelivery = batch.type === 'delivery';
+    src = src.replace(/(^GM0PHA_MODE\s*=\s*).*$/m, '$1' + (isDelivery ? 'True' : 'False') + '        # Set True to use delivery API mode');
+    if (isDelivery && batch.mid) {
+      src = src.replace(/(GM0PHA_MID\s*=\s*)"[^"]*"/, '$1"' + batch.mid + '"');
+    }
+    document.getElementById('scriptout').value = src;
     // Highlight active batch button
     document.querySelectorAll('.btn-batch').forEach(function(b){ b.classList.remove('active'); });
     this.classList.add('active');
-    toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes | pkg=' + batch.pkgId);
+    var info = batch.type === 'delivery' ? ' | DELIVERY MODE' : ' | pkg=' + batch.pkgId;
+    toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes' + info);
   });
 });
 
@@ -1207,7 +1370,6 @@ function vaultSave() {
     device_info:_lastParsed.DEVICE_INFO|| '',
     label:      'Account ' + (_vault.length + 1)
   });
-  vaultPersist();
   renderVault();
   toast('s', '✓ Saved to vault as #' + _vault.length);
 }
