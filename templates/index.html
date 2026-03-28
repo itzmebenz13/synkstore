@@ -1987,11 +1987,11 @@ dev-id: shein_8a47..."></textarea>
 
       _lastParsed = parsed;
       markUpdated(changed.length + ' tokens');
-      toast('s', _autoMode ? '\u26a1 Auto mode: parsing and launching\u2026' : '\u2713 Token parsed successfully \u2014 ready to RUN!');
       if (_autoMode) {
-        setTimeout(function() {
-          if (!_running) doRun();
-        }, 150);
+        toast('s', '\u26a1 Parsed \u2014 launching now\u2026');
+        doRun();
+      } else {
+        toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
       }
 
 
@@ -2313,6 +2313,12 @@ dev-id: shein_8a47..."></textarea>
       _autoTextEl.textContent = on ? 'AUTO' : 'MANUAL';
       _autoTextEl.style.color = on ? 'var(--ok)' : 'var(--dim)';
       localStorage.setItem('ssu_auto_mode', on ? '1' : '0');
+      var runBtn = document.getElementById('runbtn');
+      if (runBtn) {
+        runBtn.disabled = on;
+        runBtn.style.opacity = on ? '0.4' : '1';
+        runBtn.title = on ? 'Disabled in AUTO mode — runs automatically after paste' : '';
+      }
     }
 
     // Restore saved auto mode
@@ -2680,6 +2686,9 @@ dev-id: shein_8a47..."></textarea>
         status.textContent = '';
         loading.style.display = 'none';
         loading.classList.remove('active');
+        // Keep RUN button disabled if AUTO mode is still on
+        runBtn.disabled = _autoMode;
+        runBtn.style.opacity = _autoMode ? '0.4' : '1';
       }
     }
 
