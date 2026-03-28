@@ -131,6 +131,25 @@ button{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;pad
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:#2a3340;border-radius:3px}
+/* runner */
+.runner-cfg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px}
+@media(max-width:600px){.runner-cfg{grid-template-columns:1fr}}
+.runner-field{display:flex;flex-direction:column;gap:5px}
+.runner-label{font-size:10px;color:var(--accent);letter-spacing:.6px;text-transform:uppercase}
+.runner-input{background:var(--code);color:#8be9fd;font-family:'JetBrains Mono',monospace;font-size:12px;border:1px solid var(--border);border-radius:5px;padding:6px 11px;outline:none;width:100%}
+.runner-input:focus{border-color:rgba(0,229,255,.4);box-shadow:0 0 0 2px rgba(0,229,255,.07)}
+#terminal{background:#020405;border-top:1px solid var(--border);padding:13px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:#8be9fd;min-height:200px;max-height:420px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+#terminal .t-ok{color:var(--success)}
+#terminal .t-err{color:var(--red)}
+#terminal .t-warn{color:var(--warn)}
+#terminal .t-head{color:#fff;font-weight:700}
+#terminal .t-dim{color:var(--dim)}
+.btn-run{background:linear-gradient(135deg,var(--success),#00cc6a);color:#000;font-weight:700;flex:1;justify-content:center;font-size:12px;letter-spacing:.5px}
+.btn-run:hover{background:linear-gradient(135deg,#33ff99,#00e876);transform:translateY(-1px)}
+.btn-run:disabled{background:#1a2a1a;color:#2d4a2d;cursor:not-allowed;transform:none}
+.btn-stop{background:rgba(255,68,68,.12);color:var(--red);border:1px solid rgba(255,68,68,.3)}
+.btn-stop:hover{background:rgba(255,68,68,.25)}
+.run-status{font-size:10px;color:var(--dim);margin:auto 0;padding-left:6px}
 </style>
 </head>
 <body>
@@ -962,6 +981,34 @@ dev-id: shein_8a47..."></textarea>
       <button class="btn-s" id="resetbtn">&#8635; RESET</button>
     </div>
   </div>
+
+  <!-- RUNNER PANEL -->
+  <div class="panel" style="margin-top:14px">
+    <div class="ph">
+      <div class="pt">&#9658; CLOUD RUNNER</div>
+      <span class="b b-green" id="runbadge">READY</span>
+    </div>
+    <div class="runner-cfg">
+      <div class="runner-field" style="grid-column:1/-1">
+        <span class="runner-label">&#9656; Railway Server URL</span>
+        <input class="runner-input" id="run-url" type="text" placeholder="https://your-app.up.railway.app" autocomplete="off">
+      </div>
+      <div class="runner-field">
+        <span class="runner-label">&#9656; Access Key</span>
+        <input class="runner-input" id="run-key" type="password" placeholder="your access key" autocomplete="off">
+      </div>
+      <div class="runner-field">
+        <span class="runner-label">&#9656; Account Delay (sec)</span>
+        <input class="runner-input" id="run-delay" type="number" value="3" min="0" max="30">
+      </div>
+    </div>
+    <div id="terminal"><span class="t-dim">▌ Terminal ready. Configure server URL and hit RUN.</span></div>
+    <div class="br">
+      <button class="btn-run" id="runbtn">&#9658; RUN SCRIPT</button>
+      <button class="btn-stop btn-s" id="stopbtn" disabled>&#9632; STOP</button>
+      <span class="run-status" id="runstatus"></span>
+    </div>
+  </div>
 </div>
 <div id="overlay"></div>
 <div id="copypopup">
@@ -1671,6 +1718,187 @@ document.getElementById('vinput').addEventListener('keydown', function(e){ if(e.
 document.getElementById('rawin').addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();doParse();} });
 document.getElementById('histclearbtn').addEventListener('click', function(){ _parseHistory=[]; renderHistory(); toast('i','History cleared'); });
 renderHistory();
+
+// ================================================================
+// CLOUD RUNNER
+// ================================================================
+var _runAbort = null;
+var _running  = false;
+
+// Persist server URL and key
+(function(){
+  var savedUrl = localStorage.getItem('ssu_run_url');
+  var savedKey = localStorage.getItem('ssu_run_key');
+  if (savedUrl) document.getElementById('run-url').value = savedUrl;
+  if (savedKey) document.getElementById('run-key').value = savedKey;
+})();
+document.getElementById('run-url').addEventListener('change', function(){ localStorage.setItem('ssu_run_url', this.value.trim()); });
+document.getElementById('run-key').addEventListener('change', function(){ localStorage.setItem('ssu_run_key', this.value.trim()); });
+
+function termWrite(line) {
+  var el = document.getElementById('terminal');
+  var div = document.createElement('div');
+  // Colorize
+  if (line.indexOf('★') >= 0 || line.indexOf('✅') >= 0 || line.indexOf('CLAIMED') >= 0) {
+    div.className = 't-ok';
+  } else if (line.indexOf('❌') >= 0 || line.indexOf('✗') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0) {
+    div.className = 't-err';
+  } else if (line.indexOf('⚠') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) {
+    div.className = 't-warn';
+  } else if (line.indexOf('===') >= 0 || line.indexOf('###') >= 0) {
+    div.className = 't-head';
+  } else if (line.trim() === '' || line.indexOf('───') >= 0) {
+    div.className = 't-dim';
+  }
+  div.textContent = line;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function termClear() {
+  document.getElementById('terminal').innerHTML = '';
+}
+
+function buildCfgFromScript() {
+  var src = document.getElementById('scriptout').value;
+
+  function extract(name) {
+    var m = src.match(new RegExp(name + '\s*=\s*"([^"]*)"'));
+    return m ? m[1] : '';
+  }
+  function extractBool(name) {
+    var m = src.match(new RegExp(name + '\s*=\s*(True|False)'));
+    return m ? m[1] === 'True' : false;
+  }
+  function extractInt(name) {
+    var m = src.match(new RegExp(name + '\s*=\s*(\d+)'));
+    return m ? parseInt(m[1]) : 0;
+  }
+  function extractTokens() {
+    var m = src.match(/TOKENS\s*=\s*\[([\s\S]*?)\]/);
+    if (!m) return [];
+    var found = m[1].match(/"([^"]+)"/g);
+    return found ? found.map(function(t){ return t.replace(/"/g,''); }) : [];
+  }
+  function extractCodes() {
+    var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
+    if (!m) return [];
+    var found = m[1].match(/"([^"]+)"/g);
+    return found ? found.map(function(c){ return c.replace(/"/g,''); }) : [];
+  }
+
+  var bruteMode   = extractBool('BRUTE_MODE');
+  var deliveryMode = extractBool('GM0PHA_MODE');
+  var mode = bruteMode ? 'brute' : (deliveryMode ? 'delivery' : 'bind');
+
+  return {
+    tokens:          extractTokens(),
+    codes:           extractCodes(),
+    pkg_id:          extract('COUPON_PKG_ID'),
+    gw_auth:         extract('GW_AUTH'),
+    armor_token:     extract('ARMOR_TOKEN'),
+    smdevice_id:     extract('SMDEVICE_ID'),
+    ugid:            extract('UGID'),
+    sortuid:         extract('SORTUID'),
+    device_id:       extract('DEVICE_ID'),
+    appcountry:      extract('APPCOUNTRY'),
+    usercountry:     extract('USERCOUNTRY'),
+    localcountry:    extract('LOCALCOUNTRY'),
+    currency:        extract('CURRENCY'),
+    appcurrency:     extract('APPCURRENCY'),
+    app_version:     extract('APP_VERSION'),
+    device_info:     extract('DEVICE_INFO'),
+    claim_country:   extract('CLAIM_COUNTRY'),
+    gm_site:         extract('GM0PHA_SITE'),
+    gm_mid:          extract('GM0PHA_MID'),
+    gm_device_id:    extract('GM0PHA_DEVICE_ID'),
+    mode:            mode,
+    brute_start:     extractInt('BRUTE_START'),
+    brute_end:       extractInt('BRUTE_END'),
+    brute_threads:   extractInt('BRUTE_THREADS'),
+    brute_max_claims:extractInt('BRUTE_MAX_CLAIMS'),
+    account_delay:   document.getElementById('run-delay').value || 3,
+  };
+}
+
+function setRunning(on) {
+  _running = on;
+  var runBtn  = document.getElementById('runbtn');
+  var stopBtn = document.getElementById('stopbtn');
+  var badge   = document.getElementById('runbadge');
+  var status  = document.getElementById('runstatus');
+  runBtn.disabled  = on;
+  stopBtn.disabled = !on;
+  if (on) {
+    badge.textContent = 'RUNNING';
+    badge.className   = 'b b-green';
+    status.textContent = 'Script running...';
+  } else {
+    badge.textContent = 'READY';
+    badge.className   = 'b b-green';
+    status.textContent = '';
+  }
+}
+
+document.getElementById('runbtn').addEventListener('click', function() {
+  var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
+  var key = document.getElementById('run-key').value.trim();
+  if (!url) { toast('e', 'Enter your Railway server URL first'); return; }
+  if (!key) { toast('e', 'Enter your access key first'); return; }
+
+  var cfg = buildCfgFromScript();
+  if (!cfg.tokens.length) { toast('e', 'No tokens in script — parse a RAW request first'); return; }
+
+  termClear();
+  termWrite('  Connecting to ' + url + ' ...');
+  setRunning(true);
+
+  var controller = new AbortController();
+  _runAbort = controller;
+
+  fetch(url + '/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_key: key, cfg: cfg }),
+    signal: controller.signal,
+  }).then(function(resp) {
+    if (!resp.ok) {
+      return resp.json().then(function(e){ throw new Error(e.error || 'HTTP ' + resp.status); });
+    }
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+    function pump() {
+      return reader.read().then(function(result) {
+        if (result.done) { setRunning(false); return; }
+        buf += decoder.decode(result.value, { stream: true });
+        var parts = buf.split('\n\n');
+        buf = parts.pop();
+        parts.forEach(function(part) {
+          var line = part.replace(/^data:\s?/, '');
+          if (line === '[DONE]') { setRunning(false); termWrite(''); termWrite('  ✅ Session complete.'); return; }
+          if (line) termWrite(line);
+        });
+        return pump();
+      });
+    }
+    return pump();
+  }).catch(function(err) {
+    if (err.name === 'AbortError') {
+      termWrite('  ⛔ Stopped by user.');
+    } else {
+      termWrite('  ❌ Connection error: ' + err.message);
+      toast('e', 'Runner error: ' + err.message);
+    }
+    setRunning(false);
+  });
+});
+
+document.getElementById('stopbtn').addEventListener('click', function() {
+  if (_runAbort) { _runAbort.abort(); _runAbort = null; }
+  setRunning(false);
+  toast('w', 'Run stopped');
+});
 </script>
 </body>
 </html>
