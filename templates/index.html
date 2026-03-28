@@ -1661,7 +1661,7 @@ dev-id: shein_8a47..."></textarea>
         <div id="run-modal-subtitle"></div>
         <div id="run-modal-items"></div>
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px">
-          <button id="run-modal-close" class="btn-p" style="min-width:120px;justify-content:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</button>
+          <button id="run-modal-close" class="btn-p" style="min-width:120px;justify-content:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done <span id="modal-countdown" style="opacity:.7;font-size:.85em;min-width:1.4em;display:inline-block;text-align:right"></span></button>
         </div>
       </div>
     </div>
@@ -1977,11 +1977,8 @@ dev-id: shein_8a47..."></textarea>
       markUpdated(changed.length + ' tokens');
       toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
 
-      // Auto-clear RAW input after 30 seconds
-      clearTimeout(window._rawClearTimer);
-      window._rawClearTimer = setTimeout(function() {
-        document.getElementById('rawin').value = '';
-      }, 30000);
+      // Clear RAW input immediately — parsed data is already loaded into the runner
+      document.getElementById('rawin').value = '';
 
       // Add to parse history (dedupe by token)
       addParseHistory(parsed, changed.length);
@@ -2479,9 +2476,36 @@ dev-id: shein_8a47..."></textarea>
 
       modal.classList.add('active');
       modal.style.display = 'flex';
+      startModalCountdown();
+    }
+
+    // Web Worker blob timer — keeps ticking even when tab is hidden/minimised
+    var _modalWorker = null;
+    var _modalCountdownEl = document.getElementById('modal-countdown');
+
+    function _makeWorkerSrc() {
+      return 'var t=0;onmessage=function(e){if(e.data==="start"){t=5;postMessage(t);var id=setInterval(function(){t--;postMessage(t);if(t<=0)clearInterval(id);},1000);}if(e.data==="stop")t=-99;};';
+    }
+
+    function startModalCountdown() {
+      if (_modalWorker) { _modalWorker.terminate(); _modalWorker = null; }
+      var blob = new Blob([_makeWorkerSrc()], { type: 'application/javascript' });
+      _modalWorker = new Worker(URL.createObjectURL(blob));
+      _modalWorker.onmessage = function(e) {
+        var n = e.data;
+        if (_modalCountdownEl) _modalCountdownEl.textContent = n > 0 ? '(' + n + ')' : '';
+        if (n <= 0) { hideRunModal(); }
+      };
+      _modalWorker.postMessage('start');
+    }
+
+    function stopModalCountdown() {
+      if (_modalWorker) { _modalWorker.postMessage('stop'); _modalWorker.terminate(); _modalWorker = null; }
+      if (_modalCountdownEl) _modalCountdownEl.textContent = '';
     }
 
     function hideRunModal() {
+      stopModalCountdown();
       var modal = document.getElementById('run-modal');
       modal.classList.remove('active');
       modal.style.display = 'none';
