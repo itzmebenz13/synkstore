@@ -23,6 +23,8 @@ LANGUAGE     = "en"
 
 ERR_INVALID_PKG     = 1000
 ERR_ALREADY_CLAIMED = 501405
+ERR_LOGIN_CODES     = {"401", "100002", "200401", "10000", "460101"}
+ERR_LOGIN_KEYWORDS  = ("please login", "login", "not logged", "unauthorized", "user not exist", "未登录")
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
@@ -110,6 +112,15 @@ def build_delivery_headers(cfg, token):
         "accept-encoding":   "gzip, deflate, br",
         "accept-language":   "en-PH,en-US;q=0.9,en;q=0.8",
     }
+
+
+# ─── login check ─────────────────────────────────────────────────────────────
+
+def is_login_error(top_code, top_msg):
+    if top_code in ERR_LOGIN_CODES:
+        return True
+    msg_lower = top_msg.lower()
+    return any(kw in msg_lower for kw in ERR_LOGIN_KEYWORDS)
 
 
 # ─── SSE helper ───────────────────────────────────────────────────────────────
@@ -203,6 +214,9 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         error_code   = str(info.get("errorCode") or "")
 
 
+        if is_login_error(top_code, top_msg):
+            emit(f"  🔒 NOT LOGGED IN — Please login. (code={top_code})")
+            return
         if top_code == str(ERR_ALREADY_CLAIMED):
             # Emit one warning line per code so the modal count matches the code count
             for code in codes:
@@ -291,7 +305,11 @@ def _collect_delivery(cfg, token, emit):
 
         code = str(data.get("code", ""))
         if code not in ("0", "200"):
-            emit(f"  ❌ API error: {data.get('msg', 'Unknown')}")
+            top_msg_d = str(data.get("msg", "Unknown"))
+            if is_login_error(code, top_msg_d):
+                emit(f"  🔒 NOT LOGGED IN — Please login. (code={code})")
+            else:
+                emit(f"  ❌ API error: {top_msg_d}")
             return
 
         info         = data.get("info") or {}
