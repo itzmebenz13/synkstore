@@ -2374,9 +2374,12 @@ dev-id: shein_8a47..."></textarea>
     var _results = { claimed: [], failed: [], warned: [], raw: [] };
 
     function classifyLine(line) {
-      // Check warning patterns FIRST — "ALREADY CLAIMED" must not be treated as a success
+      // Check warning patterns FIRST
       if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
-      if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 || (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0)) return 'ok';
+      // Success: star/checkmark emoji, CLAIMED keyword, or delivery-mode "N claimed"
+      if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 ||
+          (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0) ||
+          /\d+\s+claimed/.test(line)) return 'ok';
       if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
       return '';
     }
@@ -2388,11 +2391,35 @@ dev-id: shein_8a47..."></textarea>
       var sub = document.getElementById('run-modal-subtitle');
       var items = document.getElementById('run-modal-items');
 
-      // Count actual coupons claimed (not just lines) by parsing codes inside [...] per line
+      // Helper: parse a claimed line into an array of code strings
+      // Handles 3 server emit formats:
+      //   ✅ CLAIMED! codes=CODE1, CODE2         (no brackets)
+      //   ✅ CLAIMED! ['code1', 'code2']          (bracket list)
+      //   ✅ N claimed, M failed                  (count only)
+      function parseClaimedCodes(line) {
+        // Format 1: bracket list  ★ CLAIMED! [...] or ✅ CLAIMED! [...]
+        var mBracket = line.match(/CLAIMED[^[]*\[([^\]]+)\]/);
+        if (mBracket) {
+          return mBracket[1].split(',').map(function(s){ return s.trim().replace(/['"]/g,''); }).filter(Boolean);
+        }
+        // Format 2: codes=CODE1, CODE2, ...  (no brackets, stop at total= or end)
+        var mEq = line.match(/CLAIMED[^=]*=\s*([^[]+?)(?:\s+total=|$)/);
+        if (mEq) {
+          return mEq[1].split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        }
+        // Format 3: "N claimed" — extract the number
+        var mCount = line.match(/(\d+)\s+claimed/);
+        if (mCount) {
+          var n = parseInt(mCount[1], 10);
+          var codes = [];
+          for (var x = 0; x < n; x++) codes.push('✓');
+          return codes;
+        }
+        return ['✓'];
+      }
+
       var nClaimed = _results.claimed.reduce(function (sum, line) {
-        var m = line.match(/CLAIMED[^\[]*\[([^\]]+)\]/);
-        if (m) return sum + m[1].split(',').length;
-        return sum + 1;
+        return sum + parseClaimedCodes(line).length;
       }, 0);
       var nFailed = _results.failed.length;
       var nWarned = _results.warned.length;
@@ -2419,14 +2446,17 @@ dev-id: shein_8a47..."></textarea>
         sub.textContent = 'No actionable results detected.';
       }
 
-      // Render result chips — extract only the codes list, not total=N
+      // Render result chips — one chip per individual code, no "OK" fallback
       var html = '';
       if (_results.claimed.length) {
         html += '<div class="rm-chips">';
         _results.claimed.forEach(function (l) {
-          var m = l.match(/CLAIMED[^\[]*\[([^\]]+)\]/);
-          var label = m ? m[1].trim().substring(0, 60) : 'OK';
-          html += '<span class="rm-chip ok">\u2713 ' + esc(label) + '</span>';
+          var codes = parseClaimedCodes(l);
+          codes.forEach(function(code) {
+            if (code !== '✓') {
+              html += '<span class="rm-chip ok">\u2713 ' + esc(code.substring(0, 40)) + '</span>';
+            }
+          });
         });
         html += '</div>';
       }
