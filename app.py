@@ -199,9 +199,17 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         fail_list    = [str(c).strip() for c in (_fl if isinstance(_fl, list) else []) if c]
         result_list  = info.get("bindResult") or []
         result_list  = result_list if isinstance(result_list, list) else []
+        pkg_code     = str(info.get("couponPackageCode") or "")
+        error_code   = str(info.get("errorCode") or "")
+
+        # DEBUG — shows which branch will fire
+        emit(f"  🔍 top={top_code!r} pkg={pkg_code!r} err={error_code!r} ok={len(success_list)} fail={len(fail_list)} bindResult={type(info.get('bindResult')).__name__}[{len(result_list)}]")
+
 
         if top_code == str(ERR_ALREADY_CLAIMED):
-            emit("  ⚠️  ALREADY CLAIMED [501405]")
+            # Emit one warning line per code so the modal count matches the code count
+            for code in codes:
+                emit(f"  ⚠️  {code} — ALREADY CLAIMED [501405]")
         elif success_list:
             emit(f"  ✅ CLAIMED! codes={', '.join(success_list)}")
         elif result_list:
@@ -213,17 +221,22 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
                 if ec in ("0", "200", ""):  claimed_c.append(cv)
                 elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
                 else: other_c.append(f"{cv}[{ec}]")
-            if claimed_c:   emit(f"  ✅ CLAIMED! {claimed_c}")
-            if conflict_c:  emit(f"  ⚠️  ALREADY CLAIMED → {conflict_c}")
-            if other_c:     emit(f"  ❌ FAILED → {other_c}")
+            if claimed_c:
+                emit(f"  ✅ CLAIMED! {claimed_c}")
+            for code in conflict_c:
+                emit(f"  ⚠️  {code} — ALREADY CLAIMED [501405]")
+            if other_c:
+                emit(f"  ❌ FAILED → {other_c}")
         elif fail_list:
             emit(f"  ❌ FAILED {fail_list}")
         elif top_code not in ("0", "200", ""):
             emit(f"  ❌ ERR {top_code}: {top_msg[:80]}")
         elif top_code in ("0", "200"):
-            # code=0/200 with NO result lists — this is NOT a confirmed claim.
-            # SHEIN returns this silently when coupons are already owned, wrong pkg, or region mismatch.
-            emit(f"  ⚠️  Already owned or ambiguous (code={top_code}) — no claim detail returned by API")
+            # code=0/200 with NO result lists — NOT a confirmed claim.
+            # SHEIN returns this when coupons are already owned, wrong pkg, or region mismatch.
+            # Emit one warning line per code so the modal count is accurate.
+            for code in codes:
+                emit(f"  ⚠️  {code} — already owned or ambiguous (code={top_code})")
         else:
             emit(f"  ❓ Ambiguous response — code={top_code} msg={top_msg[:60]}")
 
