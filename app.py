@@ -220,6 +220,9 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
             emit(f"  ❌ FAILED {fail_list}")
         elif top_code not in ("0", "200", ""):
             emit(f"  ❌ ERR {top_code}: {top_msg[:80]}")
+        elif top_code in ("0", "200"):
+            # code=0/200 with no result lists = silent success (Shein doesn't always return lists)
+            emit(f"  ✅ CLAIMED! (code={top_code} msg={top_msg[:60]}) — no detail list returned by API")
         else:
             emit(f"  ❓ Ambiguous response — code={top_code} msg={top_msg[:60]}")
 
