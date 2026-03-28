@@ -242,7 +242,7 @@ GM0PHA_DEVICE_ID = "shein_3be5c0ff-9628-3d14-a923-7541c2494e60"  # Device ID for
 
 BRUTE_MODE       = False       # Set True to enable brute-force scan
 BRUTE_START      = 17130000    # Starting packageId
-BRUTE_END        = 17134000    # Ending packageId (inclusive)
+BRUTE_END        = 17140000    # Ending packageId (inclusive)
 BRUTE_THREADS    = 10          # Threads: 10 | 20 | 30
 BRUTE_MAX_CLAIMS = 1           # Stop after this many successful claims (0 = unlimited)
 
@@ -856,6 +856,20 @@ dev-id: shein_8a47..."></textarea>
     </div>
   </div>
 
+  <!-- PARSE HISTORY -->
+  <div class="panel" style="margin-bottom:14px">
+    <div class="ph">
+      <div class="pt">&#128336; PARSE HISTORY</div>
+      <span class="b b-blue" id="histcnt">0 entries</span>
+    </div>
+    <div id="hist-list" class="tv-list">
+      <div class="tv-empty" id="hist-empty">No history yet. Parse a RAW request to see entries here.</div>
+    </div>
+    <div class="tv-bar">
+      <button class="btn-s" id="histclearbtn">&#10005; CLEAR HISTORY</button>
+    </div>
+  </div>
+
   <!-- ROW 2: Voucher manager -->
   <div class="panel" style="margin-bottom:14px">
     <div class="ph">
@@ -870,6 +884,7 @@ dev-id: shein_8a47..."></textarea>
       <button class="btn-batch" data-batch="gm0pha">gm0pha <span class="badge-status badge-test">TESTING</span></button>
       <button class="btn-batch" data-batch="phsf0212ultra">phsf0212 ULTRA <span class="badge-status badge-test">TESTING</span></button>
       <button class="btn-batch" data-batch="ph031381">ph0313 81% <span class="badge-status badge-test">TESTING</span></button>
+      <button class="btn-batch" data-batch="phsf+ph0313">phsf + ph0313 <span class="badge-status badge-test">NEW</span></button>
     </div>
     <div class="vbody">
       <div class="vadd">
@@ -900,7 +915,7 @@ dev-id: shein_8a47..."></textarea>
       </div>
       <div class="bf-field">
         <span class="bf-label">&#9656; End Package ID</span>
-        <input class="bf-input" id="bf-end" type="number" value="17134000" placeholder="e.g. 17134000">
+        <input class="bf-input" id="bf-end" type="number" value="17140000" placeholder="e.g. 17140000">
       </div>
       <div class="bf-field">
         <span class="bf-label">&#9656; Threads</span>
@@ -994,6 +1009,112 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 var vouchers = [];
 var _bfThreads = 10;
 var _bfCountry = 'PH';
+var _parseHistory = [];
+
+// ================================================================
+// PARSE HISTORY
+// ================================================================
+function addParseHistory(parsed, changedCount) {
+  var token = parsed.TOKEN || parsed.GW_AUTH || '';
+  // Dedupe by token
+  for (var i = 0; i < _parseHistory.length; i++) {
+    if (_parseHistory[i].token === token) {
+      toast('w', '\u26a0 Duplicate token — history not updated');
+      return;
+    }
+  }
+  var now = new Date();
+  var pad = function(n){ return n < 10 ? '0'+n : n; };
+  var timeStr = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  var dateStr = pad(now.getMonth()+1)+'/'+pad(now.getDate())+' '+timeStr;
+  var uid = parsed.SORTUID || parsed.UGID || '—';
+  _parseHistory.unshift({ parsed: parsed, token: token, time: dateStr, uid: uid, changed: changedCount });
+  renderHistory();
+}
+
+function historyLoad(idx) {
+  var h = _parseHistory[idx];
+  if (!h) return;
+  // Re-run the same script-patching logic using stored parsed data
+  var script = ORIG;
+  var changed = [];
+  function repV(name, val) {
+    if (!val) return;
+    var re  = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
+    var next = script.replace(re, '$1"' + val.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"');
+    if (next !== script) { script = next; changed.push(name); }
+  }
+  var p = h.parsed;
+  repV('GW_AUTH',     p.GW_AUTH);
+  repV('ARMOR_TOKEN', p.ARMOR_TOKEN);
+  repV('SMDEVICE_ID', p.SMDEVICE_ID);
+  repV('UGID',        p.UGID);
+  repV('SORTUID',     p.SORTUID);
+  repV('DEVICE_ID',   p.DEVICE_ID);
+  repV('APPCOUNTRY',  p.APPCOUNTRY);
+  repV('USERCOUNTRY', p.USERCOUNTRY);
+  repV('LOCALCOUNTRY',p.LOCALCOUNTRY);
+  repV('CURRENCY',    p.CURRENCY);
+  repV('APPCURRENCY', p.APPCURRENCY);
+  repV('APP_VERSION', p.APP_VERSION);
+  repV('DEVICE_INFO', p.DEVICE_INFO);
+  if (p.TOKEN) {
+    var tokBlock = 'TOKENS = [\n    "' + p.TOKEN.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '",\n]';
+    script = script.replace(/TOKENS\s*=\s*\[[\s\S]*?\]/, tokBlock);
+    changed.push('TOKEN');
+  }
+  if (p.COUPON_PKG_ID) {
+    script = script.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + p.COUPON_PKG_ID + '"');
+    changed.push('COUPON_PKG_ID');
+  }
+  if (vouchers.length > 0) {
+    var vlines = '';
+    for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+    script = script.replace(/CODES\s*=\s*\[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
+  }
+  document.getElementById('scriptout').value = script;
+  updateTokenPreview(p, changed);
+  markUpdated('HISTORY #' + (idx+1));
+  var scriptTxt = script;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(scriptTxt).then(function(){ toast('s', '\u2713 Loaded history #' + (idx+1) + ' \u2014 script copied!'); })
+    .catch(function(){ fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx+1) + ' \u2014 copied (fallback)!'); });
+  } else { fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx+1)); }
+}
+
+function renderHistory() {
+  var list  = document.getElementById('hist-list');
+  var empty = document.getElementById('hist-empty');
+  document.getElementById('histcnt').textContent = _parseHistory.length + ' entr' + (_parseHistory.length === 1 ? 'y' : 'ies');
+  if (_parseHistory.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < _parseHistory.length; i++) {
+    var h = _parseHistory[i];
+    var preview = h.token.length > 44 ? h.token.slice(0,41)+'\u2026' : h.token;
+    html += '<div class="tv-item">'
+      + '<div class="tv-num">' + (i+1) + '</div>'
+      + '<div class="tv-tok">' + esc(preview) + '<span>uid:' + esc(h.uid) + ' \u00b7 ' + h.changed + ' fields \u00b7 ' + h.time + '</span></div>'
+      + '<button class="btn-load" data-hi="' + i + '">&#9654; LOAD</button>'
+      + '<button class="btn-rm" data-hi="' + i + '">&#10005;</button>'
+      + '</div>';
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.btn-load[data-hi]').forEach(function(btn){
+    btn.addEventListener('click', function(){ historyLoad(parseInt(this.getAttribute('data-hi'))); });
+  });
+  list.querySelectorAll('.btn-rm[data-hi]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = parseInt(this.getAttribute('data-hi'));
+      _parseHistory.splice(idx, 1);
+      renderHistory();
+      toast('i', 'Removed history entry');
+    });
+  });
+}
 
 // ================================================================
 // VOUCHER MANAGER
@@ -1160,8 +1281,26 @@ function doParse() {
 
   _lastParsed = parsed;
   markUpdated(changed.length + ' tokens');
-  toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated');
-  showCopyPopup();
+
+  // Auto-copy output script
+  var scriptTxt = document.getElementById('scriptout').value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(scriptTxt).then(function(){
+      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 script auto-copied!');
+    }).catch(function(){
+      fallbackCopy(scriptTxt);
+      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 copied (fallback)!');
+    });
+  } else {
+    fallbackCopy(scriptTxt);
+    toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 copied!');
+  }
+
+  // Clear RAW input
+  document.getElementById('rawin').value = '';
+
+  // Add to parse history (dedupe by token)
+  addParseHistory(parsed, changed.length);
 }
 
 function updateTokenPreview(parsed, changed) {
@@ -1259,6 +1398,11 @@ var CODE_BATCHES = {
   },
   'ph031381': {
     codes: ['ph0313n5','ph0313n10','ph0313n15','ph0313n19'],
+    pkgId: '17139475',
+    type:  'bind'
+  },
+  'phsf+ph0313': {
+    codes: ['phsf021210','phsf021209','ph0313n6','phsf021208'],
     pkgId: '17139475',
     type:  'bind'
   },
@@ -1525,6 +1669,8 @@ document.getElementById('dlbtn').addEventListener('click', doDownload);
 document.getElementById('resetbtn').addEventListener('click', doReset);
 document.getElementById('vinput').addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();doAdd();} });
 document.getElementById('rawin').addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();doParse();} });
+document.getElementById('histclearbtn').addEventListener('click', function(){ _parseHistory=[]; renderHistory(); toast('i','History cleared'); });
+renderHistory();
 </script>
 </body>
 </html>
