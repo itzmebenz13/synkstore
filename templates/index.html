@@ -2301,14 +2301,6 @@ dev-id: shein_8a47..."></textarea>
     document.getElementById('vaultsavebtn').addEventListener('click', vaultSave);
     document.getElementById('vaultclearbtn').addEventListener('click', function () { _vault = []; vaultPersist(); renderVault(); toast('i', 'Vault cleared'); });
     renderVault();
-    // ── MIN RAW LENGTH — anything shorter than a real RAW request is rejected ──
-    var MIN_RAW_LEN = 300;
-
-    function isValidRaw(text) {
-      return text.trim().length >= MIN_RAW_LEN &&
-             (text.indexOf('token') >= 0 || text.indexOf('armortoken') >= 0 || text.indexOf('x-gw-auth') >= 0);
-    }
-
     // ── AUTO MODE state ──
     var _autoMode = false;
     var _autoToggleEl  = document.getElementById('auto-toggle');
@@ -2335,10 +2327,6 @@ dev-id: shein_8a47..."></textarea>
       var el = document.getElementById('rawin');
 
       function handleText(text) {
-        if (!isValidRaw(text)) {
-          toast('e', '\u2715 Not a valid RAW request — too short or missing token headers');
-          return;
-        }
         el.value = text;
         if (_autoMode) {
           doParse();
@@ -2379,16 +2367,8 @@ dev-id: shein_8a47..."></textarea>
     document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
     document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
     document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-    // Validate paste into rawin — block invalid, auto-run if AUTO mode
+    // AUTO mode: fire doParse after paste lands naturally
     document.getElementById('rawin').addEventListener('paste', function(e) {
-      var text = (e.clipboardData || window.clipboardData).getData('text');
-      if (!isValidRaw(text)) {
-        e.preventDefault();
-        toast('e', '\u2715 Pasted text is too short or missing token headers \u2014 not a valid RAW request');
-        return;
-      }
-      // Let the text land naturally — never preventDefault on valid pastes.
-      // In AUTO mode, just fire doParse after the paste event finishes.
       if (_autoMode) {
         setTimeout(doParse, 50);
       }
