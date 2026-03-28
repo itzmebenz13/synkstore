@@ -1457,7 +1457,15 @@
       <div class="panel">
         <div class="ph">
           <div class="pt">&#8595; APP RAW REQUEST INPUT</div>
-          <span class="b b-blue">PASTE HERE</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label id="auto-label" style="font-size:.68rem;font-weight:600;color:var(--dim);cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px">
+              <span id="auto-mode-text">MANUAL</span>
+              <div id="auto-toggle" style="width:32px;height:17px;border-radius:9px;background:var(--mut);position:relative;transition:background .2s;cursor:pointer;flex-shrink:0">
+                <div id="auto-thumb" style="width:13px;height:13px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s"></div>
+              </div>
+            </label>
+            <span class="b b-blue">PASTE HERE</span>
+          </div>
         </div>
         <textarea id="rawin" placeholder="Paste your RAW app request here...
 
@@ -1472,7 +1480,7 @@ x-gw-auth: a=vhOvo...
 dev-id: shein_8a47..."></textarea>
         <div class="br">
           <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE SCRIPT</button>
-          <button class="btn-s" id="clearbtn">&#10005; CLEAR</button>
+          <button class="btn-s" id="pastebtn">&#128203; PASTE</button>
         </div>
       </div>
 
@@ -1979,7 +1987,13 @@ dev-id: shein_8a47..."></textarea>
 
       _lastParsed = parsed;
       markUpdated(changed.length + ' tokens');
-      toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
+      toast('s', _autoMode ? '\u26a1 Auto mode: parsing and launching\u2026' : '\u2713 Token parsed successfully \u2014 ready to RUN!');
+      if (_autoMode) {
+        setTimeout(function() {
+          var runBtn = document.getElementById('runbtn');
+          if (runBtn && !_running) runBtn.click();
+        }, 150);
+      }
 
 
 
@@ -2287,13 +2301,79 @@ dev-id: shein_8a47..."></textarea>
     document.getElementById('vaultsavebtn').addEventListener('click', vaultSave);
     document.getElementById('vaultclearbtn').addEventListener('click', function () { _vault = []; vaultPersist(); renderVault(); toast('i', 'Vault cleared'); });
     renderVault();
+    // ── MIN RAW LENGTH — anything shorter than a real RAW request is rejected ──
+    var MIN_RAW_LEN = 300;
+
+    function isValidRaw(text) {
+      return text.trim().length >= MIN_RAW_LEN &&
+             (text.indexOf('token') >= 0 || text.indexOf('armortoken') >= 0 || text.indexOf('x-gw-auth') >= 0);
+    }
+
+    // ── AUTO MODE state ──
+    var _autoMode = false;
+    var _autoToggleEl  = document.getElementById('auto-toggle');
+    var _autoThumbEl   = document.getElementById('auto-thumb');
+    var _autoTextEl    = document.getElementById('auto-mode-text');
+
+    function setAutoMode(on) {
+      _autoMode = on;
+      _autoToggleEl.style.background = on ? 'var(--acc)' : 'var(--mut)';
+      _autoThumbEl.style.left = on ? '17px' : '2px';
+      _autoTextEl.textContent = on ? 'AUTO' : 'MANUAL';
+      _autoTextEl.style.color = on ? 'var(--ok)' : 'var(--dim)';
+      localStorage.setItem('ssu_auto_mode', on ? '1' : '0');
+    }
+
+    // Restore saved auto mode
+    setAutoMode(localStorage.getItem('ssu_auto_mode') === '1');
+
+    document.getElementById('auto-toggle').addEventListener('click', function() { setAutoMode(!_autoMode); });
+    document.getElementById('auto-label').addEventListener('click', function(e) { if (e.target !== _autoToggleEl && e.target !== _autoThumbEl) setAutoMode(!_autoMode); });
+
+    // ── PASTE button ──
+    document.getElementById('pastebtn').addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        toast('e', 'Clipboard access not available in this browser'); return;
+      }
+      navigator.clipboard.readText().then(function(text) {
+        if (!isValidRaw(text)) {
+          toast('e', '✕ Clipboard text is too short or missing token headers — not a valid RAW request');
+          return;
+        }
+        var el = document.getElementById('rawin');
+        el.value = text;
+        if (_autoMode) {
+          doParse();
+        } else {
+          toast('s', '✓ Pasted — click PARSE to continue');
+        }
+      }).catch(function() {
+        toast('e', 'Could not read clipboard — allow clipboard permission and try again');
+      });
+    });
+
+    // ── PARSE button ──
     document.getElementById('parsebtn').addEventListener('click', doParse);
-    document.getElementById('clearbtn').addEventListener('click', function () { document.getElementById('rawin').value = ''; });
     document.getElementById('addbtn').addEventListener('click', doAdd);
     document.getElementById('applybtn').addEventListener('click', doApply);
     document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
     document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
     document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    // Block paste into rawin if text is too short / missing token headers
+    document.getElementById('rawin').addEventListener('paste', function(e) {
+      var text = (e.clipboardData || window.clipboardData).getData('text');
+      if (!isValidRaw(text)) {
+        e.preventDefault();
+        toast('e', '✕ Pasted text is too short or missing token headers — not a valid RAW request');
+        return;
+      }
+      if (_autoMode) {
+        e.preventDefault();
+        var el = document.getElementById('rawin');
+        el.value = text;
+        setTimeout(doParse, 50);
+      }
+    });
     document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
     document.getElementById('histclearbtn').addEventListener('click', function () { _parseHistory = []; renderHistory(); toast('i', 'History cleared'); });
     renderHistory();
