@@ -1897,9 +1897,8 @@ dev-id: shein_8a47..."></textarea>
     // RAW PARSER
     // ================================================================
     function isAutoMode() {
-      // Read live from DOM — bypasses any variable sync issue
       var el = document.getElementById('auto-mode-text');
-      return el && el.textContent === 'AUTO';
+      return el && el.textContent.trim() === 'AUTO';
     }
 
     function getHdr(raw, name) {
@@ -1999,13 +1998,14 @@ dev-id: shein_8a47..."></textarea>
       // Add to parse history (dedupe by token)
       addParseHistory(parsed, changed.length);
 
+      toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
       if (isAutoMode()) {
         toast('s', '\u26a1 Auto mode: launching runner\u2026');
         document.getElementById('runbadge').textContent = 'AUTO-STARTING\u2026';
         document.getElementById('runbadge').className = 'b b-orange';
-        setTimeout(function() { doRun(); }, 600);
-      } else {
-        toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
+        setTimeout(function() {
+          document.getElementById('runbtn').click();
+        }, 600);
       }
     }
 
