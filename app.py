@@ -7,7 +7,7 @@ import queue
 import requests
 import urllib3
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from flask import Flask, request, Response, jsonify
+from flask import Flask, request, Response, jsonify, render_template
 from flask_cors import CORS
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -452,6 +452,11 @@ def _run_brute(cfg, q):
 
 
 # ─── routes ───────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
 
 @app.route("/health")
 def health():
