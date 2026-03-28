@@ -1990,8 +1990,7 @@ dev-id: shein_8a47..."></textarea>
       toast('s', _autoMode ? '\u26a1 Auto mode: parsing and launching\u2026' : '\u2713 Token parsed successfully \u2014 ready to RUN!');
       if (_autoMode) {
         setTimeout(function() {
-          var runBtn = document.getElementById('runbtn');
-          if (runBtn && !_running) runBtn.click();
+          if (!_running) doRun();
         }, 150);
       }
 
@@ -2324,39 +2323,12 @@ dev-id: shein_8a47..."></textarea>
 
     // ── PASTE button ──
     document.getElementById('pastebtn').addEventListener('click', function () {
+      // Don't use Clipboard API — it loses the user gesture context on mobile Chrome.
+      // Just focus the field; the browser's native long-press paste does the rest.
       var el = document.getElementById('rawin');
-
-      function handleText(text) {
-        if (_autoMode) {
-          // Pass text directly — don't touch the field to avoid double-parse
-          doParse(text);
-        } else {
-          el.value = text;
-          toast('s', '\u2713 Pasted \u2014 click PARSE to continue');
-        }
-      }
-
-      // Try Clipboard API first
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        navigator.clipboard.readText().then(handleText).catch(function () {
-          // Chrome normal tab bug: API failed even with permission.
-          // Fall back: focus the field and let the user paste with Ctrl+V / long-press.
-          el.value = '';
-          el.focus();
-          toast('w', '\u26a0 Tap the input field and paste manually (Chrome clipboard bug)');
-
-          // One-shot paste event listener as backup
-          el.addEventListener('paste', function onFallbackPaste(e) {
-            var text = (e.clipboardData || window.clipboardData).getData('text');
-            handleText(text);
-          }, { once: true });
-        });
-      } else {
-        // No Clipboard API at all — just focus and prompt
-        el.value = '';
-        el.focus();
-        toast('i', 'Clipboard API unavailable \u2014 tap the field and paste manually');
-      }
+      el.value = '';
+      el.focus();
+      toast('i', '\u261D Long-press the field and tap Paste');
     });
 
     // ── PARSE button ──
@@ -2366,11 +2338,12 @@ dev-id: shein_8a47..."></textarea>
     document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
     document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
     document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-    // AUTO mode: grab text from paste event and pass directly to doParse
+    // Single paste handler — AUTO fires parse+run, MANUAL just lets text land
     document.getElementById('rawin').addEventListener('paste', function(e) {
       if (_autoMode) {
         var text = (e.clipboardData || window.clipboardData).getData('text');
-        setTimeout(function() { doParse(text); }, 50);
+        // Let the paste land in the field first, then parse
+        setTimeout(function() { doParse(text); }, 80);
       }
     });
     document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
@@ -2710,7 +2683,7 @@ dev-id: shein_8a47..."></textarea>
       }
     }
 
-    document.getElementById('runbtn').addEventListener('click', function () {
+    function doRun() {
       var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
       var key = document.getElementById('run-key').value.trim();
       if (!url) { toast('e', 'Enter your Railway server URL first'); return; }
@@ -2767,8 +2740,9 @@ dev-id: shein_8a47..."></textarea>
           toast('e', 'Runner error: ' + err.message);
         }
       });
-    });
+    }
 
+    document.getElementById('runbtn').addEventListener('click', doRun);
     document.getElementById('stopbtn').addEventListener('click', function () {
       if (_runAbort) { _runAbort.abort(); _runAbort = null; }
       setRunning(false);
