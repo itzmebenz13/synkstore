@@ -1,368 +1,1356 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#09090b">
-<title>SHEIN Script Updater</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
-<script>
-(function(){var t=localStorage.getItem('ssu_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
-</script>
-<style>
-:root{
-  --bg:#f4f4f5;--card:#ffffff;--inp:#fafafa;--hov:#e4e4e7;
-  --b1:#e4e4e7;--b2:#d4d4d8;
-  --acc:#16a34a;--accH:#15803d;--accT:#ffffff;
-  --txt:#09090b;--dim:#71717a;--mut:#a1a1aa;
-  --code:#f9fafb;--codeT:#15803d;
-  --ok:#16a34a;--warn:#d97706;--err:#dc2626;
-  --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px -4px rgba(0,0,0,.08);
-  --r:14px;--rb:10px;--ri:10px;
-}
-[data-theme="dark"]{
-  --bg:#09090b;--card:#111113;--inp:#0e0e10;--hov:#1e1e21;
-  --b1:#232326;--b2:#3a3a40;
-  --acc:#22c55e;--accH:#16a34a;--accT:#ffffff;
-  --txt:#f5f5f5;--dim:#a1a1aa;--mut:#52525b;
-  --code:#0a0c0e;--codeT:#22c55e;
-  --ok:#22c55e;--warn:#fbbf24;--err:#f87171;
-  --shadow:0 4px 24px -4px rgba(0,0,0,.55);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{font-size:13px;scroll-behavior:smooth}
-body{
-  background:var(--bg);color:var(--txt);
-  font-family:'Inter',sans-serif;
-  min-height:100vh;overflow-x:hidden;
-  transition:background .2s,color .2s;
-}
-.wrap{
-  position:relative;z-index:1;
-  max-width:900px;margin:0 auto;
-  padding:20px 18px 60px;
-}
-header{
-  display:flex;align-items:center;gap:12px;
-  margin-bottom:22px;padding-bottom:16px;
-  border-bottom:1px solid var(--b1);
-}
-.logo{
-  width:38px;height:38px;flex-shrink:0;
-  background:var(--acc);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:15px;font-weight:800;color:#fff;
-}
-header h1{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:1rem;font-weight:700;
-  color:var(--txt);letter-spacing:-0.02em;
-}
-header p{font-size:.7rem;color:var(--dim);margin-top:2px}
-.hright{margin-left:auto;display:flex;align-items:center;gap:8px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--mut);flex-shrink:0}
-.dot.on{background:var(--acc);box-shadow:0 0 0 3px rgba(34,197,94,.18);animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-#stext{font-size:.7rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
-.theme-toggle{
-  background:transparent;border:1px solid var(--b1);
-  color:var(--dim);cursor:pointer;
-  width:30px;height:30px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .2s;font-size:14px;padding:0;
-}
-.theme-toggle:hover{background:var(--hov);border-color:var(--b2);color:var(--txt)}
-#sum{
-  display:none;margin-bottom:14px;padding:10px 14px;
-  background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);
-  border-radius:10px;font-size:.77rem;color:var(--ok);
-  align-items:center;gap:8px;flex-wrap:wrap;
-}
-#sum.on{display:flex}
-.chip{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);border-radius:5px;padding:1px 8px;font-size:.7rem}
-[data-theme="light"] #sum{background:rgba(22,163,74,.07);border-color:rgba(22,163,74,.2);color:#15803d}
-[data-theme="light"] .chip{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.25)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-@media(max-width:720px){.g2{grid-template-columns:1fr}}
-.panel{
-  background:var(--card);border:1px solid var(--b1);
-  border-radius:var(--r);overflow:hidden;
-  box-shadow:var(--shadow);margin-bottom:14px;
-}
-.ph{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:11px 15px;border-bottom:1px solid var(--b1);
-}
-.pt{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:.68rem;font-weight:700;
-  letter-spacing:.07em;text-transform:uppercase;
-  color:var(--dim);
-}
-.b{font-size:.68rem;padding:2px 8px;border-radius:5px;font-weight:600;letter-spacing:.3px}
-.b-blue{background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.25)}
-.b-orange{background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.25)}
-.b-green{background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.25)}
-.b-yellow{background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:2px 10px}
-[data-theme="light"] .b-green{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.25)}
-#nchanged{display:none}
-textarea{
-  width:100%;background:var(--inp);color:var(--txt);
-  font-family:'JetBrains Mono',monospace;
-  font-size:.78rem;line-height:1.65;
-  border:none;outline:none;padding:13px;
-  resize:vertical;min-height:230px;tab-size:2;
-}
-textarea::placeholder{color:var(--mut)}
-textarea:focus{box-shadow:inset 0 0 0 1.5px rgba(34,197,94,.2)}
-[data-theme="light"] textarea{color:#09090b}
-.script-ta{color:var(--codeT);font-size:.75rem;min-height:320px;white-space:pre;tab-size:4}
-.br{padding:11px 13px;display:flex;gap:7px;border-top:1px solid var(--b1);flex-wrap:wrap}
-button{
-  font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;
-  padding:7px 13px;border-radius:var(--rb);border:none;
-  cursor:pointer;letter-spacing:.3px;
-  transition:all .18s;display:flex;align-items:center;gap:5px;
-}
-.btn-p{background:var(--acc);color:var(--accT);flex:1;justify-content:center}
-.btn-p:hover{background:var(--accH);transform:translateY(-1px);box-shadow:0 4px 12px rgba(34,197,94,.28)}
-[data-theme="light"] .btn-p:hover{box-shadow:0 4px 12px rgba(22,163,74,.28)}
-.btn-s{background:var(--hov);color:var(--dim);border:1px solid var(--b1)}
-.btn-s:hover{background:var(--b1);color:var(--txt)}
-.btn-g{background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.25)}
-.btn-g:hover{background:rgba(34,197,94,.18)}
-[data-theme="light"] .btn-g{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.25)}
-.btn-o{background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.25)}
-.btn-o:hover{background:rgba(249,115,22,.18)}
-.btn-add{background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.25);padding:6px 12px}
-.btn-add:hover{background:rgba(34,197,94,.2)}
-[data-theme="light"] .btn-add{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.25)}
-.btn-rm{background:rgba(220,38,38,.07);color:var(--err);border:1px solid rgba(220,38,38,.2);padding:3px 8px;font-size:.68rem;border-radius:6px}
-.btn-rm:hover{background:rgba(220,38,38,.15)}
-.tg{display:flex;flex-direction:column;gap:1px;background:var(--b1)}
-.tr{display:grid;grid-template-columns:120px 1fr;background:var(--card)}
-.tk{padding:6px 11px;font-size:.68rem;color:var(--acc);border-right:1px solid var(--b1);letter-spacing:.4px;display:flex;align-items:center;font-family:'JetBrains Mono',monospace}
-[data-theme="light"] .tk{color:#15803d}
-.tv{padding:6px 11px;font-size:.68rem;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'JetBrains Mono',monospace}
-.tv.ok{color:var(--ok);background:rgba(34,197,94,.06)}
-[data-theme="light"] .tv.ok{color:#15803d;background:rgba(22,163,74,.06)}
-.tv.dim{color:var(--mut)}
-.vbody{padding:13px}
-.vadd{display:flex;gap:7px;margin-bottom:11px}
-#vinput{
-  flex:1;background:var(--inp);color:var(--txt);
-  font-family:'JetBrains Mono',monospace;font-size:.8rem;
-  border:1px solid var(--b1);border-radius:var(--ri);
-  padding:6px 11px;outline:none;
-}
-#vinput:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,197,94,.08)}
-[data-theme="light"] #vinput:focus{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.08)}
-#vinput::placeholder{color:var(--mut)}
-.vlist{display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto}
-.vi{display:flex;align-items:center;justify-content:space-between;background:var(--inp);border:1px solid var(--b1);border-radius:8px;padding:6px 10px}
-.vi:hover{border-color:var(--b2)}
-.vc{font-size:.8rem;color:var(--txt);letter-spacing:.3px;font-family:'JetBrains Mono',monospace}
-.vempty{text-align:center;padding:20px;color:var(--mut);font-size:.77rem}
-.batch-row{display:flex;gap:7px;padding:11px 13px;border-bottom:1px solid var(--b1);flex-wrap:wrap;align-items:center}
-.batch-label{font-size:.68rem;color:var(--mut);letter-spacing:.5px;margin-right:2px}
-.btn-batch{background:var(--hov);color:var(--dim);border:1px solid var(--b1);padding:5px 12px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-batch:hover{background:var(--b1);color:var(--txt)}
-.btn-batch.active{background:rgba(34,197,94,.12);color:var(--ok);border-color:rgba(34,197,94,.3)}
-[data-theme="light"] .btn-batch.active{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.3)}
-.badge-status{font-size:.6rem;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle}
-.badge-active{background:rgba(34,197,94,.15);color:var(--ok);border:1px solid rgba(34,197,94,.3)}
-.badge-test{background:rgba(245,158,11,.12);color:var(--warn);border:1px solid rgba(245,158,11,.28)}
-[data-theme="light"] .badge-active{color:#15803d}
-.bf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px}
-@media(max-width:540px){.bf-grid{grid-template-columns:1fr}}
-.bf-field{display:flex;flex-direction:column;gap:5px}
-.bf-label{font-size:.68rem;color:var(--acc);letter-spacing:.5px;text-transform:uppercase;font-weight:600}
-[data-theme="light"] .bf-label{color:#15803d}
-.bf-input{
-  background:var(--inp);color:var(--txt);
-  font-family:'JetBrains Mono',monospace;font-size:.8rem;
-  border:1px solid var(--b1);border-radius:var(--ri);
-  padding:6px 11px;outline:none;width:100%;
-}
-.bf-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,197,94,.08)}
-.btn-thread{background:var(--hov);color:var(--dim);border:1px solid var(--b1);padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-thread.active,.btn-thread:hover{background:rgba(249,115,22,.12);color:#f97316;border-color:rgba(249,115,22,.3)}
-.thread-row,.country-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-.btn-country{background:var(--hov);color:var(--dim);border:1px solid var(--b1);padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-country.active,.btn-country:hover{background:rgba(34,197,94,.12);color:var(--ok);border-color:rgba(34,197,94,.3)}
-[data-theme="light"] .btn-country.active,[data-theme="light"] .btn-country:hover{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.3)}
-.bf-note{font-size:.7rem;color:var(--dim);padding:10px 13px;line-height:1.7;border-top:1px solid var(--b1)}
-#copypopup{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(.88);
-  opacity:0;pointer-events:none;z-index:998;
-  transition:all .22s cubic-bezier(.34,1.56,.64,1);
-  background:var(--card);border:1px solid var(--b2);
-  border-radius:var(--r);padding:22px 28px;
-  text-align:center;min-width:250px;
-  box-shadow:0 20px 60px rgba(0,0,0,.3);
-}
-#copypopup.on{opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1)}
-#copypopup h3{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:var(--acc);margin-bottom:5px}
-#copypopup p{font-size:.75rem;color:var(--dim);margin-bottom:16px}
-#copypopcopy{background:var(--acc);color:var(--accT);font-family:'Inter',sans-serif;font-size:.82rem;font-weight:700;padding:9px 22px;border-radius:var(--rb);border:none;cursor:pointer;width:100%;letter-spacing:.3px;transition:all .15s}
-#copypopcopy:hover{background:var(--accH)}
-#copypopclose{background:transparent;color:var(--mut);font-size:.72rem;border:none;cursor:pointer;margin-top:8px;width:100%;padding:4px}
-#copypopclose:hover{color:var(--txt)}
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:997;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px)}
-#overlay.on{opacity:1;pointer-events:all}
-.tv-list{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;padding:11px 13px}
-.tv-item{display:grid;grid-template-columns:26px 1fr auto auto;align-items:center;gap:8px;background:var(--inp);border:1px solid var(--b1);border-radius:8px;padding:7px 10px;transition:border-color .15s}
-.tv-item:hover{border-color:var(--b2)}
-.tv-num{font-size:.75rem;color:var(--mut);font-weight:700;text-align:center}
-.tv-tok{font-size:.7rem;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.2px;font-family:'JetBrains Mono',monospace}
-.tv-tok span{color:var(--mut);font-size:.65rem;display:block;margin-top:1px}
-.btn-load{background:rgba(34,197,94,.1);color:var(--ok);border:1px solid rgba(34,197,94,.25);padding:4px 10px;border-radius:5px;font-size:.68rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
-.btn-load:hover{background:rgba(34,197,94,.22)}
-[data-theme="light"] .btn-load{background:rgba(22,163,74,.1);color:#15803d;border-color:rgba(22,163,74,.25)}
-.btn-del{background:rgba(220,38,38,.07);color:var(--err);border:1px solid rgba(220,38,38,.2);padding:4px 8px;border-radius:5px;font-size:.68rem;font-weight:600;cursor:pointer;transition:all .15s}
-.btn-del:hover{background:rgba(220,38,38,.18)}
-.tv-empty{text-align:center;padding:20px;color:var(--mut);font-size:.77rem}
-.tv-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;border-top:1px solid var(--b1);flex-wrap:wrap}
-.tv-count{font-size:.7rem;color:var(--mut);margin-left:auto}
-#toast{
-  position:fixed;bottom:20px;right:20px;
-  padding:10px 16px;border-radius:9px;font-size:.8rem;font-weight:500;
-  display:flex;align-items:center;gap:7px;
-  transform:translateY(60px);opacity:0;
-  transition:all .28s cubic-bezier(.34,1.56,.64,1);
-  z-index:999;max-width:290px;pointer-events:none;
-  font-family:'Inter',sans-serif;
-}
-#toast.on{transform:translateY(0);opacity:1}
-#toast.s{background:#052e16;border:1px solid var(--ok);color:var(--ok)}
-#toast.e{background:#450a0a;border:1px solid var(--err);color:var(--err)}
-#toast.i{background:#0c1a2e;border:1px solid #3b82f6;color:#3b82f6}
-#toast.w{background:#2d1700;border:1px solid var(--warn);color:var(--warn)}
-[data-theme="light"] #toast.s{background:#f0fdf4;color:#15803d;border-color:rgba(22,163,74,.4)}
-[data-theme="light"] #toast.e{background:#fef2f2;color:#dc2626;border-color:rgba(220,38,38,.3)}
-[data-theme="light"] #toast.i{background:#eff6ff;color:#2563eb;border-color:rgba(37,99,235,.3)}
-[data-theme="light"] #toast.w{background:#fffbeb;color:#92400e;border-color:rgba(217,119,6,.3)}
-.runner-cfg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px}
-@media(max-width:540px){.runner-cfg{grid-template-columns:1fr}}
-.runner-field{display:flex;flex-direction:column;gap:5px}
-.runner-label{font-size:.68rem;color:var(--acc);letter-spacing:.5px;text-transform:uppercase;font-weight:600}
-[data-theme="light"] .runner-label{color:#15803d}
-.runner-input{
-  background:var(--inp);color:var(--txt);
-  font-family:'JetBrains Mono',monospace;font-size:.8rem;
-  border:1px solid var(--b1);border-radius:var(--ri);
-  padding:6px 11px;outline:none;width:100%;
-}
-.runner-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(34,197,94,.08)}
-#terminal{
-  background:var(--code);border-top:1px solid var(--b1);
-  padding:12px 13px;font-family:'JetBrains Mono',monospace;
-  font-size:.75rem;line-height:1.75;color:var(--codeT);
-  min-height:180px;max-height:400px;overflow-y:auto;
-  white-space:pre-wrap;word-break:break-all;
-}
-[data-theme="light"] #terminal{color:#15803d}
-#terminal .t-ok{color:var(--ok)}
-#terminal .t-err{color:var(--err)}
-#terminal .t-warn{color:var(--warn)}
-#terminal .t-head{color:var(--txt);font-weight:700}
-#terminal .t-dim{color:var(--mut)}
-.btn-run{background:var(--acc);color:var(--accT);font-weight:700;flex:1;justify-content:center;font-size:.82rem;letter-spacing:.4px}
-.btn-run:hover{background:var(--accH);transform:translateY(-1px);box-shadow:0 4px 14px rgba(34,197,94,.3)}
-[data-theme="light"] .btn-run:hover{box-shadow:0 4px 14px rgba(22,163,74,.3)}
-.btn-run:disabled{background:var(--hov);color:var(--mut);cursor:not-allowed;transform:none;box-shadow:none}
-.btn-stop{background:rgba(220,38,38,.1);color:var(--err);border:1px solid rgba(220,38,38,.25)}
-.btn-stop:hover{background:rgba(220,38,38,.2)}
-/* ── RUNNER LOADING OVERLAY ── */
-#run-loading{
-  display:none;flex-direction:column;
-  align-items:center;justify-content:center;gap:18px;
-}
-#run-loading.active{display:flex}
-#run-spinner{
-  width:52px;height:52px;
-  border:3px solid rgba(255,255,255,.15);
-  border-top-color:var(--acc);
-  border-radius:50%;
-  animation:spin 0.85s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-/* ── RESULTS MODAL ── */
-#run-modal{
-  display:none;flex-direction:column;
-  align-items:center;justify-content:center;
-}
-#run-modal.active{display:flex}
-#run-modal-card{
-  background:var(--card);
-  border:1px solid var(--b1);
-  border-radius:20px;
-  padding:28px 24px 22px;
-  width:100%;max-width:420px;
-  box-shadow:0 24px 60px rgba(0,0,0,.45);
-  display:flex;flex-direction:column;
-  align-items:center;gap:10px;
-  animation:modalPop .3s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes modalPop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
-#run-modal-icon{
-  font-size:2.8rem;line-height:1;
-  margin-bottom:2px;
-}
-#run-modal-title{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:1.2rem;font-weight:700;
-  color:var(--txt);text-align:center;
-}
-#run-modal-subtitle{
-  font-size:.78rem;color:var(--dim);
-  text-align:center;line-height:1.5;
-  margin-bottom:4px;
-}
-#run-modal-items{
-  width:100%;
-  display:flex;flex-direction:column;gap:6px;
-  max-height:220px;overflow-y:auto;
-  margin-bottom:4px;
-}
-.rm-item{
-  display:flex;align-items:center;gap:10px;
-  background:var(--inp);
-  border:1px solid var(--b1);
-  border-radius:10px;
-  padding:9px 12px;
-}
-.rm-item.ok{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.06)}
-.rm-item.err{border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.05)}
-.rm-item.warn{border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.05)}
-.rm-icon{font-size:1rem;flex-shrink:0}
-.rm-text{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--txt);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rm-sub{font-size:.65rem;color:var(--dim);margin-top:1px}
-/* chips row */
-.rm-chips{display:flex;gap:5px;flex-wrap:wrap;width:100%;justify-content:center}
-.rm-chip{
-  font-family:'JetBrains Mono',monospace;
-  font-size:.72rem;font-weight:600;
-  padding:4px 10px;border-radius:6px;
-}
-.rm-chip.ok{background:rgba(34,197,94,.12);color:var(--ok);border:1px solid rgba(34,197,94,.3)}
-.rm-chip.err{background:rgba(220,38,38,.1);color:var(--err);border:1px solid rgba(220,38,38,.25)}
-.rm-chip.warn{background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.25)}
-[data-theme="light"] .rm-chip.ok{color:#15803d}
-.run-status{font-size:.72rem;color:var(--dim);margin:auto 0;padding-left:6px}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#09090b">
+  <title>SHEIN Script Updater</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    (function () { var t = localStorage.getItem('ssu_theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+  </script>
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --card: #ffffff;
+      --inp: #fafafa;
+      --hov: #e4e4e7;
+      --b1: #e4e4e7;
+      --b2: #d4d4d8;
+      --acc: #16a34a;
+      --accH: #15803d;
+      --accT: #ffffff;
+      --txt: #09090b;
+      --dim: #71717a;
+      --mut: #a1a1aa;
+      --code: #f9fafb;
+      --codeT: #15803d;
+      --ok: #16a34a;
+      --warn: #d97706;
+      --err: #dc2626;
+      --shadow: 0 1px 4px rgba(0, 0, 0, .06), 0 4px 16px -4px rgba(0, 0, 0, .08);
+      --r: 14px;
+      --rb: 10px;
+      --ri: 10px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #09090b;
+      --card: #111113;
+      --inp: #0e0e10;
+      --hov: #1e1e21;
+      --b1: #232326;
+      --b2: #3a3a40;
+      --acc: #22c55e;
+      --accH: #16a34a;
+      --accT: #ffffff;
+      --txt: #f5f5f5;
+      --dim: #a1a1aa;
+      --mut: #52525b;
+      --code: #0a0c0e;
+      --codeT: #22c55e;
+      --ok: #22c55e;
+      --warn: #fbbf24;
+      --err: #f87171;
+      --shadow: 0 4px 24px -4px rgba(0, 0, 0, .55);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      font-size: 13px;
+      scroll-behavior: smooth
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background .2s, color .2s;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 18px 60px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--b1);
+    }
+
+    .logo {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      background: var(--acc);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    header h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--txt);
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      font-size: .7rem;
+      color: var(--dim);
+      margin-top: 2px
+    }
+
+    .hright {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--mut);
+      flex-shrink: 0
+    }
+
+    .dot.on {
+      background: var(--acc);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .18);
+      animation: blink 2s infinite
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .3
+      }
+    }
+
+    #stext {
+      font-size: .7rem;
+      color: var(--dim);
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--b1);
+      color: var(--dim);
+      cursor: pointer;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      font-size: 14px;
+      padding: 0;
+    }
+
+    .theme-toggle:hover {
+      background: var(--hov);
+      border-color: var(--b2);
+      color: var(--txt)
+    }
+
+    #sum {
+      display: none;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      background: rgba(34, 197, 94, .07);
+      border: 1px solid rgba(34, 197, 94, .2);
+      border-radius: 10px;
+      font-size: .77rem;
+      color: var(--ok);
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #sum.on {
+      display: flex
+    }
+
+    .chip {
+      background: rgba(34, 197, 94, .12);
+      border: 1px solid rgba(34, 197, 94, .25);
+      border-radius: 5px;
+      padding: 1px 8px;
+      font-size: .7rem
+    }
+
+    [data-theme="light"] #sum {
+      background: rgba(22, 163, 74, .07);
+      border-color: rgba(22, 163, 74, .2);
+      color: #15803d
+    }
+
+    [data-theme="light"] .chip {
+      background: rgba(22, 163, 74, .12);
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    .g2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px
+    }
+
+    @media(max-width:720px) {
+      .g2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--b1);
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .ph {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 15px;
+      border-bottom: 1px solid var(--b1);
+    }
+
+    .pt {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .b {
+      font-size: .68rem;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-weight: 600;
+      letter-spacing: .3px
+    }
+
+    .b-blue {
+      background: rgba(59, 130, 246, .1);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, .25)
+    }
+
+    .b-orange {
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .25)
+    }
+
+    .b-green {
+      background: rgba(34, 197, 94, .1);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .25)
+    }
+
+    .b-yellow {
+      background: rgba(245, 158, 11, .1);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, .25);
+      border-radius: 10px;
+      padding: 2px 10px
+    }
+
+    [data-theme="light"] .b-green {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    #nchanged {
+      display: none
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--inp);
+      color: var(--txt);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      line-height: 1.65;
+      border: none;
+      outline: none;
+      padding: 13px;
+      resize: vertical;
+      min-height: 230px;
+      tab-size: 2;
+    }
+
+    textarea::placeholder {
+      color: var(--mut)
+    }
+
+    textarea:focus {
+      box-shadow: inset 0 0 0 1.5px rgba(34, 197, 94, .2)
+    }
+
+    [data-theme="light"] textarea {
+      color: #09090b
+    }
+
+    .script-ta {
+      color: var(--codeT);
+      font-size: .75rem;
+      min-height: 320px;
+      white-space: pre;
+      tab-size: 4
+    }
+
+    .br {
+      padding: 11px 13px;
+      display: flex;
+      gap: 7px;
+      border-top: 1px solid var(--b1);
+      flex-wrap: wrap
+    }
+
+    button {
+      font-family: 'Inter', sans-serif;
+      font-size: .78rem;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: var(--rb);
+      border: none;
+      cursor: pointer;
+      letter-spacing: .3px;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-p {
+      background: var(--acc);
+      color: var(--accT);
+      flex: 1;
+      justify-content: center
+    }
+
+    .btn-p:hover {
+      background: var(--accH);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, .28)
+    }
+
+    [data-theme="light"] .btn-p:hover {
+      box-shadow: 0 4px 12px rgba(22, 163, 74, .28)
+    }
+
+    .btn-s {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1)
+    }
+
+    .btn-s:hover {
+      background: var(--b1);
+      color: var(--txt)
+    }
+
+    .btn-g {
+      background: rgba(34, 197, 94, .1);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .25)
+    }
+
+    .btn-g:hover {
+      background: rgba(34, 197, 94, .18)
+    }
+
+    [data-theme="light"] .btn-g {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    .btn-o {
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .25)
+    }
+
+    .btn-o:hover {
+      background: rgba(249, 115, 22, .18)
+    }
+
+    .btn-add {
+      background: rgba(34, 197, 94, .1);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .25);
+      padding: 6px 12px
+    }
+
+    .btn-add:hover {
+      background: rgba(34, 197, 94, .2)
+    }
+
+    [data-theme="light"] .btn-add {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    .btn-rm {
+      background: rgba(220, 38, 38, .07);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .2);
+      padding: 3px 8px;
+      font-size: .68rem;
+      border-radius: 6px
+    }
+
+    .btn-rm:hover {
+      background: rgba(220, 38, 38, .15)
+    }
+
+    .tg {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--b1)
+    }
+
+    .tr {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      background: var(--card)
+    }
+
+    .tk {
+      padding: 6px 11px;
+      font-size: .68rem;
+      color: var(--acc);
+      border-right: 1px solid var(--b1);
+      letter-spacing: .4px;
+      display: flex;
+      align-items: center;
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    [data-theme="light"] .tk {
+      color: #15803d
+    }
+
+    .tv {
+      padding: 6px 11px;
+      font-size: .68rem;
+      color: var(--dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    .tv.ok {
+      color: var(--ok);
+      background: rgba(34, 197, 94, .06)
+    }
+
+    [data-theme="light"] .tv.ok {
+      color: #15803d;
+      background: rgba(22, 163, 74, .06)
+    }
+
+    .tv.dim {
+      color: var(--mut)
+    }
+
+    .vbody {
+      padding: 13px
+    }
+
+    .vadd {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 11px
+    }
+
+    #vinput {
+      flex: 1;
+      background: var(--inp);
+      color: var(--txt);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 6px 11px;
+      outline: none;
+    }
+
+    #vinput:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .08)
+    }
+
+    [data-theme="light"] #vinput:focus {
+      border-color: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .08)
+    }
+
+    #vinput::placeholder {
+      color: var(--mut)
+    }
+
+    .vlist {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 220px;
+      overflow-y: auto
+    }
+
+    .vi {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 6px 10px
+    }
+
+    .vi:hover {
+      border-color: var(--b2)
+    }
+
+    .vc {
+      font-size: .8rem;
+      color: var(--txt);
+      letter-spacing: .3px;
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    .vempty {
+      text-align: center;
+      padding: 20px;
+      color: var(--mut);
+      font-size: .77rem
+    }
+
+    .batch-row {
+      display: flex;
+      gap: 7px;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--b1);
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .batch-label {
+      font-size: .68rem;
+      color: var(--mut);
+      letter-spacing: .5px;
+      margin-right: 2px
+    }
+
+    .btn-batch {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: .75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-batch:hover {
+      background: var(--b1);
+      color: var(--txt)
+    }
+
+    .btn-batch.active {
+      background: rgba(34, 197, 94, .12);
+      color: var(--ok);
+      border-color: rgba(34, 197, 94, .3)
+    }
+
+    [data-theme="light"] .btn-batch.active {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .3)
+    }
+
+    .badge-status {
+      font-size: .6rem;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 3px;
+      vertical-align: middle
+    }
+
+    .badge-active {
+      background: rgba(34, 197, 94, .15);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .3)
+    }
+
+    .badge-test {
+      background: rgba(245, 158, 11, .12);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, .28)
+    }
+
+    [data-theme="light"] .badge-active {
+      color: #15803d
+    }
+
+    .bf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 13px
+    }
+
+    @media(max-width:540px) {
+      .bf-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .bf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px
+    }
+
+    .bf-label {
+      font-size: .68rem;
+      color: var(--acc);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      font-weight: 600
+    }
+
+    [data-theme="light"] .bf-label {
+      color: #15803d
+    }
+
+    .bf-input {
+      background: var(--inp);
+      color: var(--txt);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 6px 11px;
+      outline: none;
+      width: 100%;
+    }
+
+    .bf-input:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .08)
+    }
+
+    .btn-thread {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-thread.active,
+    .btn-thread:hover {
+      background: rgba(249, 115, 22, .12);
+      color: #f97316;
+      border-color: rgba(249, 115, 22, .3)
+    }
+
+    .thread-row,
+    .country-row {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .btn-country {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-country.active,
+    .btn-country:hover {
+      background: rgba(34, 197, 94, .12);
+      color: var(--ok);
+      border-color: rgba(34, 197, 94, .3)
+    }
+
+    [data-theme="light"] .btn-country.active,
+    [data-theme="light"] .btn-country:hover {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .3)
+    }
+
+    .bf-note {
+      font-size: .7rem;
+      color: var(--dim);
+      padding: 10px 13px;
+      line-height: 1.7;
+      border-top: 1px solid var(--b1)
+    }
+
+    #copypopup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(.88);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 998;
+      transition: all .22s cubic-bezier(.34, 1.56, .64, 1);
+      background: var(--card);
+      border: 1px solid var(--b2);
+      border-radius: var(--r);
+      padding: 22px 28px;
+      text-align: center;
+      min-width: 250px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+    }
+
+    #copypopup.on {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1)
+    }
+
+    #copypopup h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--acc);
+      margin-bottom: 5px
+    }
+
+    #copypopup p {
+      font-size: .75rem;
+      color: var(--dim);
+      margin-bottom: 16px
+    }
+
+    #copypopcopy {
+      background: var(--acc);
+      color: var(--accT);
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      font-weight: 700;
+      padding: 9px 22px;
+      border-radius: var(--rb);
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: .3px;
+      transition: all .15s
+    }
+
+    #copypopcopy:hover {
+      background: var(--accH)
+    }
+
+    #copypopclose {
+      background: transparent;
+      color: var(--mut);
+      font-size: .72rem;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      width: 100%;
+      padding: 4px
+    }
+
+    #copypopclose:hover {
+      color: var(--txt)
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 997;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+      backdrop-filter: blur(4px)
+    }
+
+    #overlay.on {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .tv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 11px 13px
+    }
+
+    .tv-item {
+      display: grid;
+      grid-template-columns: 26px 1fr auto auto;
+      align-items: center;
+      gap: 8px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 7px 10px;
+      transition: border-color .15s
+    }
+
+    .tv-item:hover {
+      border-color: var(--b2)
+    }
+
+    .tv-num {
+      font-size: .75rem;
+      color: var(--mut);
+      font-weight: 700;
+      text-align: center
+    }
+
+    .tv-tok {
+      font-size: .7rem;
+      color: var(--txt);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: .2px;
+      font-family: 'JetBrains Mono', monospace
+    }
+
+    .tv-tok span {
+      color: var(--mut);
+      font-size: .65rem;
+      display: block;
+      margin-top: 1px
+    }
+
+    .btn-load {
+      background: rgba(34, 197, 94, .1);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .25);
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: .68rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s
+    }
+
+    .btn-load:hover {
+      background: rgba(34, 197, 94, .22)
+    }
+
+    [data-theme="light"] .btn-load {
+      background: rgba(22, 163, 74, .1);
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .25)
+    }
+
+    .btn-del {
+      background: rgba(220, 38, 38, .07);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .2);
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: .68rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-del:hover {
+      background: rgba(220, 38, 38, .18)
+    }
+
+    .tv-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--mut);
+      font-size: .77rem
+    }
+
+    .tv-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 13px;
+      border-top: 1px solid var(--b1);
+      flex-wrap: wrap
+    }
+
+    .tv-count {
+      font-size: .7rem;
+      color: var(--mut);
+      margin-left: auto
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 16px;
+      border-radius: 9px;
+      font-size: .8rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all .28s cubic-bezier(.34, 1.56, .64, 1);
+      z-index: 999;
+      max-width: 290px;
+      pointer-events: none;
+      font-family: 'Inter', sans-serif;
+    }
+
+    #toast.on {
+      transform: translateY(0);
+      opacity: 1
+    }
+
+    #toast.s {
+      background: #052e16;
+      border: 1px solid var(--ok);
+      color: var(--ok)
+    }
+
+    #toast.e {
+      background: #450a0a;
+      border: 1px solid var(--err);
+      color: var(--err)
+    }
+
+    #toast.i {
+      background: #0c1a2e;
+      border: 1px solid #3b82f6;
+      color: #3b82f6
+    }
+
+    #toast.w {
+      background: #2d1700;
+      border: 1px solid var(--warn);
+      color: var(--warn)
+    }
+
+    [data-theme="light"] #toast.s {
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: rgba(22, 163, 74, .4)
+    }
+
+    [data-theme="light"] #toast.e {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, .3)
+    }
+
+    [data-theme="light"] #toast.i {
+      background: #eff6ff;
+      color: #2563eb;
+      border-color: rgba(37, 99, 235, .3)
+    }
+
+    [data-theme="light"] #toast.w {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: rgba(217, 119, 6, .3)
+    }
+
+    .runner-cfg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 13px
+    }
+
+    @media(max-width:540px) {
+      .runner-cfg {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .runner-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px
+    }
+
+    .runner-label {
+      font-size: .68rem;
+      color: var(--acc);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      font-weight: 600
+    }
+
+    [data-theme="light"] .runner-label {
+      color: #15803d
+    }
+
+    .runner-input {
+      background: var(--inp);
+      color: var(--txt);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 6px 11px;
+      outline: none;
+      width: 100%;
+    }
+
+    .runner-input:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .08)
+    }
+
+    #terminal {
+      background: var(--code);
+      border-top: 1px solid var(--b1);
+      padding: 12px 13px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      line-height: 1.75;
+      color: var(--codeT);
+      min-height: 180px;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    [data-theme="light"] #terminal {
+      color: #15803d
+    }
+
+    #terminal .t-ok {
+      color: var(--ok)
+    }
+
+    #terminal .t-err {
+      color: var(--err)
+    }
+
+    #terminal .t-warn {
+      color: var(--warn)
+    }
+
+    #terminal .t-head {
+      color: var(--txt);
+      font-weight: 700
+    }
+
+    #terminal .t-dim {
+      color: var(--mut)
+    }
+
+    .btn-run {
+      background: var(--acc);
+      color: var(--accT);
+      font-weight: 700;
+      flex: 1;
+      justify-content: center;
+      font-size: .82rem;
+      letter-spacing: .4px
+    }
+
+    .btn-run:hover {
+      background: var(--accH);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(34, 197, 94, .3)
+    }
+
+    [data-theme="light"] .btn-run:hover {
+      box-shadow: 0 4px 14px rgba(22, 163, 74, .3)
+    }
+
+    .btn-run:disabled {
+      background: var(--hov);
+      color: var(--mut);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none
+    }
+
+    .btn-stop {
+      background: rgba(220, 38, 38, .1);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .25)
+    }
+
+    .btn-stop:hover {
+      background: rgba(220, 38, 38, .2)
+    }
+
+    /* ── RUNNER LOADING OVERLAY ── */
+    #run-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+    }
+
+    #run-loading.active { display: flex }
+
+    .run-loader { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+    .run-loader-ring { position: absolute; border-radius: 50%; border: 3px solid transparent; }
+    .run-loader-r1 { inset: 0; border-top-color: var(--acc); animation: spin .9s linear infinite; }
+    .run-loader-r2 { inset: 12px; border-right-color: rgba(34,197,94,.5); animation: spin 1.35s linear infinite reverse; }
+    .run-loader-r3 { inset: 24px; border-bottom-color: rgba(34,197,94,.22); animation: spin 1.8s linear infinite; }
+    .run-loader-dot { position: absolute; inset: 34px; background: var(--acc); border-radius: 50%; animation: ldot 1.4s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    @keyframes ldot { 0%,100% { transform: scale(.6); opacity: .3; } 50% { transform: scale(1.1); opacity: .9; } }
+
+    /* ── RESULTS MODAL ── */
+    #run-modal {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #run-modal.active {
+      display: flex
+    }
+
+    #run-modal-card {
+      background: var(--card);
+      border: 1px solid var(--b1);
+      border-radius: 20px;
+      padding: 28px 24px 22px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      animation: modalPop .3s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    @keyframes modalPop {
+      from {
+        transform: scale(.88);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    #run-modal-icon {
+      width: 72px; height: 72px; margin-bottom: 6px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    #run-modal-icon svg { width: 72px; height: 72px; }
+
+    #run-modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--txt);
+      text-align: center;
+    }
+
+    #run-modal-subtitle {
+      font-size: .78rem;
+      color: var(--dim);
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+
+    #run-modal-items {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-bottom: 4px;
+    }
+
+    .rm-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+
+    .rm-item.ok {
+      border-color: rgba(34, 197, 94, .3);
+      background: rgba(34, 197, 94, .06)
+    }
+
+    .rm-item.err {
+      border-color: rgba(220, 38, 38, .25);
+      background: rgba(220, 38, 38, .05)
+    }
+
+    .rm-item.warn {
+      border-color: rgba(245, 158, 11, .25);
+      background: rgba(245, 158, 11, .05)
+    }
+
+    .rm-icon {
+      font-size: 1rem;
+      flex-shrink: 0
+    }
+
+    .rm-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem;
+      color: var(--txt);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .rm-sub {
+      font-size: .65rem;
+      color: var(--dim);
+      margin-top: 1px
+    }
+
+    /* chips row */
+    .rm-chips {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      width: 100%;
+      justify-content: center
+    }
+
+    .rm-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .rm-chip.ok {
+      background: rgba(34, 197, 94, .12);
+      color: var(--ok);
+      border: 1px solid rgba(34, 197, 94, .3)
+    }
+
+    .rm-chip.err {
+      background: rgba(220, 38, 38, .1);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .25)
+    }
+
+    .rm-chip.warn {
+      background: rgba(245, 158, 11, .1);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, .25)
+    }
+
+    [data-theme="light"] .rm-chip.ok {
+      color: #15803d
+    }
+
+    .run-status {
+      font-size: .72rem;
+      color: var(--dim);
+      margin: auto 0;
+      padding-left: 6px
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--b2);
+      border-radius: 3px
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Python script stored safely — no JS escaping issues -->
-<script type="text/plain" id="py-template">
+  <!-- Python script stored safely — no JS escaping issues -->
+  <script type="text/plain" id="py-template">
 #!/usr/bin/env -S python3 -u
 """
 SHEIN App API Coupon Collector
@@ -1010,65 +1998,70 @@ if __name__ == "__main__":
     main()
 </script>
 
-<div class="wrap">
-  <header>
-    <div class="logo">SH</div>
-    <div>
-      <h1>SHEIN Script Updater</h1>
-      <p>Paste RAW data &bull; Manage vouchers &bull; Run script</p>
-    </div>
-    <div class="hright">
-      <div class="dot" id="dot"></div>
-      <span id="stext">IDLE</span>
-      <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#9728;</button>
-    </div>
-  </header>
-
-  <div id="sum"><span>&#10003; Updated &mdash;</span><span id="schips"></span></div>
-
-  <!-- CLOUD RUNNER — top priority -->
-  <div class="panel">
-    <div class="ph">
-      <div class="pt">&#9658; Cloud Runner</div>
-      <span class="b b-green" id="runbadge">READY</span>
-    </div>
-    <div class="runner-cfg">
-      <div class="runner-field" style="grid-column:1/-1;display:none">
-        <input class="runner-input" id="run-url" type="text" autocomplete="off">
+  <div class="wrap">
+    <header>
+      <div class="logo">SH</div>
+      <div>
+        <h1>SHEIN Script Updater</h1>
+        <p>Paste RAW data &bull; Manage vouchers &bull; Run script</p>
       </div>
-      <div class="runner-field" style="grid-column:1/-1">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <span class="runner-label">&#9656; Access Key</span>
-          <span id="key-saved-badge" style="display:none;font-size:.65rem;color:var(--ok);font-weight:600;letter-spacing:.4px">&#10003; SAVED</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <div style="position:relative;flex:1">
-            <input class="runner-input" id="run-key" type="password" placeholder="Enter your access key" autocomplete="off" style="width:100%;padding-right:36px">
-            <button id="key-eye" type="button" title="Show/hide key" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--dim);padding:2px;font-size:14px;line-height:1">&#128065;</button>
-          </div>
-          <button id="key-apply" class="btn-g" style="white-space:nowrap;padding:7px 14px">&#10003; Apply</button>
-          <button id="key-edit" class="btn-s" style="white-space:nowrap;padding:7px 14px;display:none">&#9998; Edit</button>
-        </div>
+      <div class="hright">
+        <div class="dot" id="dot"></div>
+        <span id="stext">IDLE</span>
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#9728;</button>
       </div>
-      <div class="runner-field">
-        <span class="runner-label">&#9656; Account Delay (sec)</span>
-        <input class="runner-input" id="run-delay" type="number" value="3" min="0" max="30">
-      </div>
-    </div>
-    <div class="br">
-      <button class="btn-run" id="runbtn">&#9658; RUN SCRIPT</button>
-      <span class="run-status" id="runstatus"></span>
-    </div>
-  </div>
+    </header>
 
-  <!-- ROW 1 -->
-  <div class="g2">
+    <div id="sum"><span>&#10003; Updated &mdash;</span><span id="schips"></span></div>
+
+    <!-- CLOUD RUNNER — top priority -->
     <div class="panel">
       <div class="ph">
-        <div class="pt">&#8595; APP RAW REQUEST INPUT</div>
-        <span class="b b-blue">PASTE HERE</span>
+        <div class="pt">&#9658; Cloud Runner</div>
+        <span class="b b-green" id="runbadge">READY</span>
       </div>
-      <textarea id="rawin" placeholder="Paste your RAW app request here...
+      <div class="runner-cfg">
+        <div class="runner-field" style="grid-column:1/-1;display:none">
+          <input class="runner-input" id="run-url" type="text" autocomplete="off">
+        </div>
+        <div class="runner-field" style="grid-column:1/-1">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span class="runner-label">&#9656; Access Key</span>
+            <span id="key-saved-badge"
+              style="display:none;font-size:.65rem;color:var(--ok);font-weight:600;letter-spacing:.4px">&#10003;
+              SAVED</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div style="position:relative;flex:1">
+              <input class="runner-input" id="run-key" type="password" placeholder="Enter your access key"
+                autocomplete="off" style="width:100%;padding-right:36px">
+              <button id="key-eye" type="button" title="Show/hide key"
+                style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--dim);padding:2px;line-height:1;display:flex;align-items:center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+            </div>
+            <button id="key-apply" class="btn-g" style="white-space:nowrap;padding:7px 14px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Apply</button>
+            <button id="key-edit" class="btn-s" style="white-space:nowrap;padding:7px 14px;display:none">&#9998;
+              Edit</button>
+          </div>
+        </div>
+        <div class="runner-field">
+          <span class="runner-label">&#9656; Account Delay (sec)</span>
+          <input class="runner-input" id="run-delay" type="number" value="3" min="0" max="30">
+        </div>
+      </div>
+      <div class="br">
+        <button class="btn-run" id="runbtn">&#9658; RUN SCRIPT</button>
+        <span class="run-status" id="runstatus"></span>
+      </div>
+    </div>
+
+    <!-- ROW 1 -->
+    <div class="g2">
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">&#8595; APP RAW REQUEST INPUT</div>
+          <span class="b b-blue">PASTE HERE</span>
+        </div>
+        <textarea id="rawin" placeholder="Paste your RAW app request here...
 
 POST /promotion/coupon/bind_coupon HTTP/2
 host: api-service.shein.com
@@ -1079,1121 +2072,1174 @@ smdeviceid: 202603...
 token: MDEwMDE...
 x-gw-auth: a=vhOvo...
 dev-id: shein_8a47..."></textarea>
-      <div class="br">
-        <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE SCRIPT</button>
-        <button class="btn-s" id="clearbtn">&#10005; CLEAR</button>
+        <div class="br">
+          <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE SCRIPT</button>
+          <button class="btn-s" id="clearbtn">&#10005; CLEAR</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">&#9672; EXTRACTED TOKENS</div>
+          <span class="b b-blue" id="nchanged"></span>
+        </div>
+        <div id="tpreview" class="tg">
+          <div class="tr">
+            <div class="tk">TOKEN</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">GW_AUTH</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">ARMOR_TOKEN</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">SMDEVICE_ID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">UGID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">SORTUID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">DEVICE_ID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="panel">
+    <!-- TOKEN VAULT -->
+    <div class="panel" style="margin-bottom:14px">
       <div class="ph">
-        <div class="pt">&#9672; EXTRACTED TOKENS</div>
-        <span class="b b-blue" id="nchanged"></span>
+        <div class="pt">&#128273; TOKEN VAULT</div>
+        <span class="b b-blue" id="vaultcnt">0 stored</span>
       </div>
-      <div id="tpreview" class="tg">
-        <div class="tr"><div class="tk">TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">GW_AUTH</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">ARMOR_TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">SMDEVICE_ID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">UGID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">SORTUID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-        <div class="tr"><div class="tk">DEVICE_ID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+      <div id="tv-list" class="tv-list">
+        <div class="tv-empty" id="tv-empty">No tokens stored. Parse a RAW request and click <b>SAVE TO VAULT</b>.</div>
+      </div>
+      <div class="tv-bar">
+        <button class="btn-g" id="vaultsavebtn">&#43; SAVE CURRENT TOKEN TO VAULT</button>
+        <button class="btn-s" id="vaultclearbtn">&#10005; CLEAR ALL</button>
+        <span class="tv-count" id="vaultused"></span>
       </div>
     </div>
-  </div>
 
-  <!-- TOKEN VAULT -->
-  <div class="panel" style="margin-bottom:14px">
-    <div class="ph">
-      <div class="pt">&#128273; TOKEN VAULT</div>
-      <span class="b b-blue" id="vaultcnt">0 stored</span>
+    <!-- PARSE HISTORY -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">
+        <div class="pt">&#128336; PARSE HISTORY</div>
+        <span class="b b-blue" id="histcnt">0 entries</span>
+      </div>
+      <div id="hist-list" class="tv-list">
+        <div class="tv-empty" id="hist-empty">No history yet. Parse a RAW request to see entries here.</div>
+      </div>
+      <div class="tv-bar">
+        <button class="btn-s" id="histclearbtn">&#10005; CLEAR HISTORY</button>
+      </div>
     </div>
-    <div id="tv-list" class="tv-list">
-      <div class="tv-empty" id="tv-empty">No tokens stored. Parse a RAW request and click <b>SAVE TO VAULT</b>.</div>
-    </div>
-    <div class="tv-bar">
-      <button class="btn-g" id="vaultsavebtn">&#43; SAVE CURRENT TOKEN TO VAULT</button>
-      <button class="btn-s" id="vaultclearbtn">&#10005; CLEAR ALL</button>
-      <span class="tv-count" id="vaultused"></span>
-    </div>
-  </div>
 
-  <!-- PARSE HISTORY -->
-  <div class="panel" style="margin-bottom:14px">
-    <div class="ph">
-      <div class="pt">&#128336; PARSE HISTORY</div>
-      <span class="b b-blue" id="histcnt">0 entries</span>
-    </div>
-    <div id="hist-list" class="tv-list">
-      <div class="tv-empty" id="hist-empty">No history yet. Parse a RAW request to see entries here.</div>
-    </div>
-    <div class="tv-bar">
-      <button class="btn-s" id="histclearbtn">&#10005; CLEAR HISTORY</button>
-    </div>
-  </div>
-
-  <!-- ROW 2: Voucher manager -->
-  <div class="panel" style="margin-bottom:14px">
-    <div class="ph">
-      <div class="pt">&#127914; VOUCHER CODE MANAGER</div>
-      <span class="b-yellow" id="vcnt">0 codes</span>
-    </div>
-    <!-- Batch Selector -->
-    <div class="batch-row">
-      <span class="batch-label">&#9656; BATCH:</span>
-      <button class="btn-batch" data-batch="ph0313">ph0313 <span class="badge-status badge-test">TESTING</span></button>
-      <button class="btn-batch active" data-batch="phsf0212">phsf0212 <span class="badge-status badge-active">ACTIVE</span></button>
-      <button class="btn-batch" data-batch="gm0pha">gm0pha <span class="badge-status badge-test">TESTING</span></button>
-      <button class="btn-batch" data-batch="phsf0212ultra">phsf0212 ULTRA <span class="badge-status badge-test">TESTING</span></button>
-      <button class="btn-batch" data-batch="ph031381">ph0313 81% <span class="badge-status badge-test">TESTING</span></button>
-      <button class="btn-batch" data-batch="phsf+ph0313">phsf + ph0313 <span class="badge-status badge-test">NEW</span></button>
-    </div>
-    <div class="vbody">
-      <div class="vadd">
-        <input id="vinput" type="text" placeholder="Enter code (e.g. phsf021215) or paste multiple comma-separated — press Enter to add" maxlength="200">
-        <button class="btn-add" id="addbtn">&#43; ADD</button>
+    <!-- ROW 2: Voucher manager -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">
+        <div class="pt">&#127914; VOUCHER CODE MANAGER</div>
+        <span class="b-yellow" id="vcnt">0 codes</span>
       </div>
-      <div id="vlist" class="vlist">
-        <div class="vempty" id="vempty">No voucher codes. Add some above.</div>
+      <!-- Batch Selector -->
+      <div class="batch-row">
+        <span class="batch-label">&#9656; BATCH:</span>
+        <button class="btn-batch" data-batch="ph0313">ph0313 <span
+            class="badge-status badge-test">TESTING</span></button>
+        <button class="btn-batch active" data-batch="phsf0212">phsf0212 <span
+            class="badge-status badge-active">ACTIVE</span></button>
+        <button class="btn-batch" data-batch="gm0pha">gm0pha <span
+            class="badge-status badge-test">TESTING</span></button>
+        <button class="btn-batch" data-batch="phsf0212ultra">phsf0212 ULTRA <span
+            class="badge-status badge-test">TESTING</span></button>
+        <button class="btn-batch" data-batch="ph031381">ph0313 81% <span
+            class="badge-status badge-test">TESTING</span></button>
+        <button class="btn-batch" data-batch="phsf+ph0313">phsf + ph0313 <span
+            class="badge-status badge-test">NEW</span></button>
       </div>
-    </div>
-    <div class="br">
-      <button class="btn-p" id="applybtn">&#9889; APPLY CODES TO SCRIPT</button>
-      <button class="btn-s" id="reloadbtn">&#8635; RELOAD FROM SCRIPT</button>
-      <button class="btn-s" id="clearvbtn">&#10005; CLEAR ALL</button>
-    </div>
-  </div>
-
-  <!-- ROW 3: Brute-Force -->
-  <div class="panel" style="margin-bottom:14px">
-    <div class="ph">
-      <div class="pt">&#9889; BRUTE-FORCE CLAIM</div>
-      <span class="b b-orange" id="bfbadge">DISABLED</span>
-    </div>
-    <div class="bf-grid">
-      <div class="bf-field">
-        <span class="bf-label">&#9656; Start Package ID</span>
-        <input class="bf-input" id="bf-start" type="number" value="17130000" placeholder="e.g. 17130000">
-      </div>
-      <div class="bf-field">
-        <span class="bf-label">&#9656; End Package ID</span>
-        <input class="bf-input" id="bf-end" type="number" value="17140000" placeholder="e.g. 17140000">
-      </div>
-      <div class="bf-field">
-        <span class="bf-label">&#9656; Threads</span>
-        <div class="thread-row">
-          <button class="btn-thread active" data-t="10">10</button>
-          <button class="btn-thread" data-t="20">20</button>
-          <button class="btn-thread" data-t="30">30</button>
+      <div class="vbody">
+        <div class="vadd">
+          <input id="vinput" type="text"
+            placeholder="Enter code (e.g. phsf021215) or paste multiple comma-separated — press Enter to add"
+            maxlength="200">
+          <button class="btn-add" id="addbtn">&#43; ADD</button>
+        </div>
+        <div id="vlist" class="vlist">
+          <div class="vempty" id="vempty">No voucher codes. Add some above.</div>
         </div>
       </div>
-      <div class="bf-field">
-        <span class="bf-label">&#9656; Max Claims Before Stop</span>
-        <input class="bf-input" id="bf-maxclaim" type="number" value="1" min="0" placeholder="0 = unlimited">
+      <div class="br">
+        <button class="btn-p" id="applybtn">&#9889; APPLY CODES</button>
+        <button class="btn-s" id="reloadbtn">&#8635; RELOAD FROM SCRIPT</button>
+        <button class="btn-s" id="clearvbtn">&#10005; CLEAR ALL</button>
       </div>
-      <div class="bf-field" style="grid-column:1/-1">
-        <span class="bf-label">&#9656; Claim Country Override</span>
-        <div class="country-row">
-          <button class="btn-country active" data-c="PH">&#127477;&#127469; PH</button>
-          <button class="btn-country" data-c="MY">&#127474;&#127486; MY</button>
-          <button class="btn-country" data-c="TH">&#127481;&#127469; TH</button>
+    </div>
+
+    <!-- ROW 3: Brute-Force -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">
+        <div class="pt">&#9889; BRUTE-FORCE CLAIM</div>
+        <span class="b b-orange" id="bfbadge">DISABLED</span>
+      </div>
+      <div class="bf-grid">
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Start Package ID</span>
+          <input class="bf-input" id="bf-start" type="number" value="17130000" placeholder="e.g. 17130000">
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; End Package ID</span>
+          <input class="bf-input" id="bf-end" type="number" value="17140000" placeholder="e.g. 17140000">
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Threads</span>
+          <div class="thread-row">
+            <button class="btn-thread active" data-t="10">10</button>
+            <button class="btn-thread" data-t="20">20</button>
+            <button class="btn-thread" data-t="30">30</button>
+          </div>
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Max Claims Before Stop</span>
+          <input class="bf-input" id="bf-maxclaim" type="number" value="1" min="0" placeholder="0 = unlimited">
+        </div>
+        <div class="bf-field" style="grid-column:1/-1">
+          <span class="bf-label">&#9656; Claim Country Override</span>
+          <div class="country-row">
+            <button class="btn-country active" data-c="PH">&#127477;&#127469; PH</button>
+            <button class="btn-country" data-c="MY">&#127474;&#127486; MY</button>
+            <button class="btn-country" data-c="TH">&#127481;&#127469; TH</button>
+          </div>
+        </div>
+      </div>
+      <div class="bf-note">
+        &#9432; <b>Sign in to Malaysia (MY)</b> when capturing RAW data — prevents random PH coupons from auto-claiming
+        during capture.<br>
+        The <b>Claim Country</b> above overrides only <code>usercountry</code> / <code>localcountry</code> /
+        <code>currency</code> in the claim headers. Your capture tokens are untouched.<br>
+        &#9432; <b>Max Claims</b>: script stops after this many successful claims. Set 0 for unlimited.
+      </div>
+      <div class="br">
+        <button class="btn-o" id="bfapplybtn">&#8627; APPLY BRUTE-FORCE TO SCRIPT</button>
+        <span style="font-size:.72rem;color:var(--dim);margin:auto 0;padding-left:6px" id="bfstatus"></span>
+      </div>
+    </div>
+
+    <!-- scriptout: hidden in-memory buffer for JS -->
+    <textarea id="scriptout" class="script-ta" readonly style="display:none"></textarea> <!-- Loading Overlay -->
+    <div id="run-loading"
+      style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+      <div class="run-loader">
+      <div class="run-loader-ring run-loader-r1"></div>
+      <div class="run-loader-ring run-loader-r2"></div>
+      <div class="run-loader-ring run-loader-r3"></div>
+      <div class="run-loader-dot"></div>
+    </div>
+      <div id="run-loading-text"
+        style="font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;color:#fff;letter-spacing:.02em">
+        Running script...</div>
+      <button id="stopbtn"
+        style="margin-top:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;padding:8px 20px;border-radius:var(--rb);cursor:pointer;transition:background .18s;display:flex;align-items:center;gap:7px"
+        onmouseover="this.style.background='rgba(255,255,255,.22)'"
+        onmouseout="this.style.background='rgba(255,255,255,.12)'"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/></svg> STOP</button>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="run-modal"
+      style="display:none;position:fixed;inset:0;z-index:901;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px">
+      <div id="run-modal-card">
+        <div id="run-modal-icon"></div>
+        <div id="run-modal-title"></div>
+        <div id="run-modal-subtitle"></div>
+        <div id="run-modal-items"></div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+          <button id="run-modal-close" class="btn-p" style="min-width:120px;justify-content:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</button>
         </div>
       </div>
     </div>
-    <div class="bf-note">
-      &#9432; <b>Sign in to Malaysia (MY)</b> when capturing RAW data — prevents random PH coupons from auto-claiming during capture.<br>
-      The <b>Claim Country</b> above overrides only <code>usercountry</code> / <code>localcountry</code> / <code>currency</code> in the claim headers. Your capture tokens are untouched.<br>
-      &#9432; <b>Max Claims</b>: script stops after this many successful claims. Set 0 for unlimited.
-    </div>
-    <div class="br">
-      <button class="btn-o" id="bfapplybtn">&#8627; APPLY BRUTE-FORCE TO SCRIPT</button>
-      <span style="font-size:.72rem;color:var(--dim);margin:auto 0;padding-left:6px" id="bfstatus"></span>
-    </div>
+
   </div>
+  <div id="toast"></div>
 
-  <!-- scriptout: hidden in-memory buffer for JS -->
-  <textarea id="scriptout" class="script-ta" readonly style="display:none"></textarea>  <!-- Loading Overlay -->
-  <div id="run-loading" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px">
-    <div id="run-spinner"></div>
-    <div id="run-loading-text" style="font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:600;color:#fff;letter-spacing:.02em">Running script...</div>
-    <button id="stopbtn" style="margin-top:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;padding:8px 20px;border-radius:var(--rb);cursor:pointer;transition:background .18s" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">&#9632; STOP</button>
-  </div>
-
-  <!-- Results Modal -->
-  <div id="run-modal" style="display:none;position:fixed;inset:0;z-index:901;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px">
-    <div id="run-modal-card">
-      <div id="run-modal-icon"></div>
-      <div id="run-modal-title"></div>
-      <div id="run-modal-subtitle"></div>
-      <div id="run-modal-items"></div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px">
-        <button id="run-modal-close" class="btn-p" style="min-width:120px;justify-content:center">&#10003; Done</button>
-      </div>
-    </div>
-  </div>
-
-</div>
-<div id="toast"></div>
-
-<script>
-// ================================================================
-// HELPERS
-// ================================================================
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-var _tt;
-function toast(type, msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'on ' + type;
-  clearTimeout(_tt);
-  _tt = setTimeout(function(){ t.className = ''; }, 3200);
-}
-
-function markUpdated(label) {
-  document.getElementById('obadge').textContent = 'UPDATED: ' + label;
-  document.getElementById('obadge').className = 'b b-green';
-  document.getElementById('dot').className = 'dot on';
-  document.getElementById('stext').textContent = 'READY';
-}
-
-// ================================================================
-// LOAD ORIG FROM TEMPLATE TAG (no escaping issues!)
-// ================================================================
-var ORIG = document.getElementById('py-template').textContent;
-// Trim leading newline from the template
-if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
-
-// ================================================================
-// STATE
-// ================================================================
-var vouchers = [];
-var _bfThreads = 10;
-var _bfCountry = 'PH';
-var _parseHistory = [];
-
-// ================================================================
-// PARSE HISTORY
-// ================================================================
-function addParseHistory(parsed, changedCount) {
-  var token = parsed.TOKEN || parsed.GW_AUTH || '';
-  // Dedupe by token
-  for (var i = 0; i < _parseHistory.length; i++) {
-    if (_parseHistory[i].token === token) {
-      toast('w', '\u26a0 Duplicate token — history not updated');
-      return;
+  <script>
+    // ================================================================
+    // HELPERS
+    // ================================================================
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-  }
-  var now = new Date();
-  var pad = function(n){ return n < 10 ? '0'+n : n; };
-  var timeStr = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
-  var dateStr = pad(now.getMonth()+1)+'/'+pad(now.getDate())+' '+timeStr;
-  var uid = parsed.SORTUID || parsed.UGID || '—';
-  _parseHistory.unshift({ parsed: parsed, token: token, time: dateStr, uid: uid, changed: changedCount });
-  renderHistory();
-}
 
-function historyLoad(idx) {
-  var h = _parseHistory[idx];
-  if (!h) return;
-  // Re-run the same script-patching logic using stored parsed data
-  var script = ORIG;
-  var changed = [];
-  function repV(name, val) {
-    if (!val) return;
-    var re  = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
-    var next = script.replace(re, '$1"' + val.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"');
-    if (next !== script) { script = next; changed.push(name); }
-  }
-  var p = h.parsed;
-  repV('GW_AUTH',     p.GW_AUTH);
-  repV('ARMOR_TOKEN', p.ARMOR_TOKEN);
-  repV('SMDEVICE_ID', p.SMDEVICE_ID);
-  repV('UGID',        p.UGID);
-  repV('SORTUID',     p.SORTUID);
-  repV('DEVICE_ID',   p.DEVICE_ID);
-  repV('APPCOUNTRY',  p.APPCOUNTRY);
-  repV('USERCOUNTRY', p.USERCOUNTRY);
-  repV('LOCALCOUNTRY',p.LOCALCOUNTRY);
-  repV('CURRENCY',    p.CURRENCY);
-  repV('APPCURRENCY', p.APPCURRENCY);
-  repV('APP_VERSION', p.APP_VERSION);
-  repV('DEVICE_INFO', p.DEVICE_INFO);
-  if (p.TOKEN) {
-    var tokBlock = 'TOKENS = [\n    "' + p.TOKEN.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '",\n]';
-    script = script.replace(/TOKENS\s*=\s*\[[\s\S]*?\]/, tokBlock);
-    changed.push('TOKEN');
-  }
-  if (p.COUPON_PKG_ID) {
-    script = script.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + p.COUPON_PKG_ID + '"');
-    changed.push('COUPON_PKG_ID');
-  }
-  if (vouchers.length > 0) {
-    var vlines = '';
-    for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
-    script = script.replace(/CODES\s*=\s*\[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
-  }
-  document.getElementById('scriptout').value = script;
-  updateTokenPreview(p, changed);
-  markUpdated('HISTORY #' + (idx+1));
-  var scriptTxt = script;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(scriptTxt).then(function(){ toast('s', '\u2713 Loaded history #' + (idx+1) + ' \u2014 script copied!'); })
-    .catch(function(){ fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx+1) + ' \u2014 copied (fallback)!'); });
-  } else { fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx+1)); }
-}
+    var _tt;
+    function toast(type, msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'on ' + type;
+      clearTimeout(_tt);
+      _tt = setTimeout(function () { t.className = ''; }, 3200);
+    }
 
-function renderHistory() {
-  var list  = document.getElementById('hist-list');
-  var empty = document.getElementById('hist-empty');
-  document.getElementById('histcnt').textContent = _parseHistory.length + ' entr' + (_parseHistory.length === 1 ? 'y' : 'ies');
-  if (_parseHistory.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < _parseHistory.length; i++) {
-    var h = _parseHistory[i];
-    var preview = h.token.length > 44 ? h.token.slice(0,41)+'\u2026' : h.token;
-    html += '<div class="tv-item">'
-      + '<div class="tv-num">' + (i+1) + '</div>'
-      + '<div class="tv-tok">' + esc(preview) + '<span>uid:' + esc(h.uid) + ' \u00b7 ' + h.changed + ' fields \u00b7 ' + h.time + '</span></div>'
-      + '<button class="btn-load" data-hi="' + i + '">&#9654; LOAD</button>'
-      + '<button class="btn-rm" data-hi="' + i + '">&#10005;</button>'
-      + '</div>';
-  }
-  list.innerHTML = html;
-  list.querySelectorAll('.btn-load[data-hi]').forEach(function(btn){
-    btn.addEventListener('click', function(){ historyLoad(parseInt(this.getAttribute('data-hi'))); });
-  });
-  list.querySelectorAll('.btn-rm[data-hi]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var idx = parseInt(this.getAttribute('data-hi'));
-      _parseHistory.splice(idx, 1);
+    function markUpdated(label) {
+      document.getElementById('obadge').textContent = 'UPDATED: ' + label;
+      document.getElementById('obadge').className = 'b b-green';
+      document.getElementById('dot').className = 'dot on';
+      document.getElementById('stext').textContent = 'READY';
+    }
+
+    // ================================================================
+    // LOAD ORIG FROM TEMPLATE TAG (no escaping issues!)
+    // ================================================================
+    var ORIG = document.getElementById('py-template').textContent;
+    // Trim leading newline from the template
+    if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
+
+    // ================================================================
+    // STATE
+    // ================================================================
+    var vouchers = [];
+    var _bfThreads = 10;
+    var _bfCountry = 'PH';
+    var _parseHistory = [];
+
+    // ================================================================
+    // PARSE HISTORY
+    // ================================================================
+    function addParseHistory(parsed, changedCount) {
+      var token = parsed.TOKEN || parsed.GW_AUTH || '';
+      // Dedupe by token
+      for (var i = 0; i < _parseHistory.length; i++) {
+        if (_parseHistory[i].token === token) {
+          toast('w', '\u26a0 Duplicate token — history not updated');
+          return;
+        }
+      }
+      var now = new Date();
+      var pad = function (n) { return n < 10 ? '0' + n : n; };
+      var timeStr = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      var dateStr = pad(now.getMonth() + 1) + '/' + pad(now.getDate()) + ' ' + timeStr;
+      var uid = parsed.SORTUID || parsed.UGID || '—';
+      _parseHistory.unshift({ parsed: parsed, token: token, time: dateStr, uid: uid, changed: changedCount });
       renderHistory();
-      toast('i', 'Removed history entry');
-    });
-  });
-}
-
-// ================================================================
-// VOUCHER MANAGER
-// ================================================================
-function loadCodesFromText(src) {
-  var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
-  if (!m) return;
-  var found = m[1].match(/"([^"]+)"/g);
-  vouchers = found ? found.map(function(c){ return c.replace(/"/g,''); }) : [];
-  renderVouchers();
-}
-
-function renderVouchers() {
-  var list  = document.getElementById('vlist');
-  var empty = document.getElementById('vempty');
-  document.getElementById('vcnt').textContent = vouchers.length + ' code' + (vouchers.length !== 1 ? 's' : '');
-  if (vouchers.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < vouchers.length; i++) {
-    html += '<div class="vi">'
-      + '<span class="vc">' + (i+1) + '. ' + esc(vouchers[i]) + '</span>'
-      + '<button class="btn-rm" data-i="' + i + '">&#10005; REMOVE</button>'
-      + '</div>';
-  }
-  list.innerHTML = html;
-  list.querySelectorAll('.btn-rm').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var idx = parseInt(this.getAttribute('data-i'));
-      var code = vouchers[idx];
-      vouchers.splice(idx, 1);
-      renderVouchers();
-      toast('i', 'Removed: ' + code);
-    });
-  });
-}
-
-function doAdd() {
-  var raw = document.getElementById('vinput').value.trim();
-  if (!raw) { toast('w','Enter a voucher code first'); return; }
-  var parts = raw.split(',');
-  var added = [], dupes = [];
-  for (var i = 0; i < parts.length; i++) {
-    var c = parts[i].trim();
-    if (!c) continue;
-    if (vouchers.indexOf(c) >= 0) { dupes.push(c); }
-    else { vouchers.push(c); added.push(c); }
-  }
-  document.getElementById('vinput').value = '';
-  renderVouchers();
-  if (added.length && !dupes.length) toast('s', '\u2713 Added: ' + added.join(', '));
-  else if (added.length) toast('w', '\u2713 Added ' + added.length + ', skipped ' + dupes.length + ' dupe(s)');
-  else toast('w', '\u26a0 Already in list: ' + dupes.join(', '));
-}
-
-function doApply() {
-  if (vouchers.length === 0) { toast('e','No voucher codes to apply'); return; }
-  var lines = '';
-  for (var i = 0; i < vouchers.length; i++) lines += '    "' + vouchers[i] + '",\n';
-  var block = 'CODES = [\n' + lines + ']';
-  var src = document.getElementById('scriptout').value;
-  var updated = src.replace(/CODES\s*=\s*\[[\s\S]*?\]/, block);
-  if (updated === src) { toast('e','Could not find CODES block in script'); return; }
-  document.getElementById('scriptout').value = updated;
-  markUpdated('CODES (' + vouchers.length + ')');
-  toast('s', '\u2713 ' + vouchers.length + ' code(s) applied to script');
-}
-
-// ================================================================
-// RAW PARSER
-// ================================================================
-function getHdr(raw, name) {
-  var re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
-  var m = raw.match(re);
-  return m ? m[1].trim() : null;
-}
-
-function doParse() {
-  var raw = document.getElementById('rawin').value.trim();
-  if (!raw) { toast('e','\u2715 No RAW data pasted!'); return; }
-
-  var parsed = {
-    TOKEN:       getHdr(raw,'token'),
-    GW_AUTH:     getHdr(raw,'x-gw-auth'),
-    ARMOR_TOKEN: getHdr(raw,'armortoken'),
-    SMDEVICE_ID: getHdr(raw,'smdeviceid'),
-    UGID:        getHdr(raw,'ugid'),
-    SORTUID:     getHdr(raw,'sortuid') || getHdr(raw,'newuid'),
-    DEVICE_ID:   getHdr(raw,'dev-id') || getHdr(raw,'deviceid'),
-    APPCOUNTRY:  getHdr(raw,'appcountry'),
-    USERCOUNTRY: getHdr(raw,'usercountry'),
-    LOCALCOUNTRY:getHdr(raw,'localcountry'),
-    CURRENCY:    getHdr(raw,'currency'),
-    APPCURRENCY: getHdr(raw,'appcurrency'),
-    APP_VERSION: getHdr(raw,'version') || getHdr(raw,'appversion'),
-    DEVICE_INFO: getHdr(raw,'device'),
-  };
-
-  var pkgm = raw.match(/"couponPackageId"\s*:\s*"([^"]+)"/);
-  if (pkgm) parsed.COUPON_PKG_ID = pkgm[1].trim();
-
-  var anyFound = parsed.TOKEN || parsed.GW_AUTH || parsed.ARMOR_TOKEN;
-  if (!anyFound) { toast('e','\u2715 No tokens found. Check your RAW format.'); return; }
-
-  var script  = ORIG;
-  var changed = [];
-
-  function repVar(name, val) {
-    if (!val) return;
-    var re  = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
-    var next = script.replace(re, '$1"' + val.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"');
-    if (next !== script) { script = next; changed.push(name); }
-  }
-
-  repVar('GW_AUTH',     parsed.GW_AUTH);
-  repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
-  repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
-  repVar('UGID',        parsed.UGID);
-  repVar('SORTUID',     parsed.SORTUID);
-  repVar('DEVICE_ID',   parsed.DEVICE_ID);
-  repVar('APPCOUNTRY',  parsed.APPCOUNTRY);
-  repVar('USERCOUNTRY', parsed.USERCOUNTRY);
-  repVar('LOCALCOUNTRY',parsed.LOCALCOUNTRY);
-  repVar('CURRENCY',    parsed.CURRENCY);
-  repVar('APPCURRENCY', parsed.APPCURRENCY);
-  repVar('APP_VERSION', parsed.APP_VERSION);
-  repVar('DEVICE_INFO', parsed.DEVICE_INFO);
-
-  if (parsed.TOKEN) {
-    var tokRe    = /TOKENS\s*=\s*\[[\s\S]*?\]/;
-    var tokBlock = 'TOKENS = [\n    "' + parsed.TOKEN.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '",\n]';
-    var nt = script.replace(tokRe, tokBlock);
-    if (nt !== script) { script = nt; changed.push('TOKEN'); }
-  }
-
-  if (parsed.COUPON_PKG_ID) {
-    var pkgRe = new RegExp('(COUPON_PKG_ID\\s*=\\s*)"[^"]*"', 'g');
-    var np = script.replace(pkgRe, '$1"' + parsed.COUPON_PKG_ID + '"');
-    if (np !== script) { script = np; changed.push('COUPON_PKG_ID'); }
-  }
-
-  // Re-apply current voucher list
-  if (vouchers.length > 0) {
-    var vlines = '';
-    for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
-    var vblock = 'CODES = [\n' + vlines + ']';
-    script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, vblock);
-  }
-
-  document.getElementById('scriptout').value = script;
-  updateTokenPreview(parsed, changed);
-
-  var cc = document.getElementById('nchanged');
-  cc.style.display = 'inline';
-  cc.textContent = changed.length + ' CHANGED';
-
-  document.getElementById('sum').className = 'on';
-  var chips = '';
-  for (var chi = 0; chi < changed.length; chi++) chips += '<span class="chip">' + changed[chi] + '</span> ';
-  document.getElementById('schips').innerHTML = chips;
-
-  _lastParsed = parsed;
-  markUpdated(changed.length + ' tokens');
-  toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 ready to RUN!');
-
-  // Clear RAW input
-  document.getElementById('rawin').value = '';
-
-  // Add to parse history (dedupe by token)
-  addParseHistory(parsed, changed.length);
-}
-
-function updateTokenPreview(parsed, changed) {
-  var fields = [
-    ['TOKEN',       parsed.TOKEN],
-    ['GW_AUTH',     parsed.GW_AUTH],
-    ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
-    ['SMDEVICE_ID', parsed.SMDEVICE_ID],
-    ['UGID',        parsed.UGID],
-    ['SORTUID',     parsed.SORTUID],
-    ['DEVICE_ID',   parsed.DEVICE_ID],
-  ];
-  var html = '';
-  for (var i = 0; i < fields.length; i++) {
-    var fname = fields[i][0], fval = fields[i][1];
-    var isChanged = changed.indexOf(fname) >= 0;
-    if (!fval) {
-      html += '<div class="tr"><div class="tk">'+fname+'</div><div class="tv dim">&#8212; not found &#8212;</div></div>';
-    } else {
-      var display = fval.length > 58 ? fval.slice(0,55) + '\u2026' : fval;
-      html += '<div class="tr"><div class="tk">'+fname+'</div>'
-            + '<div class="tv'+(isChanged?' ok':'')+'">'+( isChanged?'\u2713 ':'')+esc(display)+'</div></div>';
     }
-  }
-  document.getElementById('tpreview').innerHTML = html;
-}
 
-
-// ================================================================
-// CODE BATCHES
-// ================================================================
-var CODE_BATCHES = {
-  'ph0313': {
-    codes: ['ph0313n3','ph0313n4','ph0313n5','ph0313n6'],
-    pkgId: '17139475',
-    type: 'bind'
-  },
-  'phsf0212': {
-    codes: ['phsf021210','phsf021209','phsf021208','phsf021207'],
-    pkgId: '17139475',
-    type: 'bind'
-  },
-  'gm0pha': {
-    codes: ['gm0pha11','gm0pha12','gm0pha13','gm0pha14'],
-    pkgId: '17131185',
-    mid:   '4142402',
-    type:  'delivery'
-  },
-  'phsf0212ultra': {
-    codes: ['phsf021210','phsf021209','phsf021208','phsf021207','phsf021206','phsf021205','phsf021204','phsf021203'],
-    pkgId: '17139475',
-    type:  'bind'
-  },
-  'ph031381': {
-    codes: ['ph0313n5','ph0313n10','ph0313n15','ph0313n19'],
-    pkgId: '17139475',
-    type:  'bind'
-  },
-  'phsf+ph0313': {
-    codes: ['phsf021210','phsf021209','ph0313n6','phsf021208'],
-    pkgId: '17139475',
-    type:  'bind'
-  },
-};
-var _activeBatch = 'phsf0212';
-
-document.querySelectorAll('.btn-batch').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    var bname = this.getAttribute('data-batch');
-    var batch = CODE_BATCHES[bname];
-    _activeBatch = bname;
-    // Load batch codes into vouchers list
-    vouchers = batch.codes.slice();
-    renderVouchers();
-    // Patch script
-    var src = document.getElementById('scriptout').value;
-    // Patch COUPON_PKG_ID
-    src = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + batch.pkgId + '"');
-    // Patch GM0PHA_MODE and GM0PHA_MID
-    var isDelivery = batch.type === 'delivery';
-    src = src.replace(/(^GM0PHA_MODE\s*=\s*).*$/m, '$1' + (isDelivery ? 'True' : 'False') + '        # Set True to use delivery API mode');
-    if (isDelivery && batch.mid) {
-      src = src.replace(/(GM0PHA_MID\s*=\s*)"[^"]*"/, '$1"' + batch.mid + '"');
-    }
-    document.getElementById('scriptout').value = src;
-    // Highlight active batch button
-    document.querySelectorAll('.btn-batch').forEach(function(b){ b.classList.remove('active'); });
-    this.classList.add('active');
-    var info = batch.type === 'delivery' ? ' | DELIVERY MODE' : ' | pkg=' + batch.pkgId;
-    toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes' + info);
-  });
-});
-
-// ================================================================
-// BRUTE-FORCE PANEL
-// ================================================================
-document.querySelectorAll('.btn-thread').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
-    this.classList.add('active');
-    _bfThreads = parseInt(this.getAttribute('data-t'));
-    toast('i','Threads: ' + _bfThreads);
-  });
-});
-
-document.querySelectorAll('.btn-country').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('.btn-country').forEach(function(b){ b.classList.remove('active'); });
-    this.classList.add('active');
-    _bfCountry = this.getAttribute('data-c');
-    toast('i','Claim country: ' + _bfCountry);
-  });
-});
-
-document.getElementById('bfapplybtn').addEventListener('click', function(){
-  var start    = document.getElementById('bf-start').value.trim();
-  var end      = document.getElementById('bf-end').value.trim();
-  var maxClaim = document.getElementById('bf-maxclaim').value.trim() || '1';
-
-  if (!start || !end || isNaN(+start) || isNaN(+end)) {
-    toast('e','Enter valid Start and End Package IDs'); return;
-  }
-  if (+start > +end) {
-    toast('e','Start must be \u2264 End'); return;
-  }
-
-  var src = document.getElementById('scriptout').value;
-  var changed = [];
-
-  function repBf(name, val) {
-    // Match:  NAME = <anything until end-of-line>
-    var re  = new RegExp('(^' + name + '\\s*=\\s*).*$', 'm');
-    var nxt = src.replace(re, '$1' + val);
-    if (nxt !== src) { src = nxt; changed.push(name); }
-  }
-
-  repBf('BRUTE_MODE',       'True          # Set True to enable brute-force scan');
-  repBf('BRUTE_START',      start + '    # Starting packageId');
-  repBf('BRUTE_END',        end   + '    # Ending packageId (inclusive)');
-  repBf('BRUTE_THREADS',    _bfThreads + '          # Threads: 10 | 20 | 30');
-  repBf('BRUTE_MAX_CLAIMS', maxClaim   + '           # Stop after this many successful claims (0 = unlimited)');
-  repBf('CLAIM_COUNTRY',    '"' + _bfCountry + '"   # <\u2500 change to MY or TH if needed');
-
-  document.getElementById('scriptout').value = src;
-
-  var badge = document.getElementById('bfbadge');
-  badge.textContent = 'ACTIVE \u00b7 ' + start + '\u2192' + end + ' \u00b7 ' + _bfThreads + 'T \u00b7 ' + _bfCountry;
-  badge.className = 'b b-green';
-  document.getElementById('bfstatus').textContent = '\u2713 ' + changed.length + ' field(s) injected';
-
-  markUpdated('BRUTE-FORCE');
-  toast('s', '\u26a1 Brute-force config applied \u00b7 ' + _bfCountry);
-});
-
-// ================================================================
-// TOKEN VAULT
-// ================================================================
-var _vault = (function(){
-  try { var s = localStorage.getItem('shein_vault'); return s ? JSON.parse(s) : []; }
-  catch(e){ return []; }
-})();
-var _lastParsed = null; // holds last successfully parsed token data
-
-function vaultPersist() {
-  try { localStorage.setItem('shein_vault', JSON.stringify(_vault)); } catch(e){}
-}
-
-function vaultSave() {
-  if (!_lastParsed || !_lastParsed.TOKEN) {
-    toast('e', 'No parsed token to save. Parse a RAW request first.');
-    return;
-  }
-  // Check duplicate
-  for (var i = 0; i < _vault.length; i++) {
-    if (_vault[i].token === _lastParsed.TOKEN) {
-      toast('w', 'Token already in vault (#' + (i+1) + ')');
-      return;
-    }
-  }
-  _vault.push({
-    token:      _lastParsed.TOKEN,
-    gw_auth:    _lastParsed.GW_AUTH    || '',
-    armor:      _lastParsed.ARMOR_TOKEN|| '',
-    smdevice:   _lastParsed.SMDEVICE_ID|| '',
-    ugid:       _lastParsed.UGID       || '',
-    sortuid:    _lastParsed.SORTUID    || '',
-    device_id:  _lastParsed.DEVICE_ID  || '',
-    appcountry: _lastParsed.APPCOUNTRY || '',
-    usercountry:_lastParsed.USERCOUNTRY|| '',
-    localcountry:_lastParsed.LOCALCOUNTRY||'',
-    currency:   _lastParsed.CURRENCY   || '',
-    appcurrency:_lastParsed.APPCURRENCY|| '',
-    app_version:_lastParsed.APP_VERSION|| '',
-    device_info:_lastParsed.DEVICE_INFO|| '',
-    label:      'Account ' + (_vault.length + 1)
-  });
-  renderVault();
-  toast('s', '✓ Saved to vault as #' + _vault.length);
-}
-
-function vaultLoad(idx) {
-  var entry = _vault[idx];
-  if (!entry) return;
-
-  var script = ORIG;
-  var changed = [];
-
-  function repV(name, val) {
-    if (!val) return;
-    var re = new RegExp('(' + name + '\\s*=\\s*)"[^"]*"', 'g');
-    var safe = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    var next = script.replace(re, '$1"' + safe + '"');
-    if (next !== script) { script = next; changed.push(name); }
-  }
-
-  repV('GW_AUTH',      entry.gw_auth);
-  repV('ARMOR_TOKEN',  entry.armor);
-  repV('SMDEVICE_ID',  entry.smdevice);
-  repV('UGID',         entry.ugid);
-  repV('SORTUID',      entry.sortuid);
-  repV('DEVICE_ID',    entry.device_id);
-  repV('APPCOUNTRY',   entry.appcountry);
-  repV('USERCOUNTRY',  entry.usercountry);
-  repV('LOCALCOUNTRY', entry.localcountry);
-  repV('CURRENCY',     entry.currency);
-  repV('APPCURRENCY',  entry.appcurrency);
-  repV('APP_VERSION',  entry.app_version);
-  repV('DEVICE_INFO',  entry.device_info);
-
-  // Inject token
-  var safeTok = entry.token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  var tokBlock = 'TOKENS = [\n    "' + safeTok + '",\n]';
-  script = script.replace(/TOKENS\s*=\s*\[[\s\S]*?\]/, tokBlock);
-  changed.push('TOKEN');
-
-  // Re-apply vouchers
-  if (vouchers.length > 0) {
-    var vlines = '';
-    for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
-    script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
-  }
-
-  document.getElementById('scriptout').value = script;
-  markUpdated('VAULT #' + (idx+1));
-  toast('s', '\u2713 Loaded vault #' + (idx+1) + ' into script');
-
-  updateTokenPreview({
-    TOKEN: entry.token, GW_AUTH: entry.gw_auth, ARMOR_TOKEN: entry.armor,
-    SMDEVICE_ID: entry.smdevice, UGID: entry.ugid, SORTUID: entry.sortuid, DEVICE_ID: entry.device_id
-  }, changed);
-}
-function vaultDelete(idx) {
-  var label = '#' + (idx+1);
-  _vault.splice(idx, 1);
-  vaultPersist();
-  renderVault();
-  toast('i', 'Deleted vault entry ' + label);
-}
-
-function renderVault() {
-  var list  = document.getElementById('tv-list');
-  var empty = document.getElementById('tv-empty');
-  document.getElementById('vaultcnt').textContent = _vault.length + ' stored';
-  document.getElementById('vaultused').textContent = _vault.length > 0 ? _vault.length + ' token' + (_vault.length !== 1 ? 's' : '') + ' ready' : '';
-
-  if (_vault.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < _vault.length; i++) {
-    var tok = _vault[i].token;
-    var preview = tok.length > 52 ? tok.slice(0, 49) + '…' : tok;
-    var uid = _vault[i].sortuid ? ' · uid:' + _vault[i].sortuid : '';
-    html += '<div class="tv-item">'
-      + '<div class="tv-num">' + (i+1) + '</div>'
-      + '<div class="tv-tok">' + esc(preview) + '<span>' + esc(_vault[i].label) + uid + '</span></div>'
-      + '<button class="btn-load" data-vi="' + i + '">&#9654; LOAD</button>'
-      + '<button class="btn-del" data-vi="' + i + '">&#10005;</button>'
-      + '</div>';
-  }
-  list.innerHTML = html;
-  list.querySelectorAll('.btn-load').forEach(function(btn){
-    btn.addEventListener('click', function(){ vaultLoad(parseInt(this.getAttribute('data-vi'))); });
-  });
-  list.querySelectorAll('.btn-del').forEach(function(btn){
-    btn.addEventListener('click', function(){ vaultDelete(parseInt(this.getAttribute('data-vi'))); });
-  });
-}
-
-
-
-// ================================================================
-// INIT (after all functions defined)
-// ================================================================
-document.getElementById('scriptout').value = ORIG;
-loadCodesFromText(ORIG);
-
-document.getElementById('vaultsavebtn').addEventListener('click', vaultSave);
-document.getElementById('vaultclearbtn').addEventListener('click', function(){ _vault=[]; vaultPersist(); renderVault(); toast('i','Vault cleared'); });
-renderVault();
-document.getElementById('parsebtn').addEventListener('click', doParse);
-document.getElementById('clearbtn').addEventListener('click', function(){ document.getElementById('rawin').value = ''; });
-document.getElementById('addbtn').addEventListener('click', doAdd);
-document.getElementById('applybtn').addEventListener('click', doApply);
-document.getElementById('reloadbtn').addEventListener('click', function(){ loadCodesFromText(document.getElementById('scriptout').value); toast('i','Reloaded from script'); });
-document.getElementById('clearvbtn').addEventListener('click', function(){ vouchers=[]; renderVouchers(); toast('i','Cleared'); });
-document.getElementById('vinput').addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();doAdd();} });
-document.getElementById('rawin').addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();doParse();} });
-document.getElementById('histclearbtn').addEventListener('click', function(){ _parseHistory=[]; renderHistory(); toast('i','History cleared'); });
-renderHistory();
-
-// ================================================================
-// CLOUD RUNNER
-// ================================================================
-var _runAbort = null;
-var _running  = false;
-
-// Persist server URL and key with lock/unlock UI
-(function(){
-  document.getElementById('run-url').value = window.location.origin;
-  var savedKey = localStorage.getItem('ssu_run_key');
-  var keyInput  = document.getElementById('run-key');
-  var applyBtn  = document.getElementById('key-apply');
-  var editBtn   = document.getElementById('key-edit');
-  var eyeBtn    = document.getElementById('key-eye');
-  var savedBadge= document.getElementById('key-saved-badge');
-
-  function lockKey() {
-    keyInput.readOnly = true;
-    keyInput.style.opacity = '0.6';
-    keyInput.style.cursor  = 'default';
-    keyInput.type = 'password';
-    eyeBtn.textContent = '\uD83D\uDC41';
-    applyBtn.style.display = 'none';
-    editBtn.style.display  = '';
-    savedBadge.style.display = '';
-  }
-  function unlockKey() {
-    keyInput.readOnly = false;
-    keyInput.style.opacity = '1';
-    keyInput.style.cursor  = '';
-    applyBtn.style.display = '';
-    editBtn.style.display  = 'none';
-    savedBadge.style.display = 'none';
-    keyInput.focus();
-  }
-
-  // Load saved key and lock on start
-  if (savedKey) {
-    keyInput.value = savedKey;
-    lockKey();
-  }
-
-  applyBtn.addEventListener('click', function(){
-    var k = keyInput.value.trim();
-    if (!k) { toast('e', 'Enter an access key first'); return; }
-    localStorage.setItem('ssu_run_key', k);
-    lockKey();
-    toast('s', '\u2713 Access key saved');
-  });
-  editBtn.addEventListener('click', function(){
-    unlockKey();
-  });
-  eyeBtn.addEventListener('click', function(){
-    if (keyInput.type === 'password') {
-      keyInput.type = 'text';
-      this.textContent = '\uD83D\uDC41\uFE0F';
-    } else {
-      keyInput.type = 'password';
-      this.textContent = '\uD83D\uDC41';
-    }
-  });
-})();
-
-// ── RESULT COLLECTOR & MODAL ──
-var _results = { claimed:[], failed:[], warned:[], raw:[] };
-
-function classifyLine(line) {
-  // Check warning patterns FIRST — "ALREADY CLAIMED" must not be treated as a success
-  if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
-  if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 || (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0)) return 'ok';
-  if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
-  return '';
-}
-
-function showRunModal(aborted) {
-  var modal = document.getElementById('run-modal');
-  var icon  = document.getElementById('run-modal-icon');
-  var title = document.getElementById('run-modal-title');
-  var sub   = document.getElementById('run-modal-subtitle');
-  var items = document.getElementById('run-modal-items');
-
-  var nClaimed = _results.claimed.length;
-  var nFailed  = _results.failed.length;
-  var nWarned  = _results.warned.length;
-
-  if (aborted) {
-    icon.textContent  = '\u26d4';
-    title.textContent = 'Stopped';
-    sub.textContent   = 'Run was cancelled by user.';
-  } else if (nClaimed > 0) {
-    icon.textContent  = '\u2705';
-    title.textContent = nClaimed + ' Coupon' + (nClaimed>1?'s':'') + ' Claimed!';
-    sub.textContent   = (nFailed+nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : 'All codes collected successfully');
-  } else if (nFailed > 0) {
-    icon.textContent  = '\u274c';
-    title.textContent = 'Claim Failed';
-    sub.textContent   = nFailed + ' error' + (nFailed>1?'s':'') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
-  } else if (nWarned > 0) {
-    icon.textContent  = '\u26a0\uFE0F';
-    title.textContent = 'Already Claimed';
-    sub.textContent   = 'These coupons are already in your account.';
-  } else {
-    icon.textContent  = '\u2139\uFE0F';
-    title.textContent = 'Session Complete';
-    sub.textContent   = 'No actionable results detected.';
-  }
-
-  // Render result chips
-  var html = '';
-  if (_results.claimed.length) {
-    html += '<div class="rm-chips">';
-    _results.claimed.forEach(function(l){ html += '<span class="rm-chip ok">\u2713 ' + esc(l.replace(/.*CLAIMED[^\[]*\[?([^\]]+)\]?.*/,'$1').trim().substring(0,40)) + '</span>'; });
-    html += '</div>';
-  }
-  if (_results.failed.length) {
-    html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">' + _results.failed.length + ' error(s)</div><div class="rm-sub">Check server / tokens</div></div></div>';
-  }
-  if (_results.warned.length) {
-    html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
-  }
-  if (!html) {
-    html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
-  }
-  items.innerHTML = html;
-
-  modal.classList.add('active');
-  modal.style.display = 'flex';
-}
-
-function hideRunModal() {
-  var modal = document.getElementById('run-modal');
-  modal.classList.remove('active');
-  modal.style.display = 'none';
-}
-
-document.getElementById('run-modal-close').addEventListener('click', hideRunModal);
-document.getElementById('run-modal').addEventListener('click', function(e){ if(e.target===this) hideRunModal(); });
-
-function buildCfgFromScript() {
-  var src = document.getElementById('scriptout').value;
-  var lines = src.split('\n');
-
-  function extract(name) {
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (line.indexOf(name) === 0) {
-        var eq = line.indexOf('=');
-        if (eq < 0) continue;
-        var rest = line.slice(eq + 1).trim();
-        var q1 = rest.indexOf('"');
-        var q2 = rest.indexOf('"', q1 + 1);
-        if (q1 >= 0 && q2 > q1) return rest.slice(q1 + 1, q2);
+    function historyLoad(idx) {
+      var h = _parseHistory[idx];
+      if (!h) return;
+      // Re-run the same script-patching logic using stored parsed data
+      var script = ORIG;
+      var changed = [];
+      function repV(name, val) {
+        if (!val) return;
+        var re = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
+        var next = script.replace(re, '$1"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"');
+        if (next !== script) { script = next; changed.push(name); }
       }
-    }
-    return '';
-  }
-  function extractBool(name) {
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (line.indexOf(name) === 0) {
-        var eq = line.indexOf('=');
-        if (eq < 0) continue;
-        var rest = line.slice(eq + 1).trim();
-        if (rest.indexOf('True') === 0) return true;
-        if (rest.indexOf('False') === 0) return false;
+      var p = h.parsed;
+      repV('GW_AUTH', p.GW_AUTH);
+      repV('ARMOR_TOKEN', p.ARMOR_TOKEN);
+      repV('SMDEVICE_ID', p.SMDEVICE_ID);
+      repV('UGID', p.UGID);
+      repV('SORTUID', p.SORTUID);
+      repV('DEVICE_ID', p.DEVICE_ID);
+      repV('APPCOUNTRY', p.APPCOUNTRY);
+      repV('USERCOUNTRY', p.USERCOUNTRY);
+      repV('LOCALCOUNTRY', p.LOCALCOUNTRY);
+      repV('CURRENCY', p.CURRENCY);
+      repV('APPCURRENCY', p.APPCURRENCY);
+      repV('APP_VERSION', p.APP_VERSION);
+      repV('DEVICE_INFO', p.DEVICE_INFO);
+      if (p.TOKEN) {
+        var tokBlock = 'TOKENS = [\n    "' + p.TOKEN.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '",\n]';
+        script = script.replace(/TOKENS\s*=\s*\[[\s\S]*?\]/, tokBlock);
+        changed.push('TOKEN');
       }
-    }
-    return false;
-  }
-  function extractInt(name) {
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      if (line.indexOf(name) === 0) {
-        var eq = line.indexOf('=');
-        if (eq < 0) continue;
-        var rest = line.slice(eq + 1).trim();
-        var n = parseInt(rest);
-        if (!isNaN(n)) return n;
+      if (p.COUPON_PKG_ID) {
+        script = script.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + p.COUPON_PKG_ID + '"');
+        changed.push('COUPON_PKG_ID');
       }
+      if (vouchers.length > 0) {
+        var vlines = '';
+        for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+        script = script.replace(/CODES\s*=\s*\[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
+      }
+      document.getElementById('scriptout').value = script;
+      updateTokenPreview(p, changed);
+      markUpdated('HISTORY #' + (idx + 1));
+      var scriptTxt = script;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(scriptTxt).then(function () { toast('s', '\u2713 Loaded history #' + (idx + 1) + ' \u2014 script copied!'); })
+          .catch(function () { fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx + 1) + ' \u2014 copied (fallback)!'); });
+      } else { fallbackCopy(scriptTxt); toast('s', '\u2713 Loaded history #' + (idx + 1)); }
     }
-    return 0;
-  }
-  function extractTokens() {
-    var m = src.match(/TOKENS\s*=\s*\[([\s\S]*?)\]/);
-    if (!m) return [];
-    var found = m[1].match(/"([^"]+)"/g);
-    return found ? found.map(function(t){ return t.replace(/"/g,''); }) : [];
-  }
-  function extractCodes() {
-    var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
-    if (!m) return [];
-    var found = m[1].match(/"([^"]+)"/g);
-    return found ? found.map(function(c){ return c.replace(/"/g,''); }) : [];
-  }
 
-  var bruteMode   = extractBool('BRUTE_MODE');
-  var deliveryMode = extractBool('GM0PHA_MODE');
-  var mode = bruteMode ? 'brute' : (deliveryMode ? 'delivery' : 'bind');
-
-  return {
-    tokens:          extractTokens(),
-    codes:           extractCodes(),
-    pkg_id:          extract('COUPON_PKG_ID'),
-    gw_auth:         extract('GW_AUTH'),
-    armor_token:     extract('ARMOR_TOKEN'),
-    smdevice_id:     extract('SMDEVICE_ID'),
-    ugid:            extract('UGID'),
-    sortuid:         extract('SORTUID'),
-    device_id:       extract('DEVICE_ID'),
-    appcountry:      extract('APPCOUNTRY'),
-    usercountry:     extract('USERCOUNTRY'),
-    localcountry:    extract('LOCALCOUNTRY'),
-    currency:        extract('CURRENCY'),
-    appcurrency:     extract('APPCURRENCY'),
-    app_version:     extract('APP_VERSION'),
-    device_info:     extract('DEVICE_INFO'),
-    claim_country:   extract('CLAIM_COUNTRY'),
-    gm_site:         extract('GM0PHA_SITE'),
-    gm_mid:          extract('GM0PHA_MID'),
-    gm_device_id:    extract('GM0PHA_DEVICE_ID'),
-    mode:            mode,
-    brute_start:     extractInt('BRUTE_START'),
-    brute_end:       extractInt('BRUTE_END'),
-    brute_threads:   extractInt('BRUTE_THREADS'),
-    brute_max_claims:extractInt('BRUTE_MAX_CLAIMS'),
-    account_delay:   document.getElementById('run-delay').value || 3,
-  };
-}
-
-function setRunning(on) {
-  _running = on;
-  var runBtn  = document.getElementById('runbtn');
-  var badge   = document.getElementById('runbadge');
-  var status  = document.getElementById('runstatus');
-  var loading = document.getElementById('run-loading');
-  runBtn.disabled = on;
-  if (on) {
-    badge.textContent = 'RUNNING';
-    badge.className   = 'b b-green';
-    status.textContent = '';
-    loading.style.display = 'flex';
-    loading.classList.add('active');
-    _results = { claimed:[], failed:[], warned:[], raw:[] };
-  } else {
-    badge.textContent = 'READY';
-    badge.className   = 'b b-green';
-    status.textContent = '';
-    loading.style.display = 'none';
-    loading.classList.remove('active');
-  }
-}
-
-document.getElementById('runbtn').addEventListener('click', function() {
-  var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
-  var key = document.getElementById('run-key').value.trim();
-  if (!url) { toast('e', 'Enter your Railway server URL first'); return; }
-  if (!key) { toast('e', 'Enter your access key first'); return; }
-
-  var cfg = buildCfgFromScript();
-  if (!cfg.tokens.length) { toast('e', 'No tokens in script — parse a RAW request first'); return; }
-
-  setRunning(true);
-
-  var controller = new AbortController();
-  _runAbort = controller;
-
-  fetch(url + '/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ access_key: key, cfg: cfg }),
-    signal: controller.signal,
-  }).then(function(resp) {
-    if (!resp.ok) {
-      return resp.json().then(function(e){ throw new Error(e.error || 'HTTP ' + resp.status); });
-    }
-    var reader = resp.body.getReader();
-    var decoder = new TextDecoder();
-    var buf = '';
-    function pump() {
-      return reader.read().then(function(result) {
-        if (result.done) { setRunning(false); showRunModal(false); return; }
-        buf += decoder.decode(result.value, { stream: true });
-        var parts = buf.split('\n\n');
-        buf = parts.pop();
-        parts.forEach(function(part) {
-          var line = part.replace(/^data:\s?/, '');
-          if (line === '[DONE]') { setRunning(false); showRunModal(false); return; }
-          if (!line) return;
-          _results.raw.push(line);
-          var cls = classifyLine(line);
-          if (cls === 'ok')   _results.claimed.push(line);
-          else if (cls === 'err')  _results.failed.push(line);
-          else if (cls === 'warn') _results.warned.push(line);
+    function renderHistory() {
+      var list = document.getElementById('hist-list');
+      var empty = document.getElementById('hist-empty');
+      document.getElementById('histcnt').textContent = _parseHistory.length + ' entr' + (_parseHistory.length === 1 ? 'y' : 'ies');
+      if (_parseHistory.length === 0) {
+        list.innerHTML = '';
+        list.appendChild(empty);
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < _parseHistory.length; i++) {
+        var h = _parseHistory[i];
+        var preview = h.token.length > 44 ? h.token.slice(0, 41) + '\u2026' : h.token;
+        html += '<div class="tv-item">'
+          + '<div class="tv-num">' + (i + 1) + '</div>'
+          + '<div class="tv-tok">' + esc(preview) + '<span>uid:' + esc(h.uid) + ' \u00b7 ' + h.changed + ' fields \u00b7 ' + h.time + '</span></div>'
+          + '<button class="btn-load" data-hi="' + i + '">&#9654; LOAD</button>'
+          + '<button class="btn-rm" data-hi="' + i + '">&#10005;</button>'
+          + '</div>';
+      }
+      list.innerHTML = html;
+      list.querySelectorAll('.btn-load[data-hi]').forEach(function (btn) {
+        btn.addEventListener('click', function () { historyLoad(parseInt(this.getAttribute('data-hi'))); });
+      });
+      list.querySelectorAll('.btn-rm[data-hi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-hi'));
+          _parseHistory.splice(idx, 1);
+          renderHistory();
+          toast('i', 'Removed history entry');
         });
-        return pump();
       });
     }
-    return pump();
-  }).catch(function(err) {
-    setRunning(false);
-    if (err.name === 'AbortError') {
-      showRunModal(true);
-    } else {
-      _results.failed.push('Connection error: ' + err.message);
-      showRunModal(false);
-      toast('e', 'Runner error: ' + err.message);
+
+    // ================================================================
+    // VOUCHER MANAGER
+    // ================================================================
+    function loadCodesFromText(src) {
+      var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
+      if (!m) return;
+      var found = m[1].match(/"([^"]+)"/g);
+      vouchers = found ? found.map(function (c) { return c.replace(/"/g, ''); }) : [];
+      renderVouchers();
     }
-  });
-});
 
-document.getElementById('stopbtn').addEventListener('click', function() {
-  if (_runAbort) { _runAbort.abort(); _runAbort = null; }
-  setRunning(false);
-});
+    function renderVouchers() {
+      var list = document.getElementById('vlist');
+      var empty = document.getElementById('vempty');
+      document.getElementById('vcnt').textContent = vouchers.length + ' code' + (vouchers.length !== 1 ? 's' : '');
+      if (vouchers.length === 0) {
+        list.innerHTML = '';
+        list.appendChild(empty);
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < vouchers.length; i++) {
+        html += '<div class="vi">'
+          + '<span class="vc">' + (i + 1) + '. ' + esc(vouchers[i]) + '</span>'
+          + '<button class="btn-rm" data-i="' + i + '">&#10005; REMOVE</button>'
+          + '</div>';
+      }
+      list.innerHTML = html;
+      list.querySelectorAll('.btn-rm').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-i'));
+          var code = vouchers[idx];
+          vouchers.splice(idx, 1);
+          renderVouchers();
+          toast('i', 'Removed: ' + code);
+        });
+      });
+    }
 
-// ================================================================
-// THEME TOGGLE
-// ================================================================
-(function(){
-  var btn = document.getElementById('themeToggle');
-  var t = document.documentElement.getAttribute('data-theme') || 'dark';
-  btn.textContent = t === 'dark' ? '\u2600' : '\uD83C\uDF19';
-  btn.addEventListener('click', function(){
-    var cur = document.documentElement.getAttribute('data-theme');
-    var next = cur === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('ssu_theme', next);
-    this.textContent = next === 'dark' ? '\u2600' : '\uD83C\uDF19';
-  });
-})();
-</script>
+    function doAdd() {
+      var raw = document.getElementById('vinput').value.trim();
+      if (!raw) { toast('w', 'Enter a voucher code first'); return; }
+      var parts = raw.split(',');
+      var added = [], dupes = [];
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].trim();
+        if (!c) continue;
+        if (vouchers.indexOf(c) >= 0) { dupes.push(c); }
+        else { vouchers.push(c); added.push(c); }
+      }
+      document.getElementById('vinput').value = '';
+      renderVouchers();
+      if (added.length && !dupes.length) toast('s', '\u2713 Added: ' + added.join(', '));
+      else if (added.length) toast('w', '\u2713 Added ' + added.length + ', skipped ' + dupes.length + ' dupe(s)');
+      else toast('w', '\u26a0 Already in list: ' + dupes.join(', '));
+    }
+
+    function doApply() {
+      if (vouchers.length === 0) { toast('e', 'No voucher codes to apply'); return; }
+      var lines = '';
+      for (var i = 0; i < vouchers.length; i++) lines += '    "' + vouchers[i] + '",\n';
+      var block = 'CODES = [\n' + lines + ']';
+      var src = document.getElementById('scriptout').value;
+      var updated = src.replace(/CODES\s*=\s*\[[\s\S]*?\]/, block);
+      if (updated === src) { toast('e', 'Could not find CODES block in script'); return; }
+      document.getElementById('scriptout').value = updated;
+      markUpdated('CODES (' + vouchers.length + ')');
+      toast('s', '\u2713 ' + vouchers.length + ' code(s) applied to script');
+    }
+
+    // ================================================================
+    // RAW PARSER
+    // ================================================================
+    function getHdr(raw, name) {
+      var re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
+      var m = raw.match(re);
+      return m ? m[1].trim() : null;
+    }
+
+    function doParse() {
+      var raw = document.getElementById('rawin').value.trim();
+      if (!raw) { toast('e', '\u2715 No RAW data pasted!'); return; }
+
+      var parsed = {
+        TOKEN: getHdr(raw, 'token'),
+        GW_AUTH: getHdr(raw, 'x-gw-auth'),
+        ARMOR_TOKEN: getHdr(raw, 'armortoken'),
+        SMDEVICE_ID: getHdr(raw, 'smdeviceid'),
+        UGID: getHdr(raw, 'ugid'),
+        SORTUID: getHdr(raw, 'sortuid') || getHdr(raw, 'newuid'),
+        DEVICE_ID: getHdr(raw, 'dev-id') || getHdr(raw, 'deviceid'),
+        APPCOUNTRY: getHdr(raw, 'appcountry'),
+        USERCOUNTRY: getHdr(raw, 'usercountry'),
+        LOCALCOUNTRY: getHdr(raw, 'localcountry'),
+        CURRENCY: getHdr(raw, 'currency'),
+        APPCURRENCY: getHdr(raw, 'appcurrency'),
+        APP_VERSION: getHdr(raw, 'version') || getHdr(raw, 'appversion'),
+        DEVICE_INFO: getHdr(raw, 'device'),
+      };
+
+      var pkgm = raw.match(/"couponPackageId"\s*:\s*"([^"]+)"/);
+      if (pkgm) parsed.COUPON_PKG_ID = pkgm[1].trim();
+
+      var anyFound = parsed.TOKEN || parsed.GW_AUTH || parsed.ARMOR_TOKEN;
+      if (!anyFound) { toast('e', '\u2715 No tokens found. Check your RAW format.'); return; }
+
+      var script = ORIG;
+      var changed = [];
+
+      function repVar(name, val) {
+        if (!val) return;
+        var re = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
+        var next = script.replace(re, '$1"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"');
+        if (next !== script) { script = next; changed.push(name); }
+      }
+
+      repVar('GW_AUTH', parsed.GW_AUTH);
+      repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
+      repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
+      repVar('UGID', parsed.UGID);
+      repVar('SORTUID', parsed.SORTUID);
+      repVar('DEVICE_ID', parsed.DEVICE_ID);
+      repVar('APPCOUNTRY', parsed.APPCOUNTRY);
+      repVar('USERCOUNTRY', parsed.USERCOUNTRY);
+      repVar('LOCALCOUNTRY', parsed.LOCALCOUNTRY);
+      repVar('CURRENCY', parsed.CURRENCY);
+      repVar('APPCURRENCY', parsed.APPCURRENCY);
+      repVar('APP_VERSION', parsed.APP_VERSION);
+      repVar('DEVICE_INFO', parsed.DEVICE_INFO);
+
+      if (parsed.TOKEN) {
+        var tokRe = /TOKENS\s*=\s*\[[\s\S]*?\]/;
+        var tokBlock = 'TOKENS = [\n    "' + parsed.TOKEN.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '",\n]';
+        var nt = script.replace(tokRe, tokBlock);
+        if (nt !== script) { script = nt; changed.push('TOKEN'); }
+      }
+
+      if (parsed.COUPON_PKG_ID) {
+        var pkgRe = new RegExp('(COUPON_PKG_ID\\s*=\\s*)"[^"]*"', 'g');
+        var np = script.replace(pkgRe, '$1"' + parsed.COUPON_PKG_ID + '"');
+        if (np !== script) { script = np; changed.push('COUPON_PKG_ID'); }
+      }
+
+      // Re-apply current voucher list
+      if (vouchers.length > 0) {
+        var vlines = '';
+        for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+        var vblock = 'CODES = [\n' + vlines + ']';
+        script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, vblock);
+      }
+
+      document.getElementById('scriptout').value = script;
+      updateTokenPreview(parsed, changed);
+
+      var cc = document.getElementById('nchanged');
+      cc.style.display = 'inline';
+      cc.textContent = changed.length + ' CHANGED';
+
+      document.getElementById('sum').className = 'on';
+      var chips = '';
+      for (var chi = 0; chi < changed.length; chi++) chips += '<span class="chip">' + changed[chi] + '</span> ';
+      document.getElementById('schips').innerHTML = chips;
+
+      _lastParsed = parsed;
+      markUpdated(changed.length + ' tokens');
+      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length !== 1 ? 's' : '') + ' updated \u2014 ready to RUN!');
+
+      // Clear RAW input
+      document.getElementById('rawin').value = '';
+
+      // Add to parse history (dedupe by token)
+      addParseHistory(parsed, changed.length);
+    }
+
+    function updateTokenPreview(parsed, changed) {
+      var fields = [
+        ['TOKEN', parsed.TOKEN],
+        ['GW_AUTH', parsed.GW_AUTH],
+        ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
+        ['SMDEVICE_ID', parsed.SMDEVICE_ID],
+        ['UGID', parsed.UGID],
+        ['SORTUID', parsed.SORTUID],
+        ['DEVICE_ID', parsed.DEVICE_ID],
+      ];
+      var html = '';
+      for (var i = 0; i < fields.length; i++) {
+        var fname = fields[i][0], fval = fields[i][1];
+        var isChanged = changed.indexOf(fname) >= 0;
+        if (!fval) {
+          html += '<div class="tr"><div class="tk">' + fname + '</div><div class="tv dim">&#8212; not found &#8212;</div></div>';
+        } else {
+          var display = fval.length > 58 ? fval.slice(0, 55) + '\u2026' : fval;
+          html += '<div class="tr"><div class="tk">' + fname + '</div>'
+            + '<div class="tv' + (isChanged ? ' ok' : '') + '">' + (isChanged ? '\u2713 ' : '') + esc(display) + '</div></div>';
+        }
+      }
+      document.getElementById('tpreview').innerHTML = html;
+    }
+
+
+    // ================================================================
+    // CODE BATCHES
+    // ================================================================
+    var CODE_BATCHES = {
+      'ph0313': {
+        codes: ['ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
+        pkgId: '17139475',
+        type: 'bind'
+      },
+      'phsf0212': {
+        codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207'],
+        pkgId: '17139475',
+        type: 'bind'
+      },
+      'gm0pha': {
+        codes: ['gm0pha11', 'gm0pha12', 'gm0pha13', 'gm0pha14'],
+        pkgId: '17131185',
+        mid: '4142402',
+        type: 'delivery'
+      },
+      'phsf0212ultra': {
+        codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207', 'phsf021206', 'phsf021205', 'phsf021204', 'phsf021203'],
+        pkgId: '17139475',
+        type: 'bind'
+      },
+      'ph031381': {
+        codes: ['ph0313n5', 'ph0313n10', 'ph0313n15', 'ph0313n19'],
+        pkgId: '17139475',
+        type: 'bind'
+      },
+      'phsf+ph0313': {
+        codes: ['phsf021210', 'phsf021209', 'ph0313n6', 'phsf021208'],
+        pkgId: '17139475',
+        type: 'bind'
+      },
+    };
+    var _activeBatch = 'phsf0212';
+
+    document.querySelectorAll('.btn-batch').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var bname = this.getAttribute('data-batch');
+        var batch = CODE_BATCHES[bname];
+        _activeBatch = bname;
+        // Load batch codes into vouchers list
+        vouchers = batch.codes.slice();
+        renderVouchers();
+        // Patch script
+        var src = document.getElementById('scriptout').value;
+        // Patch COUPON_PKG_ID
+        src = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + batch.pkgId + '"');
+        // Patch GM0PHA_MODE and GM0PHA_MID
+        var isDelivery = batch.type === 'delivery';
+        src = src.replace(/(^GM0PHA_MODE\s*=\s*).*$/m, '$1' + (isDelivery ? 'True' : 'False') + '        # Set True to use delivery API mode');
+        if (isDelivery && batch.mid) {
+          src = src.replace(/(GM0PHA_MID\s*=\s*)"[^"]*"/, '$1"' + batch.mid + '"');
+        }
+        document.getElementById('scriptout').value = src;
+        // Highlight active batch button
+        document.querySelectorAll('.btn-batch').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        var info = batch.type === 'delivery' ? ' | DELIVERY MODE' : ' | pkg=' + batch.pkgId;
+        toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes' + info);
+      });
+    });
+
+    // ================================================================
+    // BRUTE-FORCE PANEL
+    // ================================================================
+    document.querySelectorAll('.btn-thread').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-thread').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        _bfThreads = parseInt(this.getAttribute('data-t'));
+        toast('i', 'Threads: ' + _bfThreads);
+      });
+    });
+
+    document.querySelectorAll('.btn-country').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-country').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        _bfCountry = this.getAttribute('data-c');
+        toast('i', 'Claim country: ' + _bfCountry);
+      });
+    });
+
+    document.getElementById('bfapplybtn').addEventListener('click', function () {
+      var start = document.getElementById('bf-start').value.trim();
+      var end = document.getElementById('bf-end').value.trim();
+      var maxClaim = document.getElementById('bf-maxclaim').value.trim() || '1';
+
+      if (!start || !end || isNaN(+start) || isNaN(+end)) {
+        toast('e', 'Enter valid Start and End Package IDs'); return;
+      }
+      if (+start > +end) {
+        toast('e', 'Start must be \u2264 End'); return;
+      }
+
+      var src = document.getElementById('scriptout').value;
+      var changed = [];
+
+      function repBf(name, val) {
+        // Match:  NAME = <anything until end-of-line>
+        var re = new RegExp('(^' + name + '\\s*=\\s*).*$', 'm');
+        var nxt = src.replace(re, '$1' + val);
+        if (nxt !== src) { src = nxt; changed.push(name); }
+      }
+
+      repBf('BRUTE_MODE', 'True          # Set True to enable brute-force scan');
+      repBf('BRUTE_START', start + '    # Starting packageId');
+      repBf('BRUTE_END', end + '    # Ending packageId (inclusive)');
+      repBf('BRUTE_THREADS', _bfThreads + '          # Threads: 10 | 20 | 30');
+      repBf('BRUTE_MAX_CLAIMS', maxClaim + '           # Stop after this many successful claims (0 = unlimited)');
+      repBf('CLAIM_COUNTRY', '"' + _bfCountry + '"   # <\u2500 change to MY or TH if needed');
+
+      document.getElementById('scriptout').value = src;
+
+      var badge = document.getElementById('bfbadge');
+      badge.textContent = 'ACTIVE \u00b7 ' + start + '\u2192' + end + ' \u00b7 ' + _bfThreads + 'T \u00b7 ' + _bfCountry;
+      badge.className = 'b b-green';
+      document.getElementById('bfstatus').textContent = '\u2713 ' + changed.length + ' field(s) injected';
+
+      markUpdated('BRUTE-FORCE');
+      toast('s', '\u26a1 Brute-force config applied \u00b7 ' + _bfCountry);
+    });
+
+    // ================================================================
+    // TOKEN VAULT
+    // ================================================================
+    var _vault = (function () {
+      try { var s = localStorage.getItem('shein_vault'); return s ? JSON.parse(s) : []; }
+      catch (e) { return []; }
+    })();
+    var _lastParsed = null; // holds last successfully parsed token data
+
+    function vaultPersist() {
+      try { localStorage.setItem('shein_vault', JSON.stringify(_vault)); } catch (e) { }
+    }
+
+    function vaultSave() {
+      if (!_lastParsed || !_lastParsed.TOKEN) {
+        toast('e', 'No parsed token to save. Parse a RAW request first.');
+        return;
+      }
+      // Check duplicate
+      for (var i = 0; i < _vault.length; i++) {
+        if (_vault[i].token === _lastParsed.TOKEN) {
+          toast('w', 'Token already in vault (#' + (i + 1) + ')');
+          return;
+        }
+      }
+      _vault.push({
+        token: _lastParsed.TOKEN,
+        gw_auth: _lastParsed.GW_AUTH || '',
+        armor: _lastParsed.ARMOR_TOKEN || '',
+        smdevice: _lastParsed.SMDEVICE_ID || '',
+        ugid: _lastParsed.UGID || '',
+        sortuid: _lastParsed.SORTUID || '',
+        device_id: _lastParsed.DEVICE_ID || '',
+        appcountry: _lastParsed.APPCOUNTRY || '',
+        usercountry: _lastParsed.USERCOUNTRY || '',
+        localcountry: _lastParsed.LOCALCOUNTRY || '',
+        currency: _lastParsed.CURRENCY || '',
+        appcurrency: _lastParsed.APPCURRENCY || '',
+        app_version: _lastParsed.APP_VERSION || '',
+        device_info: _lastParsed.DEVICE_INFO || '',
+        label: 'Account ' + (_vault.length + 1)
+      });
+      renderVault();
+      toast('s', '✓ Saved to vault as #' + _vault.length);
+    }
+
+    function vaultLoad(idx) {
+      var entry = _vault[idx];
+      if (!entry) return;
+
+      var script = ORIG;
+      var changed = [];
+
+      function repV(name, val) {
+        if (!val) return;
+        var re = new RegExp('(' + name + '\\s*=\\s*)"[^"]*"', 'g');
+        var safe = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        var next = script.replace(re, '$1"' + safe + '"');
+        if (next !== script) { script = next; changed.push(name); }
+      }
+
+      repV('GW_AUTH', entry.gw_auth);
+      repV('ARMOR_TOKEN', entry.armor);
+      repV('SMDEVICE_ID', entry.smdevice);
+      repV('UGID', entry.ugid);
+      repV('SORTUID', entry.sortuid);
+      repV('DEVICE_ID', entry.device_id);
+      repV('APPCOUNTRY', entry.appcountry);
+      repV('USERCOUNTRY', entry.usercountry);
+      repV('LOCALCOUNTRY', entry.localcountry);
+      repV('CURRENCY', entry.currency);
+      repV('APPCURRENCY', entry.appcurrency);
+      repV('APP_VERSION', entry.app_version);
+      repV('DEVICE_INFO', entry.device_info);
+
+      // Inject token
+      var safeTok = entry.token.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      var tokBlock = 'TOKENS = [\n    "' + safeTok + '",\n]';
+      script = script.replace(/TOKENS\s*=\s*\[[\s\S]*?\]/, tokBlock);
+      changed.push('TOKEN');
+
+      // Re-apply vouchers
+      if (vouchers.length > 0) {
+        var vlines = '';
+        for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+        script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
+      }
+
+      document.getElementById('scriptout').value = script;
+      markUpdated('VAULT #' + (idx + 1));
+      toast('s', '\u2713 Loaded vault #' + (idx + 1) + ' into script');
+
+      updateTokenPreview({
+        TOKEN: entry.token, GW_AUTH: entry.gw_auth, ARMOR_TOKEN: entry.armor,
+        SMDEVICE_ID: entry.smdevice, UGID: entry.ugid, SORTUID: entry.sortuid, DEVICE_ID: entry.device_id
+      }, changed);
+    }
+    function vaultDelete(idx) {
+      var label = '#' + (idx + 1);
+      _vault.splice(idx, 1);
+      vaultPersist();
+      renderVault();
+      toast('i', 'Deleted vault entry ' + label);
+    }
+
+    function renderVault() {
+      var list = document.getElementById('tv-list');
+      var empty = document.getElementById('tv-empty');
+      document.getElementById('vaultcnt').textContent = _vault.length + ' stored';
+      document.getElementById('vaultused').textContent = _vault.length > 0 ? _vault.length + ' token' + (_vault.length !== 1 ? 's' : '') + ' ready' : '';
+
+      if (_vault.length === 0) {
+        list.innerHTML = '';
+        list.appendChild(empty);
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < _vault.length; i++) {
+        var tok = _vault[i].token;
+        var preview = tok.length > 52 ? tok.slice(0, 49) + '…' : tok;
+        var uid = _vault[i].sortuid ? ' · uid:' + _vault[i].sortuid : '';
+        html += '<div class="tv-item">'
+          + '<div class="tv-num">' + (i + 1) + '</div>'
+          + '<div class="tv-tok">' + esc(preview) + '<span>' + esc(_vault[i].label) + uid + '</span></div>'
+          + '<button class="btn-load" data-vi="' + i + '">&#9654; LOAD</button>'
+          + '<button class="btn-del" data-vi="' + i + '">&#10005;</button>'
+          + '</div>';
+      }
+      list.innerHTML = html;
+      list.querySelectorAll('.btn-load').forEach(function (btn) {
+        btn.addEventListener('click', function () { vaultLoad(parseInt(this.getAttribute('data-vi'))); });
+      });
+      list.querySelectorAll('.btn-del').forEach(function (btn) {
+        btn.addEventListener('click', function () { vaultDelete(parseInt(this.getAttribute('data-vi'))); });
+      });
+    }
+
+
+
+    // ================================================================
+    // INIT (after all functions defined)
+    // ================================================================
+    document.getElementById('scriptout').value = ORIG;
+    loadCodesFromText(ORIG);
+
+    document.getElementById('vaultsavebtn').addEventListener('click', vaultSave);
+    document.getElementById('vaultclearbtn').addEventListener('click', function () { _vault = []; vaultPersist(); renderVault(); toast('i', 'Vault cleared'); });
+    renderVault();
+    document.getElementById('parsebtn').addEventListener('click', doParse);
+    document.getElementById('clearbtn').addEventListener('click', function () { document.getElementById('rawin').value = ''; });
+    document.getElementById('addbtn').addEventListener('click', doAdd);
+    document.getElementById('applybtn').addEventListener('click', doApply);
+    document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
+    document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
+    document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
+    document.getElementById('histclearbtn').addEventListener('click', function () { _parseHistory = []; renderHistory(); toast('i', 'History cleared'); });
+    renderHistory();
+
+    // ================================================================
+    // CLOUD RUNNER
+    // ================================================================
+    var _runAbort = null;
+    var _running = false;
+
+    // ── SVG icon strings ──
+    var _EYE_SHOW = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var _EYE_HIDE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    var _ICON_OK   = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#22c55e" stroke-width="1.5"/><polyline points="9 12 11 14 15 10" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var _ICON_ERR  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="1.5"/><line x1="15" y1="9" x2="9" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="9" x2="15" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>';
+    var _ICON_WARN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#fbbf24" stroke-width="1.5" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fbbf24"/></svg>';
+    var _ICON_STOP = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="1.5"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>';
+    var _ICON_INFO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#71717a" stroke-width="1.5"/><line x1="12" y1="16" x2="12" y2="12" stroke="#71717a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="#71717a"/></svg>';
+
+    // Persist server URL and key with lock/unlock UI
+    (function () {
+      document.getElementById('run-url').value = window.location.origin;
+      var savedKey = localStorage.getItem('ssu_run_key');
+      var keyInput = document.getElementById('run-key');
+      var applyBtn = document.getElementById('key-apply');
+      var editBtn = document.getElementById('key-edit');
+      var eyeBtn = document.getElementById('key-eye');
+      var savedBadge = document.getElementById('key-saved-badge');
+
+      function lockKey() {
+        keyInput.readOnly = true;
+        keyInput.style.opacity = '0.6';
+        keyInput.style.cursor = 'default';
+        keyInput.type = 'password';
+        eyeBtn.innerHTML = _EYE_HIDE;
+        applyBtn.style.display = 'none';
+        editBtn.style.display = '';
+        savedBadge.style.display = '';
+      }
+      function unlockKey() {
+        keyInput.readOnly = false;
+        keyInput.style.opacity = '1';
+        keyInput.style.cursor = '';
+        applyBtn.style.display = '';
+        editBtn.style.display = 'none';
+        savedBadge.style.display = 'none';
+        keyInput.focus();
+      }
+
+      // Load saved key and lock on start
+      if (savedKey) {
+        keyInput.value = savedKey;
+        lockKey();
+      }
+
+      applyBtn.addEventListener('click', function () {
+        var k = keyInput.value.trim();
+        if (!k) { toast('e', 'Enter an access key first'); return; }
+        localStorage.setItem('ssu_run_key', k);
+        lockKey();
+        toast('s', '\u2713 Access key saved');
+      });
+      editBtn.addEventListener('click', function () {
+        unlockKey();
+      });
+      eyeBtn.addEventListener('click', function () {
+        if (keyInput.type === 'password') {
+          keyInput.type = 'text';
+          this.innerHTML = _EYE_SHOW;
+        } else {
+          keyInput.type = 'password';
+          this.innerHTML = _EYE_HIDE;
+        }
+      });
+    })();
+
+    // ── RESULT COLLECTOR & MODAL ──
+    var _results = { claimed: [], failed: [], warned: [], raw: [] };
+
+    function classifyLine(line) {
+      // Check warning patterns FIRST — "ALREADY CLAIMED" must not be treated as a success
+      if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
+      if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 || (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0)) return 'ok';
+      if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
+      return '';
+    }
+
+    function showRunModal(aborted) {
+      var modal = document.getElementById('run-modal');
+      var icon = document.getElementById('run-modal-icon');
+      var title = document.getElementById('run-modal-title');
+      var sub = document.getElementById('run-modal-subtitle');
+      var items = document.getElementById('run-modal-items');
+
+      var nClaimed = _results.claimed.length;
+      var nFailed = _results.failed.length;
+      var nWarned = _results.warned.length;
+
+      if (aborted) {
+        icon.innerHTML = _ICON_STOP;
+        title.textContent = 'Stopped';
+        sub.textContent = 'Run was cancelled by user.';
+      } else if (nClaimed > 0) {
+        icon.innerHTML = _ICON_OK;
+        title.textContent = nClaimed + ' Coupon' + (nClaimed > 1 ? 's' : '') + ' Claimed!';
+        sub.textContent = (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : 'All codes collected successfully');
+      } else if (nFailed > 0) {
+        icon.innerHTML = _ICON_ERR;
+        title.textContent = 'Claim Failed';
+        sub.textContent = nFailed + ' error' + (nFailed > 1 ? 's' : '') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
+      } else if (nWarned > 0) {
+        icon.innerHTML = _ICON_WARN;
+        title.textContent = 'Already Claimed';
+        sub.textContent = 'These coupons are already in your account.';
+      } else {
+        icon.innerHTML = _ICON_INFO;
+        title.textContent = 'Session Complete';
+        sub.textContent = 'No actionable results detected.';
+      }
+
+      // Render result chips
+      var html = '';
+      if (_results.claimed.length) {
+        html += '<div class="rm-chips">';
+        _results.claimed.forEach(function (l) { html += '<span class="rm-chip ok">\u2713 ' + esc(l.replace(/.*CLAIMED[^\[]*\[?([^\]]+)\]?.*/, '$1').trim().substring(0, 40)) + '</span>'; });
+        html += '</div>';
+      }
+      if (_results.failed.length) {
+        html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">' + _results.failed.length + ' error(s)</div><div class="rm-sub">Check server / tokens</div></div></div>';
+      }
+      if (_results.warned.length) {
+        html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
+      }
+      if (!html) {
+        html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
+      }
+      items.innerHTML = html;
+
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+
+    function hideRunModal() {
+      var modal = document.getElementById('run-modal');
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+
+    document.getElementById('run-modal-close').addEventListener('click', hideRunModal);
+    document.getElementById('run-modal').addEventListener('click', function (e) { if (e.target === this) hideRunModal(); });
+
+    function buildCfgFromScript() {
+      var src = document.getElementById('scriptout').value;
+      var lines = src.split('\n');
+
+      function extract(name) {
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.indexOf(name) === 0) {
+            var eq = line.indexOf('=');
+            if (eq < 0) continue;
+            var rest = line.slice(eq + 1).trim();
+            var q1 = rest.indexOf('"');
+            var q2 = rest.indexOf('"', q1 + 1);
+            if (q1 >= 0 && q2 > q1) return rest.slice(q1 + 1, q2);
+          }
+        }
+        return '';
+      }
+      function extractBool(name) {
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.indexOf(name) === 0) {
+            var eq = line.indexOf('=');
+            if (eq < 0) continue;
+            var rest = line.slice(eq + 1).trim();
+            if (rest.indexOf('True') === 0) return true;
+            if (rest.indexOf('False') === 0) return false;
+          }
+        }
+        return false;
+      }
+      function extractInt(name) {
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.indexOf(name) === 0) {
+            var eq = line.indexOf('=');
+            if (eq < 0) continue;
+            var rest = line.slice(eq + 1).trim();
+            var n = parseInt(rest);
+            if (!isNaN(n)) return n;
+          }
+        }
+        return 0;
+      }
+      function extractTokens() {
+        var m = src.match(/TOKENS\s*=\s*\[([\s\S]*?)\]/);
+        if (!m) return [];
+        var found = m[1].match(/"([^"]+)"/g);
+        return found ? found.map(function (t) { return t.replace(/"/g, ''); }) : [];
+      }
+      function extractCodes() {
+        var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
+        if (!m) return [];
+        var found = m[1].match(/"([^"]+)"/g);
+        return found ? found.map(function (c) { return c.replace(/"/g, ''); }) : [];
+      }
+
+      var bruteMode = extractBool('BRUTE_MODE');
+      var deliveryMode = extractBool('GM0PHA_MODE');
+      var mode = bruteMode ? 'brute' : (deliveryMode ? 'delivery' : 'bind');
+
+      return {
+        tokens: extractTokens(),
+        codes: extractCodes(),
+        pkg_id: extract('COUPON_PKG_ID'),
+        gw_auth: extract('GW_AUTH'),
+        armor_token: extract('ARMOR_TOKEN'),
+        smdevice_id: extract('SMDEVICE_ID'),
+        ugid: extract('UGID'),
+        sortuid: extract('SORTUID'),
+        device_id: extract('DEVICE_ID'),
+        appcountry: extract('APPCOUNTRY'),
+        usercountry: extract('USERCOUNTRY'),
+        localcountry: extract('LOCALCOUNTRY'),
+        currency: extract('CURRENCY'),
+        appcurrency: extract('APPCURRENCY'),
+        app_version: extract('APP_VERSION'),
+        device_info: extract('DEVICE_INFO'),
+        claim_country: extract('CLAIM_COUNTRY'),
+        gm_site: extract('GM0PHA_SITE'),
+        gm_mid: extract('GM0PHA_MID'),
+        gm_device_id: extract('GM0PHA_DEVICE_ID'),
+        mode: mode,
+        brute_start: extractInt('BRUTE_START'),
+        brute_end: extractInt('BRUTE_END'),
+        brute_threads: extractInt('BRUTE_THREADS'),
+        brute_max_claims: extractInt('BRUTE_MAX_CLAIMS'),
+        account_delay: document.getElementById('run-delay').value || 3,
+      };
+    }
+
+    function setRunning(on) {
+      _running = on;
+      var runBtn = document.getElementById('runbtn');
+      var badge = document.getElementById('runbadge');
+      var status = document.getElementById('runstatus');
+      var loading = document.getElementById('run-loading');
+      runBtn.disabled = on;
+      if (on) {
+        badge.textContent = 'RUNNING';
+        badge.className = 'b b-green';
+        status.textContent = '';
+        loading.style.display = 'flex';
+        loading.classList.add('active');
+        _results = { claimed: [], failed: [], warned: [], raw: [] };
+      } else {
+        badge.textContent = 'READY';
+        badge.className = 'b b-green';
+        status.textContent = '';
+        loading.style.display = 'none';
+        loading.classList.remove('active');
+      }
+    }
+
+    document.getElementById('runbtn').addEventListener('click', function () {
+      var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
+      var key = document.getElementById('run-key').value.trim();
+      if (!url) { toast('e', 'Enter your Railway server URL first'); return; }
+      if (!key) { toast('e', 'Enter your access key first'); return; }
+
+      var cfg = buildCfgFromScript();
+      if (!cfg.tokens.length) { toast('e', 'No tokens in script — parse a RAW request first'); return; }
+
+      setRunning(true);
+
+      var controller = new AbortController();
+      _runAbort = controller;
+
+      fetch(url + '/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key: key, cfg: cfg }),
+        signal: controller.signal,
+      }).then(function (resp) {
+        if (!resp.ok) {
+          return resp.json().then(function (e) { throw new Error(e.error || 'HTTP ' + resp.status); });
+        }
+        var reader = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buf = '';
+        function pump() {
+          return reader.read().then(function (result) {
+            if (result.done) { setRunning(false); showRunModal(false); return; }
+            buf += decoder.decode(result.value, { stream: true });
+            var parts = buf.split('\n\n');
+            buf = parts.pop();
+            parts.forEach(function (part) {
+              var line = part.replace(/^data:\s?/, '');
+              if (line === '[DONE]') { setRunning(false); showRunModal(false); return; }
+              if (!line) return;
+              _results.raw.push(line);
+              var cls = classifyLine(line);
+              if (cls === 'ok') _results.claimed.push(line);
+              else if (cls === 'err') _results.failed.push(line);
+              else if (cls === 'warn') _results.warned.push(line);
+            });
+            return pump();
+          });
+        }
+        return pump();
+      }).catch(function (err) {
+        setRunning(false);
+        if (err.name === 'AbortError') {
+          showRunModal(true);
+        } else {
+          _results.failed.push('Connection error: ' + err.message);
+          showRunModal(false);
+          toast('e', 'Runner error: ' + err.message);
+        }
+      });
+    });
+
+    document.getElementById('stopbtn').addEventListener('click', function () {
+      if (_runAbort) { _runAbort.abort(); _runAbort = null; }
+      setRunning(false);
+    });
+
+    // ================================================================
+    // THEME TOGGLE
+    // ================================================================
+    (function () {
+      var btn = document.getElementById('themeToggle');
+      var t = document.documentElement.getAttribute('data-theme') || 'dark';
+      btn.textContent = t === 'dark' ? '\u2600' : '\uD83C\uDF19';
+      btn.addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme');
+        var next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('ssu_theme', next);
+        this.textContent = next === 'dark' ? '\u2600' : '\uD83C\uDF19';
+      });
+    })();
+  </script>
 </body>
+
 </html>
