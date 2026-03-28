@@ -1327,20 +1327,7 @@ function doParse() {
 
   _lastParsed = parsed;
   markUpdated(changed.length + ' tokens');
-
-  // Auto-copy output script
-  var scriptTxt = document.getElementById('scriptout').value;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(scriptTxt).then(function(){
-      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 script auto-copied!');
-    }).catch(function(){
-      fallbackCopy(scriptTxt);
-      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 copied (fallback)!');
-    });
-  } else {
-    fallbackCopy(scriptTxt);
-    toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 copied!');
-  }
+  toast('s', '\u2713 ' + changed.length + ' field' + (changed.length!==1?'s':'') + ' updated \u2014 ready to RUN!');
 
   // Clear RAW input
   document.getElementById('rawin').value = '';
@@ -1759,18 +1746,47 @@ function termClear() {
 
 function buildCfgFromScript() {
   var src = document.getElementById('scriptout').value;
+  var lines = src.split('\n');
 
   function extract(name) {
-    var m = src.match(new RegExp(name + '\s*=\s*"([^"]*)"'));
-    return m ? m[1] : '';
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.indexOf(name) === 0) {
+        var eq = line.indexOf('=');
+        if (eq < 0) continue;
+        var rest = line.slice(eq + 1).trim();
+        var q1 = rest.indexOf('"');
+        var q2 = rest.indexOf('"', q1 + 1);
+        if (q1 >= 0 && q2 > q1) return rest.slice(q1 + 1, q2);
+      }
+    }
+    return '';
   }
   function extractBool(name) {
-    var m = src.match(new RegExp(name + '\s*=\s*(True|False)'));
-    return m ? m[1] === 'True' : false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.indexOf(name) === 0) {
+        var eq = line.indexOf('=');
+        if (eq < 0) continue;
+        var rest = line.slice(eq + 1).trim();
+        if (rest.indexOf('True') === 0) return true;
+        if (rest.indexOf('False') === 0) return false;
+      }
+    }
+    return false;
   }
   function extractInt(name) {
-    var m = src.match(new RegExp(name + '\s*=\s*(\d+)'));
-    return m ? parseInt(m[1]) : 0;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.indexOf(name) === 0) {
+        var eq = line.indexOf('=');
+        if (eq < 0) continue;
+        var rest = line.slice(eq + 1).trim();
+        var n = parseInt(rest);
+        if (!isNaN(n)) return n;
+      }
+    }
+    return 0;
   }
   function extractTokens() {
     var m = src.match(/TOKENS\s*=\s*\[([\s\S]*?)\]/);
