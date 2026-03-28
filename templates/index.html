@@ -1410,7 +1410,7 @@
       </div>
     </header>
 
-    <div id="sum"><span>&#10003; Updated &mdash;</span><span id="schips"></span></div>
+    <div id="sum"><span id="schips">&#10003; Token parsed successfully &mdash; ready to run!</span></div>
 
     <!-- CLOUD RUNNER — top priority -->
     <div class="panel">
@@ -1972,16 +1972,16 @@ dev-id: shein_8a47..."></textarea>
       cc.textContent = changed.length + ' CHANGED';
 
       document.getElementById('sum').className = 'on';
-      var chips = '';
-      for (var chi = 0; chi < changed.length; chi++) chips += '<span class="chip">' + changed[chi] + '</span> ';
-      document.getElementById('schips').innerHTML = chips;
 
       _lastParsed = parsed;
       markUpdated(changed.length + ' tokens');
-      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length !== 1 ? 's' : '') + ' updated \u2014 ready to RUN!');
+      toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
 
-      // Clear RAW input
-      document.getElementById('rawin').value = '';
+      // Auto-clear RAW input after 30 seconds
+      clearTimeout(window._rawClearTimer);
+      window._rawClearTimer = setTimeout(function() {
+        document.getElementById('rawin').value = '';
+      }, 30000);
 
       // Add to parse history (dedupe by token)
       addParseHistory(parsed, changed.length);
@@ -2371,9 +2371,11 @@ dev-id: shein_8a47..."></textarea>
     })();
 
     // ── RESULT COLLECTOR & MODAL ──
-    var _results = { claimed: [], failed: [], warned: [], raw: [] };
+    var _results = { claimed: [], failed: [], warned: [], login: [], raw: [] };
 
     function classifyLine(line) {
+      // Login error — check before anything else
+      if (line.indexOf('NOT LOGGED IN') >= 0 || line.indexOf('Please login') >= 0) return 'login';
       // Check warning patterns FIRST
       if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
       // Success: star/checkmark emoji, CLAIMED keyword, or delivery-mode "N claimed"
@@ -2418,6 +2420,7 @@ dev-id: shein_8a47..."></textarea>
         return ['✓'];
       }
 
+      var nLogin = _results.login.length;
       var nClaimed = _results.claimed.reduce(function (sum, line) {
         return sum + parseClaimedCodes(line).length;
       }, 0);
@@ -2431,7 +2434,7 @@ dev-id: shein_8a47..."></textarea>
       } else if (nClaimed > 0) {
         icon.innerHTML = _ICON_OK;
         title.textContent = nClaimed + ' Coupon' + (nClaimed > 1 ? 's' : '') + ' Claimed!';
-        sub.textContent = (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : 'All codes collected successfully');
+        sub.textContent = (nLogin > 0 ? nLogin + ' account(s) not logged in · ' : '') + (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : (nLogin === 0 ? 'All codes collected successfully' : ''));
       } else if (nFailed > 0) {
         icon.innerHTML = _ICON_ERR;
         title.textContent = 'Claim Failed';
@@ -2465,6 +2468,9 @@ dev-id: shein_8a47..."></textarea>
       }
       if (_results.warned.length) {
         html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
+      }
+      if (_results.login.length) {
+        html += '<div class="rm-item err"><span class="rm-icon">&#128274;</span><div><div class="rm-text">' + _results.login.length + ' account(s) not logged in</div><div class="rm-sub">Please login &mdash; token may be expired</div></div></div>';
       }
       if (!html) {
         html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
@@ -2588,7 +2594,7 @@ dev-id: shein_8a47..."></textarea>
         status.textContent = '';
         loading.style.display = 'flex';
         loading.classList.add('active');
-        _results = { claimed: [], failed: [], warned: [], raw: [] };
+        _results = { claimed: [], failed: [], warned: [], login: [], raw: [] };
       } else {
         badge.textContent = 'READY';
         badge.className = 'b b-green';
@@ -2639,6 +2645,7 @@ dev-id: shein_8a47..."></textarea>
               if (cls === 'ok') _results.claimed.push(line);
               else if (cls === 'err') _results.failed.push(line);
               else if (cls === 'warn') _results.warned.push(line);
+              else if (cls === 'login') _results.login.push(line);
             });
             return pump();
           });
