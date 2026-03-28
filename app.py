@@ -202,9 +202,6 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         pkg_code     = str(info.get("couponPackageCode") or "")
         error_code   = str(info.get("errorCode") or "")
 
-        # DEBUG — shows which branch will fire
-        emit(f"  🔍 top={top_code!r} pkg={pkg_code!r} err={error_code!r} ok={len(success_list)} fail={len(fail_list)} bindResult={type(info.get('bindResult')).__name__}[{len(result_list)}]")
-
 
         if top_code == str(ERR_ALREADY_CLAIMED):
             # Emit one warning line per code so the modal count matches the code count
