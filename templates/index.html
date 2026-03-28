@@ -1900,9 +1900,9 @@ dev-id: shein_8a47..."></textarea>
       return m ? m[1].trim() : null;
     }
 
-    function doParse() {
+    function doParse(rawOverride) {
       var _rawinEl = document.getElementById('rawin');
-      var raw = _rawinEl.value.trim();
+      var raw = (rawOverride || _rawinEl.value).trim();
       if (!raw) { toast('e', '\u2715 No RAW data pasted!'); return; }
 
       var parsed = {
@@ -2327,10 +2327,11 @@ dev-id: shein_8a47..."></textarea>
       var el = document.getElementById('rawin');
 
       function handleText(text) {
-        el.value = text;
         if (_autoMode) {
-          doParse();
+          // Pass text directly — don't touch the field to avoid double-parse
+          doParse(text);
         } else {
+          el.value = text;
           toast('s', '\u2713 Pasted \u2014 click PARSE to continue');
         }
       }
@@ -2346,9 +2347,7 @@ dev-id: shein_8a47..."></textarea>
 
           // One-shot paste event listener as backup
           el.addEventListener('paste', function onFallbackPaste(e) {
-            el.removeEventListener('paste', onFallbackPaste);
             var text = (e.clipboardData || window.clipboardData).getData('text');
-            e.preventDefault();
             handleText(text);
           }, { once: true });
         });
@@ -2367,10 +2366,11 @@ dev-id: shein_8a47..."></textarea>
     document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
     document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
     document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
-    // AUTO mode: fire doParse after paste lands naturally
+    // AUTO mode: grab text from paste event and pass directly to doParse
     document.getElementById('rawin').addEventListener('paste', function(e) {
       if (_autoMode) {
-        setTimeout(doParse, 50);
+        var text = (e.clipboardData || window.clipboardData).getData('text');
+        setTimeout(function() { doParse(text); }, 50);
       }
     });
     document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
