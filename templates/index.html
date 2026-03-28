@@ -2328,13 +2328,17 @@ dev-id: shein_8a47..."></textarea>
     // Restore saved auto mode
     setAutoMode(localStorage.getItem('ssu_auto_mode') === '1');
 
-    document.getElementById('auto-label').addEventListener('click', function(e) {
-      e.stopPropagation();
-      setAutoMode(!_autoMode);
-    });
-    document.getElementById('auto-toggle').addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
+    (function() {
+      var _toggling = false;
+      function handleToggle() {
+        if (_toggling) return;
+        _toggling = true;
+        setAutoMode(!_autoMode);
+        setTimeout(function() { _toggling = false; }, 50);
+      }
+      document.getElementById('auto-label').addEventListener('click', handleToggle);
+      document.getElementById('auto-toggle').addEventListener('click', handleToggle);
+    })();
 
     // ── PASTE button ──
     document.getElementById('pastebtn').addEventListener('click', function () {
