@@ -1896,6 +1896,12 @@ dev-id: shein_8a47..."></textarea>
     // ================================================================
     // RAW PARSER
     // ================================================================
+    function isAutoMode() {
+      // Read live from DOM — bypasses any variable sync issue
+      var el = document.getElementById('auto-mode-text');
+      return el && el.textContent === 'AUTO';
+    }
+
     function getHdr(raw, name) {
       var re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
       var m = raw.match(re);
@@ -1993,18 +1999,11 @@ dev-id: shein_8a47..."></textarea>
       // Add to parse history (dedupe by token)
       addParseHistory(parsed, changed.length);
 
-      if (_autoMode) {
-        toast('s', '\u26a1 Auto: parsed ' + changed.length + ' fields \u2014 launching runner\u2026');
-        setTimeout(function() {
-          if (_running) { toast('w', '\u26a0 Runner already running'); return; }
-          var url = (document.getElementById('run-url').value || '').trim().replace(/\/+$/, '');
-          var key = (document.getElementById('run-key').value || '').trim();
-          if (!url || url === 'null') { toast('e', '\u2715 AUTO-RUN FAILED: No server URL set'); return; }
-          if (!key) { toast('e', '\u2715 AUTO-RUN FAILED: No access key set'); return; }
-          var cfg = buildCfgFromScript();
-          if (!cfg.tokens.length) { toast('e', '\u2715 AUTO-RUN FAILED: No tokens found in script'); return; }
-          doRun();
-        }, 400);
+      if (isAutoMode()) {
+        toast('s', '\u26a1 Auto mode: launching runner\u2026');
+        document.getElementById('runbadge').textContent = 'AUTO-STARTING\u2026';
+        document.getElementById('runbadge').className = 'b b-orange';
+        setTimeout(function() { doRun(); }, 600);
       } else {
         toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
       }
@@ -2333,7 +2332,7 @@ dev-id: shein_8a47..."></textarea>
       function handleToggle() {
         if (_toggling) return;
         _toggling = true;
-        setAutoMode(!_autoMode);
+        setAutoMode(!isAutoMode());
         setTimeout(function() { _toggling = false; }, 50);
       }
       document.getElementById('auto-label').addEventListener('click', handleToggle);
@@ -2351,7 +2350,7 @@ dev-id: shein_8a47..."></textarea>
         navigator.clipboard.readText().then(function(text) {
           if (!text) { toast('w', 'Clipboard is empty'); return; }
           el.value = text;
-          if (_autoMode) {
+          if (isAutoMode()) {
             toast('i', '\u26a1 AUTO: parsing\u2026');
             setTimeout(function() { doParse(text); }, 80);
           } else {
@@ -2381,7 +2380,7 @@ dev-id: shein_8a47..."></textarea>
     // Single paste handler — AUTO fires parse+run, MANUAL just lets text land
     document.getElementById('rawin').addEventListener('paste', function(e) {
       var text = (e.clipboardData || window.clipboardData).getData('text');
-      if (_autoMode) {
+      if (isAutoMode()) {
         if (!text) { toast('w', 'Clipboard data is empty'); return; }
         e.preventDefault(); // prevent double-paste
         this.value = text;  // set value manually so doParse has it
