@@ -61,7 +61,7 @@
       --shadow: 0 2px 8px rgba(0,0,0,.4), 0 16px 48px -8px rgba(0,0,0,.6);
       --shadow-lg: 0 8px 16px rgba(0,0,0,.5), 0 32px 64px -16px rgba(0,0,0,.7);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0 }
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
     html { font-size: 12px; scroll-behavior: smooth }
     body {
       background: var(--bg);
@@ -332,7 +332,7 @@
     /* ─── RESULTS MODAL ─── */
     #run-modal { display: none; position: fixed; inset: 0; z-index: 901; background: rgba(0,0,0,.6); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; }
     #run-modal-card { background: var(--card); border: 1px solid var(--b1); border-radius: var(--r); padding: 20px; max-width: 340px; width: 100%; box-shadow: var(--shadow-lg); }
-    #run-modal-icon { font-size: 2rem; text-align: center; margin-bottom: 8px; }
+    #run-modal-icon { font-size: 1.6rem; text-align: center; margin-bottom: 6px; line-height: 1; }
     #run-modal-title { font-size: .9rem; font-weight: 700; text-align: center; margin-bottom: 3px; color: var(--txt); }
     #run-modal-subtitle { font-size: .7rem; color: var(--dim); text-align: center; margin-bottom: 12px; }
     #run-modal-items { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; }
