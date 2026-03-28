@@ -1931,9 +1931,10 @@ var _running  = false;
 var _results = { claimed:[], failed:[], warned:[], raw:[] };
 
 function classifyLine(line) {
-  if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 || line.indexOf('CLAIMED') >= 0) return 'ok';
-  if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
+  // Check warning patterns FIRST — "ALREADY CLAIMED" must not be treated as a success
   if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
+  if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 || (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0)) return 'ok';
+  if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
   return '';
 }
 
