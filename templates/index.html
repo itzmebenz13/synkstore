@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#DCEEDB">
   <title>SHEIN Script Updater</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
-    (function () { var t = localStorage.getItem('ssu_theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+    (function () { var t = localStorage.getItem('ssu_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); })();
   </script>
   <style>
     :root {
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --inp: #f7f8fa;
-      --hov: #edf0f4;
-      --b1: #e2e6ed;
-      --b2: #cbd2dc;
-      --acc: #16a34a;
-      --accH: #15803d;
+      --bg: #DCEEDB;
+      --card: #eef6ee;
+      --inp: #e6f2e6;
+      --hov: #d4ead4;
+      --b1: #c3dcc3;
+      --b2: #aacfaa;
+      --acc: #3a9e5f;
+      --accH: #2e7d4f;
       --accT: #ffffff;
-      --acc2: #22c55e;
-      --txt: #0d1117;
-      --dim: #5a6478;
-      --mut: #9ba4b4;
-      --code: #f3f6fa;
-      --codeT: #15803d;
-      --ok: #16a34a;
+      --acc2: #A7E6B6;
+      --txt: #0d1f0f;
+      --dim: #4a6b50;
+      --mut: #7fa886;
+      --code: #e4f0e4;
+      --codeT: #2e7d4f;
+      --ok: #2e7d4f;
       --warn: #d97706;
       --err: #dc2626;
       --shadow: 0 1px 3px rgba(0,0,0,.05), 0 8px 24px -6px rgba(0,0,0,.08);
@@ -98,13 +98,13 @@
       display: flex; align-items: center; justify-content: center;
       font-family: var(--font); font-size: 12px; font-weight: 700; color: #fff;
       letter-spacing: -.3px;
-      box-shadow: 0 2px 8px rgba(34,197,94,.35);
+      box-shadow: 0 2px 8px rgba(58,158,95,.35);
     }
     header h1 { font-size: .88rem; font-weight: 700; letter-spacing: -.02em; color: var(--txt); }
     header p { font-size: .65rem; color: var(--dim); margin-top: 1px; }
     .hright { margin-left: auto; display: flex; align-items: center; gap: 7px; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mut); flex-shrink: 0; }
-    .dot.on { background: var(--acc); box-shadow: 0 0 0 3px rgba(34,197,94,.18); animation: pulse 2s infinite; }
+    .dot.on { background: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.18); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
     #stext { font-size: .65rem; color: var(--dim); font-family: var(--mono); }
     .theme-toggle {
@@ -117,13 +117,13 @@
     /* ─── SUCCESS BANNER ─── */
     #sum {
       display: none; margin-bottom: 12px; padding: 8px 12px;
-      background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.2);
+      background: rgba(58,158,95,.07); border: 1px solid rgba(58,158,95,.2);
       border-radius: 10px; font-size: .72rem; color: var(--ok);
       align-items: center; gap: 7px; flex-wrap: wrap;
     }
     #sum.on { display: flex; }
     .chip {
-      background: rgba(34,197,94,.12); border: 1px solid rgba(34,197,94,.25);
+      background: rgba(58,158,95,.12); border: 1px solid rgba(58,158,95,.25);
       border-radius: 4px; padding: 1px 7px; font-size: .65rem;
     }
     /* ─── PANELS ─── */
@@ -148,7 +148,7 @@
     .b { font-size: .62rem; padding: 2px 7px; border-radius: 5px; font-weight: 600; letter-spacing: .2px; }
     .b-blue { background: rgba(59,130,246,.1); color: #3b82f6; border: 1px solid rgba(59,130,246,.2); }
     .b-orange { background: rgba(249,115,22,.1); color: #f97316; border: 1px solid rgba(249,115,22,.2); }
-    .b-green { background: rgba(34,197,94,.1); color: var(--ok); border: 1px solid rgba(34,197,94,.2); }
+    .b-green { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); }
     .b-yellow { background: rgba(245,158,11,.1); color: var(--warn); border: 1px solid rgba(245,158,11,.2); border-radius: 5px; padding: 2px 7px; }
     #nchanged { display: none; }
     /* ─── GRID ─── */
@@ -177,7 +177,7 @@
       resize: vertical; min-height: 200px; tab-size: 2;
     }
     textarea::placeholder { color: var(--mut); }
-    textarea:focus { box-shadow: inset 0 0 0 1.5px rgba(34,197,94,.25); }
+    textarea:focus { box-shadow: inset 0 0 0 1.5px rgba(58,158,95,.25); }
     .script-ta { color: var(--codeT); font-size: .7rem; min-height: 280px; white-space: pre; tab-size: 4; }
     /* ─── BUTTON ROW ─── */
     .br {
@@ -194,32 +194,32 @@
     .btn-p {
       background: linear-gradient(135deg, var(--acc), var(--accH));
       color: #fff; flex: 1; justify-content: center;
-      box-shadow: 0 2px 8px rgba(34,197,94,.25);
+      box-shadow: 0 2px 8px rgba(58,158,95,.25);
     }
-    .btn-p:hover { background: linear-gradient(135deg, var(--accH), #14532d); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,197,94,.35); }
+    .btn-p:hover { background: linear-gradient(135deg, var(--accH), #1a5c30); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(58,158,95,.35); }
     .btn-s { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); }
     .btn-s:hover { background: var(--b1); color: var(--txt); }
-    .btn-g { background: rgba(34,197,94,.1); color: var(--ok); border: 1px solid rgba(34,197,94,.2); }
-    .btn-g:hover { background: rgba(34,197,94,.18); }
+    .btn-g { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); }
+    .btn-g:hover { background: rgba(58,158,95,.18); }
     .btn-o { background: rgba(249,115,22,.1); color: #f97316; border: 1px solid rgba(249,115,22,.2); }
     .btn-o:hover { background: rgba(249,115,22,.18); }
-    .btn-add { background: rgba(34,197,94,.1); color: var(--ok); border: 1px solid rgba(34,197,94,.2); padding: 5px 10px; }
-    .btn-add:hover { background: rgba(34,197,94,.2); }
+    .btn-add { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); padding: 5px 10px; }
+    .btn-add:hover { background: rgba(58,158,95,.2); }
     .btn-rm { background: rgba(220,38,38,.07); color: var(--err); border: 1px solid rgba(220,38,38,.18); padding: 3px 7px; font-size: .62rem; border-radius: 5px; }
     .btn-rm:hover { background: rgba(220,38,38,.14); }
-    .btn-load { background: rgba(34,197,94,.1); color: var(--ok); border: 1px solid rgba(34,197,94,.2); padding: 3px 8px; border-radius: 5px; font-size: .62rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
-    .btn-load:hover { background: rgba(34,197,94,.22); }
+    .btn-load { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); padding: 3px 8px; border-radius: 5px; font-size: .62rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+    .btn-load:hover { background: rgba(58,158,95,.22); }
     .btn-del { background: rgba(220,38,38,.07); color: var(--err); border: 1px solid rgba(220,38,38,.18); padding: 3px 7px; border-radius: 5px; font-size: .62rem; font-weight: 600; cursor: pointer; transition: all .15s; }
     .btn-del:hover { background: rgba(220,38,38,.15); }
     /* ─── RUN BUTTON ─── */
     .btn-run {
-      flex: 1; background: linear-gradient(135deg, #16a34a, #15803d);
+      flex: 1; background: linear-gradient(135deg, var(--acc), var(--accH));
       color: #fff; font-size: .76rem; font-weight: 700; letter-spacing: .04em;
       padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
       transition: all .2s; justify-content: center;
-      box-shadow: 0 3px 12px rgba(34,197,94,.3);
+      box-shadow: 0 3px 12px rgba(58,158,95,.3);
     }
-    .btn-run:hover { background: linear-gradient(135deg, #15803d, #14532d); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(34,197,94,.4); }
+    .btn-run:hover { background: linear-gradient(135deg, var(--accH), #1a5c30); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(58,158,95,.4); }
     .btn-run:disabled { opacity: .5; cursor: not-allowed; transform: none; }
     .run-status { font-size: .65rem; color: var(--dim); font-family: var(--mono); }
     /* ─── TOKEN TABLE ─── */
@@ -227,7 +227,7 @@
     .tr { display: grid; grid-template-columns: 110px 1fr; background: var(--card); }
     .tk { padding: 5px 10px; font-size: .62rem; color: var(--acc); border-right: 1px solid var(--b1); letter-spacing: .4px; display: flex; align-items: center; font-family: var(--mono); }
     .tv { padding: 5px 10px; font-size: .62rem; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
-    .tv.ok { color: var(--ok); background: rgba(34,197,94,.05); }
+    .tv.ok { color: var(--ok); background: rgba(58,158,95,.05); }
     .tv.dim { color: var(--mut); }
     /* ─── VAULT LIST ─── */
     .tv-list { display: flex; flex-direction: column; gap: 3px; max-height: 210px; overflow-y: auto; padding: 10px 12px; }
@@ -247,7 +247,7 @@
       font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri);
       padding: 5px 10px; outline: none;
     }
-    #vinput:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
+    #vinput:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
     #vinput::placeholder { color: var(--mut); }
     .vlist { display: flex; flex-direction: column; gap: 3px; max-height: 190px; overflow-y: auto; }
     .vi { display: flex; align-items: center; justify-content: space-between; background: var(--inp); border: 1px solid var(--b1); border-radius: 7px; padding: 5px 9px; }
@@ -259,9 +259,9 @@
     .batch-label { font-size: .62rem; color: var(--mut); letter-spacing: .5px; margin-right: 2px; }
     .btn-batch { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 4px 10px; border-radius: 6px; font-size: .68rem; font-weight: 600; cursor: pointer; transition: all .15s; }
     .btn-batch:hover { background: var(--b1); color: var(--txt); }
-    .btn-batch.active { background: rgba(34,197,94,.12); color: var(--ok); border-color: rgba(34,197,94,.3); }
+    .btn-batch.active { background: rgba(58,158,95,.12); color: var(--ok); border-color: rgba(58,158,95,.3); }
     .badge-status { font-size: .55rem; padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
-    .badge-active { background: rgba(34,197,94,.15); color: var(--ok); border: 1px solid rgba(34,197,94,.3); }
+    .badge-active { background: rgba(58,158,95,.15); color: var(--ok); border: 1px solid rgba(58,158,95,.3); }
     .badge-test { background: rgba(245,158,11,.12); color: var(--warn); border: 1px solid rgba(245,158,11,.28); }
     /* ─── BRUTE FORCE ─── */
     .bf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 11px 12px; }
@@ -269,12 +269,12 @@
     .bf-field { display: flex; flex-direction: column; gap: 4px; }
     .bf-label { font-size: .62rem; color: var(--acc); letter-spacing: .5px; text-transform: uppercase; font-weight: 600; }
     .bf-input { background: var(--inp); color: var(--txt); font-family: var(--mono); font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri); padding: 5px 10px; outline: none; width: 100%; }
-    .bf-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
+    .bf-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
     .btn-thread { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 5px 12px; border-radius: 6px; font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .15s; }
     .btn-thread.active, .btn-thread:hover { background: rgba(249,115,22,.12); color: #f97316; border-color: rgba(249,115,22,.3); }
     .thread-row, .country-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .btn-country { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 5px 12px; border-radius: 6px; font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-country.active, .btn-country:hover { background: rgba(34,197,94,.12); color: var(--ok); border-color: rgba(34,197,94,.3); }
+    .btn-country.active, .btn-country:hover { background: rgba(58,158,95,.12); color: var(--ok); border-color: rgba(58,158,95,.3); }
     .bf-note { font-size: .65rem; color: var(--dim); padding: 9px 12px; line-height: 1.7; border-top: 1px solid var(--b1); }
     /* ─── RUNNER ─── */
     .runner-cfg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 11px 12px; }
@@ -282,7 +282,7 @@
     .runner-field { display: flex; flex-direction: column; gap: 4px; }
     .runner-label { font-size: .62rem; color: var(--acc); letter-spacing: .5px; text-transform: uppercase; font-weight: 600; }
     .runner-input { background: var(--inp); color: var(--txt); font-family: var(--mono); font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri); padding: 5px 10px; outline: none; width: 100%; }
-    .runner-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
+    .runner-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
     .runner-input::placeholder { color: var(--mut); }
     /* ─── TERMINAL ─── */
     #terminal { background: var(--code); border-top: 1px solid var(--b1); padding: 10px 12px; font-family: var(--mono); font-size: .7rem; line-height: 1.75; color: var(--codeT); min-height: 160px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
@@ -325,58 +325,104 @@
       box-shadow: 0 8px 24px rgba(0,0,0,.18);
     }
     #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #toast.s { color: var(--ok); border-color: rgba(34,197,94,.3); }
+    #toast.s { color: var(--ok); border-color: rgba(58,158,95,.3); }
     #toast.e { color: var(--err); border-color: rgba(220,38,38,.3); }
     #toast.w { color: var(--warn); border-color: rgba(245,158,11,.3); }
     #toast.i { color: var(--dim); }
-    /* ─── RESULTS MODAL ─── */
-    #run-modal { display: none; position: fixed; inset: 0; z-index: 901; background: rgba(0,0,0,.6); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; }
-    #run-modal-card { background: var(--card); border: 1px solid var(--b1); border-radius: var(--r); padding: 20px; max-width: 340px; width: 100%; box-shadow: var(--shadow-lg); }
-    #run-modal-icon { text-align: center; margin-bottom: 8px; line-height: 1; }
-    #run-modal-icon svg { width: 48px; height: 48px; display: inline-block; }
-    #run-modal-title { font-size: .9rem; font-weight: 700; text-align: center; margin-bottom: 3px; color: var(--txt); }
-    #run-modal-subtitle { font-size: .7rem; color: var(--dim); text-align: center; margin-bottom: 12px; }
-    #run-modal-items { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; }
+    /* ─── UNIFIED RUN MODAL (loading + results) ─── */
+    #run-modal {
+      display: none; position: fixed; inset: 0; z-index: 901;
+      background: rgba(0,0,0,.38);
+      align-items: center; justify-content: center; padding: 16px;
+      transition: opacity .22s;
+    }
+    #run-modal.visible { display: flex; }
+    #run-modal-card {
+      background: var(--card); border: 1px solid var(--b1);
+      border-radius: 20px; width: 100%; max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.13), 0 1.5px 4px rgba(0,0,0,.07);
+      overflow: hidden;
+      animation: modalIn .28s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes modalIn { from { opacity:0; transform:translateY(18px) scale(.97); } to { opacity:1; transform:none; } }
+
+    /* ── Loading phase ── */
+    #rml-loading { padding: 28px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    #rml-loading.hidden { display: none; }
+    .rml-bar-wrap {
+      width: 100%; height: 3px; background: var(--b1); border-radius: 2px; overflow: hidden;
+    }
+    .rml-bar {
+      height: 100%; width: 0%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--acc), var(--acc2));
+      animation: rmlBarFlow 2.2s cubic-bezier(.4,0,.2,1) infinite;
+    }
+    @keyframes rmlBarFlow {
+      0%   { width: 0%;   margin-left: 0%; }
+      40%  { width: 60%;  margin-left: 0%; }
+      60%  { width: 60%;  margin-left: 40%; }
+      100% { width: 0%;   margin-left: 100%; }
+    }
+    .rml-dots { display: flex; gap: 7px; align-items: center; }
+    .rml-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--acc);
+      animation: rmlDotPulse 1.2s ease-in-out infinite;
+    }
+    .rml-dot:nth-child(2) { animation-delay: .18s; }
+    .rml-dot:nth-child(3) { animation-delay: .36s; }
+    @keyframes rmlDotPulse {
+      0%,100% { opacity: .25; transform: scale(.8); }
+      50%      { opacity: 1;   transform: scale(1.2); }
+    }
+    #rml-label {
+      font-size: .78rem; font-weight: 600; color: var(--txt);
+      letter-spacing: .01em; text-align: center;
+    }
+    #rml-sublabel { font-size: .65rem; color: var(--dim); text-align: center; margin-top: -10px; }
+    .rml-stop-row { width: 100%; display: flex; justify-content: center; padding-bottom: 2px; }
+    #rml-stopbtn {
+      font-size: .65rem; font-weight: 600; color: var(--err);
+      background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.18);
+      border-radius: 7px; padding: 5px 16px; cursor: pointer;
+      transition: background .15s; letter-spacing: .3px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    #rml-stopbtn:hover { background: rgba(220,38,38,.14); }
+
+    /* ── Results phase ── */
+    #rml-results { display: none; }
+    #rml-results.visible { display: block; }
+    #rml-res-top {
+      padding: 22px 20px 14px;
+      border-bottom: 1px solid var(--b1);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    #rml-res-icon { line-height: 1; }
+    #rml-res-icon svg { width: 44px; height: 44px; }
+    #rml-res-title { font-size: .92rem; font-weight: 700; color: var(--txt); text-align: center; }
+    #rml-res-sub { font-size: .68rem; color: var(--dim); text-align: center; }
+    #rml-res-items { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; max-height: 190px; overflow-y: auto; }
     .rm-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 8px; background: var(--inp); border: 1px solid var(--b1); }
-    .rm-item.ok { border-color: rgba(34,197,94,.2); }
+    .rm-item.ok { border-color: rgba(58,158,95,.2); }
     .rm-item.err { border-color: rgba(220,38,38,.2); }
     .rm-item.warn { border-color: rgba(245,158,11,.2); }
     .rm-icon { font-size: .95rem; flex-shrink: 0; }
     .rm-text { font-size: .72rem; font-weight: 600; color: var(--txt); }
     .rm-sub { font-size: .62rem; color: var(--dim); }
-    .rm-chip { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.22); border-radius: 4px; padding: 1px 6px; font-size: .6rem; color: var(--ok); margin-right: 2px; font-family: var(--mono); }
-    /* ─── LOADER (Apple-style circular) ─── */
-    #run-loading {
-      display: none; position: fixed; inset: 0; z-index: 900;
-      background: rgba(0,0,0,.65); backdrop-filter: blur(10px);
-      flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    .rm-chip { background: rgba(58,158,95,.1); border: 1px solid rgba(58,158,95,.22); border-radius: 4px; padding: 1px 6px; font-size: .6rem; color: var(--ok); margin-right: 2px; font-family: var(--mono); }
+    #rml-res-foot {
+      padding: 10px 16px 16px; display: flex; justify-content: center;
     }
-    .apple-loader {
-      width: 64px; height: 64px; position: relative;
+    #rml-res-done {
+      min-width: 120px; justify-content: center;
     }
-    .apple-loader-track {
-      width: 64px; height: 64px; border-radius: 50%;
-      border: 4px solid rgba(255,255,255,.1);
-      position: absolute; top: 0; left: 0;
+
+    /* ── RUN btn grayed in auto mode ── */
+    #runbtn.auto-disabled {
+      opacity: .38; cursor: not-allowed; pointer-events: none;
+      filter: grayscale(.4);
     }
-    .apple-loader-spin {
-      width: 64px; height: 64px; border-radius: 50%;
-      border: 4px solid transparent;
-      border-top-color: var(--acc2);
-      border-right-color: rgba(34,197,94,.4);
-      position: absolute; top: 0; left: 0;
-      animation: appleSpin 1s cubic-bezier(.5,0,.5,1) infinite;
-    }
-    .apple-loader-spin2 {
-      width: 44px; height: 44px; border-radius: 50%;
-      border: 3px solid transparent;
-      border-top-color: rgba(74,222,128,.5);
-      position: absolute; top: 9px; left: 9px;
-      animation: appleSpin 1.5s cubic-bezier(.5,0,.5,1) infinite reverse;
-    }
-    @keyframes appleSpin { to { transform: rotate(360deg); } }
-    #run-loading-text { font-family: var(--font); font-size: .9rem; font-weight: 600; color: rgba(255,255,255,.9); letter-spacing: .02em; }
-    #run-loading-sub { font-family: var(--font); font-size: .7rem; color: rgba(255,255,255,.45); letter-spacing: .02em; }
     /* ─── SCROLLBAR ─── */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -456,7 +502,9 @@
     <div class="panel">
       <div class="ph">
         <div class="pt"><span class="pt-icon">&#9654;</span> Cloud Runner</div>
-        <span class="b b-green" id="runbadge">READY</span>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span class="b b-green" id="runbadge">READY</span>
+        </div>
       </div>
       <div class="runner-cfg">
         <div class="runner-field" style="grid-column:1/-1;display:none">
@@ -514,7 +562,7 @@ token: MDEwMDE...
 x-gw-auth: a=vhOvo...
 dev-id: shein_8a47..."></textarea>
         <div class="br">
-          <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE</button>
+          <button class="btn-p" id="parsebtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0"><defs><linearGradient id="bolt-g1" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity=".7"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g1)" stroke="none"><animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width=".5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite"/></polygon></svg> PARSE &amp; UPDATE</button>
           <button class="btn-s" id="pastebtn">&#128203; PASTE</button>
         </div>
       </div>
@@ -611,7 +659,7 @@ dev-id: shein_8a47..."></textarea>
           </div>
         </div>
         <div class="br">
-          <button class="btn-p" id="applybtn">&#9889; APPLY</button>
+          <button class="btn-p" id="applybtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0"><defs><linearGradient id="bolt-g2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity=".7"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g2)" stroke="none"><animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width=".5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite"/></polygon></svg> APPLY</button>
           <button class="btn-s" id="reloadbtn">&#8635; RELOAD</button>
           <button class="btn-s" id="clearvbtn">&#10005; CLEAR</button>
         </div>
@@ -621,7 +669,7 @@ dev-id: shein_8a47..."></textarea>
     <!-- BRUTE-FORCE — collapsed -->
     <div class="panel">
       <div class="collapse-header" id="bf-toggle">
-        <div class="pt"><span class="pt-icon">&#9889;</span> Brute-Force Claim</div>
+        <div class="pt"><span class="pt-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-2px"><defs><linearGradient id="bolt-g3" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="var(--acc)"/><stop offset="100%" stop-color="var(--acc2)"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g3)"><animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="2s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="var(--acc2)" stroke-width=".6" stroke-linejoin="round"><animate attributeName="opacity" values="0;0.6;0" dur="2s" repeatCount="indefinite"/></polygon></svg></span> Brute-Force Claim</div>
         <div style="display:flex;align-items:center;gap:6px">
           <span class="b b-orange" id="bfbadge">DISABLED</span>
           <div class="collapse-arrow" id="bf-arrow">&#9660;</div>
@@ -673,36 +721,44 @@ dev-id: shein_8a47..."></textarea>
     <!-- Hidden script output -->
     <textarea id="scriptout" class="script-ta" readonly style="display:none"></textarea>
 
-    <!-- LOADING OVERLAY (Apple-style) -->
-    <div id="run-loading" style="display:none">
-      <div class="apple-loader">
-        <div class="apple-loader-track"></div>
-        <div class="apple-loader-spin"></div>
-        <div class="apple-loader-spin2"></div>
-      </div>
-      <div id="run-loading-text">Running script...</div>
-      <div id="run-loading-sub">Please wait</div>
-      <button id="stopbtn"
-        style="margin-top:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;padding:7px 18px;border-radius:8px;cursor:pointer;transition:background .18s;display:flex;align-items:center;gap:6px"
-        onmouseover="this.style.background='rgba(255,255,255,.2)'"
-        onmouseout="this.style.background='rgba(255,255,255,.1)'">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/></svg> STOP
-      </button>
-    </div>
-
-    <!-- RESULTS MODAL -->
-    <div id="run-modal" style="display:none;position:fixed;inset:0;z-index:901;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px">
+    <!-- UNIFIED RUN MODAL (loading → results) -->
+    <div id="run-modal">
       <div id="run-modal-card">
-        <div id="run-modal-icon"></div>
-        <div id="run-modal-title"></div>
-        <div id="run-modal-subtitle"></div>
-        <div id="run-modal-items"></div>
-        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:4px">
-          <button id="run-modal-close" class="btn-p" style="min-width:110px;justify-content:center;gap:5px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Done <span id="modal-countdown" style="opacity:.7;font-size:.85em;min-width:1.4em;display:inline-block;text-align:right"></span>
-          </button>
+
+        <!-- Loading phase -->
+        <div id="rml-loading">
+          <div class="rml-bar-wrap"><div class="rml-bar"></div></div>
+          <div class="rml-dots">
+            <div class="rml-dot"></div>
+            <div class="rml-dot"></div>
+            <div class="rml-dot"></div>
+          </div>
+          <div id="rml-label">Running script…</div>
+          <div id="rml-sublabel">Connecting to server</div>
+          <div class="rml-stop-row">
+            <button id="rml-stopbtn">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+              STOP
+            </button>
+          </div>
         </div>
+
+        <!-- Results phase -->
+        <div id="rml-results">
+          <div id="rml-res-top">
+            <div id="rml-res-icon"></div>
+            <div id="rml-res-title"></div>
+            <div id="rml-res-sub"></div>
+          </div>
+          <div id="rml-res-items"></div>
+          <div id="rml-res-foot">
+            <button id="run-modal-close" class="btn-p rml-res-done">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Done <span id="modal-countdown" style="opacity:.7;font-size:.85em;min-width:1.4em;display:inline-block;text-align:right"></span>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -756,7 +812,7 @@ dev-id: shein_8a47..."></textarea>
     var _tt;
     function toast(type, msg) {
       var t = document.getElementById('toast');
-      t.textContent = msg;
+      t.innerHTML = msg;
       t.className = 'on ' + type;
       clearTimeout(_tt);
       _tt = setTimeout(function () { t.className = ''; }, 3200);
@@ -1066,20 +1122,12 @@ dev-id: shein_8a47..."></textarea>
       // Add to parse history (dedupe by token)
       addParseHistory(parsed, changed.length);
 
-      // Auto-open the extracted tokens panel so user can see results
-      var tokBody = document.getElementById('tokens-body');
-      var tokArrow = document.getElementById('tokens-arrow');
-      var tokToggle = document.getElementById('tokens-toggle');
-      if (tokBody && !tokBody.classList.contains('open')) {
-        tokBody.classList.add('open');
-        if (tokArrow) tokArrow.classList.add('open');
-        if (tokToggle) tokToggle.classList.add('open');
-      }
-      toast('s', '\u2713 Token parsed successfully \u2014 ready to RUN!');
+      toast('s', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>Token parsed successfully \u2014 ready to RUN!');
       if (isAutoMode()) {
-        toast('s', '\u26a1 Auto mode: launching runner\u2026');
         document.getElementById('runbadge').textContent = 'AUTO-STARTING\u2026';
         document.getElementById('runbadge').className = 'b b-orange';
+        // Dismiss the keyboard / blur any focused input before the loading overlay appears
+        if (document.activeElement) document.activeElement.blur();
         setTimeout(function() {
           document.getElementById('runbtn').click();
         }, 600);
@@ -1235,7 +1283,7 @@ dev-id: shein_8a47..."></textarea>
       document.getElementById('bfstatus').textContent = '\u2713 ' + changed.length + ' field(s) injected';
 
       markUpdated('BRUTE-FORCE');
-      toast('s', '\u26a1 Brute-force config applied \u00b7 ' + _bfCountry);
+      toast('s', '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-2px;margin-right:4px"><defs><linearGradient id="bolt-gt" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="currentColor"/><stop offset="100%" stop-color="currentColor" stop-opacity=".6"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-gt)"><animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="1.2s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon></svg>Brute-force config applied \u00b7 ' + _bfCountry);
     });
 
     // ================================================================
@@ -1399,6 +1447,7 @@ dev-id: shein_8a47..."></textarea>
       _autoTextEl.textContent = on ? 'AUTO' : 'MANUAL';
       _autoTextEl.style.color = on ? 'var(--ok)' : 'var(--dim)';
       localStorage.setItem('ssu_auto_mode', on ? '1' : '0');
+      updateAutoDisable();
     }
 
     // Restore saved auto mode
@@ -1428,7 +1477,7 @@ dev-id: shein_8a47..."></textarea>
           if (!text) { toast('w', 'Clipboard is empty'); return; }
           el.value = text;
           if (isAutoMode()) {
-            toast('i', '\u26a1 AUTO: parsing\u2026');
+            if (document.activeElement) document.activeElement.blur();
             setTimeout(function() { doParse(text); }, 80);
           } else {
             toast('s', '\u2713 Pasted! Hit PARSE or Ctrl+Enter');
@@ -1461,7 +1510,7 @@ dev-id: shein_8a47..."></textarea>
         if (!text) { toast('w', 'Clipboard data is empty'); return; }
         e.preventDefault(); // prevent double-paste
         this.value = text;  // set value manually so doParse has it
-        toast('i', '\u26a1 AUTO: parsing\u2026');
+        if (document.activeElement) document.activeElement.blur();
         setTimeout(function() { doParse(text); }, 80);
       }
     });
@@ -1556,109 +1605,80 @@ dev-id: shein_8a47..."></textarea>
     }
 
     function showRunModal(aborted) {
-      var modal = document.getElementById('run-modal');
-      var icon = document.getElementById('run-modal-icon');
-      var title = document.getElementById('run-modal-title');
-      var sub = document.getElementById('run-modal-subtitle');
-      var items = document.getElementById('run-modal-items');
-
       // Helper: parse a claimed line into an array of code strings
-      // Handles 3 server emit formats:
-      //   ✅ CLAIMED! codes=CODE1, CODE2         (no brackets)
-      //   ✅ CLAIMED! ['code1', 'code2']          (bracket list)
-      //   ✅ N claimed, M failed                  (count only)
       function parseClaimedCodes(line) {
-        // Format 1: bracket list  ★ CLAIMED! [...] or ✅ CLAIMED! [...]
         var mBracket = line.match(/CLAIMED[^[]*\[([^\]]+)\]/);
-        if (mBracket) {
-          return mBracket[1].split(',').map(function(s){ return s.trim().replace(/['"]/g,''); }).filter(Boolean);
-        }
-        // Format 2: codes=CODE1, CODE2, ...  (no brackets, stop at total= or end)
+        if (mBracket) return mBracket[1].split(',').map(function(s){ return s.trim().replace(/['"]/g,''); }).filter(Boolean);
         var mEq = line.match(/CLAIMED[^=]*=\s*([^[]+?)(?:\s+total=|$)/);
-        if (mEq) {
-          return mEq[1].split(',').map(function(s){ return s.trim(); }).filter(Boolean);
-        }
-        // Format 3: "N claimed" — extract the number
+        if (mEq) return mEq[1].split(',').map(function(s){ return s.trim(); }).filter(Boolean);
         var mCount = line.match(/(\d+)\s+claimed/);
-        if (mCount) {
-          var n = parseInt(mCount[1], 10);
-          var codes = [];
-          for (var x = 0; x < n; x++) codes.push('✓');
-          return codes;
-        }
-        return ['✓'];
+        if (mCount) { var n=parseInt(mCount[1],10); var c=[]; for(var x=0;x<n;x++) c.push('\u2713'); return c; }
+        return ['\u2713'];
       }
 
-      var nLogin = _results.login.length;
-      var nClaimed = _results.claimed.reduce(function (sum, line) {
-        return sum + parseClaimedCodes(line).length;
-      }, 0);
-      var nFailed = _results.failed.length;
-      var nWarned = _results.warned.length;
+      var nLogin   = _results.login.length;
+      var nClaimed = _results.claimed.reduce(function(s,l){ return s + parseClaimedCodes(l).length; }, 0);
+      var nFailed  = _results.failed.length;
+      var nWarned  = _results.warned.length;
+
+      // Populate results pane
+      var icon  = document.getElementById('rml-res-icon');
+      var title = document.getElementById('rml-res-title');
+      var sub   = document.getElementById('rml-res-sub');
+      var items = document.getElementById('rml-res-items');
 
       if (aborted) {
-        icon.innerHTML = _ICON_STOP;
+        icon.innerHTML  = _ICON_STOP;
         title.textContent = 'Stopped';
-        sub.textContent = 'Run was cancelled by user.';
+        sub.textContent   = 'Run was cancelled by user.';
       } else if (nClaimed > 0) {
-        icon.innerHTML = _ICON_OK;
+        icon.innerHTML  = _ICON_OK;
         title.textContent = nClaimed + ' Coupon' + (nClaimed > 1 ? 's' : '') + ' Claimed!';
-        sub.textContent = (nLogin > 0 ? nLogin + ' account(s) not logged in · ' : '') + (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : (nLogin === 0 ? 'All codes collected successfully' : ''));
+        sub.textContent   = (nLogin > 0 ? nLogin + ' account(s) not logged in · ' : '') +
+          (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : (nLogin === 0 ? 'All codes collected successfully' : ''));
       } else if (nFailed > 0) {
-        icon.innerHTML = _ICON_ERR;
+        icon.innerHTML  = _ICON_ERR;
         title.textContent = 'Claim Failed';
-        sub.textContent = nFailed + ' error' + (nFailed > 1 ? 's' : '') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
+        sub.textContent   = nFailed + ' error' + (nFailed > 1 ? 's' : '') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
       } else if (nWarned > 0) {
-        icon.innerHTML = _ICON_WARN;
+        icon.innerHTML  = _ICON_WARN;
         title.textContent = 'Already Claimed';
-        sub.textContent = 'These coupons are already in your account.';
+        sub.textContent   = 'These coupons are already in your account.';
       } else {
-        icon.innerHTML = _ICON_INFO;
+        icon.innerHTML  = _ICON_INFO;
         title.textContent = 'Session Complete';
-        sub.textContent = 'No actionable results detected.';
+        sub.textContent   = 'No actionable results detected.';
       }
 
-      // Render result chips — one chip per individual code, no "OK" fallback
       var html = '';
       if (_results.claimed.length) {
         html += '<div class="rm-chips">';
-        _results.claimed.forEach(function (l) {
-          var codes = parseClaimedCodes(l);
-          codes.forEach(function(code) {
-            if (code !== '✓') {
-              html += '<span class="rm-chip ok">\u2713 ' + esc(code.substring(0, 40)) + '</span>';
-            }
+        _results.claimed.forEach(function(l) {
+          parseClaimedCodes(l).forEach(function(code) {
+            if (code !== '\u2713') html += '<span class="rm-chip ok">\u2713 ' + esc(code.substring(0,40)) + '</span>';
           });
         });
         html += '</div>';
       }
-      if (_results.failed.length) {
-        html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">' + _results.failed.length + ' error(s)</div><div class="rm-sub">Check server / tokens</div></div></div>';
-      }
-      if (_results.warned.length) {
-        html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
-      }
-      if (_results.login.length) {
-        html += '<div class="rm-item err"><span class="rm-icon">&#128274;</span><div><div class="rm-text">' + _results.login.length + ' account(s) not logged in</div><div class="rm-sub">Please login &mdash; token may be expired</div></div></div>';
-      }
-      if (!html) {
-        html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
-      }
+      if (_results.failed.length)  html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">' + _results.failed.length + ' error(s)</div><div class="rm-sub">Check server / tokens</div></div></div>';
+      if (_results.warned.length)  html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
+      if (_results.login.length)   html += '<div class="rm-item err"><span class="rm-icon">&#128274;</span><div><div class="rm-text">' + _results.login.length + ' account(s) not logged in</div><div class="rm-sub">Please login &mdash; token may be expired</div></div></div>';
+      if (!html) html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
       items.innerHTML = html;
 
-      modal.classList.add('active');
-      modal.style.display = 'flex';
+      // Transition: hide loading, show results (modal stays open)
+      document.getElementById('rml-loading').classList.add('hidden');
+      document.getElementById('rml-results').classList.add('visible');
       startModalCountdown();
     }
 
-    // Web Worker blob timer — keeps ticking even when tab is hidden/minimised
+    // Web Worker blob timer
     var _modalWorker = null;
     var _modalCountdownEl = document.getElementById('modal-countdown');
 
     function _makeWorkerSrc() {
       return 'var t=0;onmessage=function(e){if(e.data==="start"){t=5;postMessage(t);var id=setInterval(function(){t--;postMessage(t);if(t<=0)clearInterval(id);},1000);}if(e.data==="stop")t=-99;};';
     }
-
     function startModalCountdown() {
       if (_modalWorker) { _modalWorker.terminate(); _modalWorker = null; }
       var blob = new Blob([_makeWorkerSrc()], { type: 'application/javascript' });
@@ -1666,25 +1686,37 @@ dev-id: shein_8a47..."></textarea>
       _modalWorker.onmessage = function(e) {
         var n = e.data;
         if (_modalCountdownEl) _modalCountdownEl.textContent = n > 0 ? '(' + n + ')' : '';
-        if (n <= 0) { hideRunModal(); }
+        if (n <= 0) hideRunModal();
       };
       _modalWorker.postMessage('start');
     }
-
     function stopModalCountdown() {
       if (_modalWorker) { _modalWorker.postMessage('stop'); _modalWorker.terminate(); _modalWorker = null; }
       if (_modalCountdownEl) _modalCountdownEl.textContent = '';
     }
-
     function hideRunModal() {
       stopModalCountdown();
       var modal = document.getElementById('run-modal');
-      modal.classList.remove('active');
-      modal.style.display = 'none';
+      modal.classList.remove('visible');
     }
 
     document.getElementById('run-modal-close').addEventListener('click', hideRunModal);
-    document.getElementById('run-modal').addEventListener('click', function (e) { if (e.target === this) hideRunModal(); });
+    document.getElementById('run-modal').addEventListener('click', function(e) { if (e.target === this) hideRunModal(); });
+    document.getElementById('rml-stopbtn').addEventListener('click', function() {
+      if (_runAbort) { _runAbort.abort(); _runAbort = null; }
+      setRunning(false);
+      showRunModal(true);
+    });
+
+    // ── AUTO-DISABLE run button in AUTO mode ──
+    function updateAutoDisable() {
+      var runBtn = document.getElementById('runbtn');
+      if (_autoMode) {
+        runBtn.classList.add('auto-disabled');
+      } else {
+        runBtn.classList.remove('auto-disabled');
+      }
+    }
 
     function buildCfgFromScript() {
       var src = document.getElementById('scriptout').value;
@@ -1782,21 +1814,25 @@ dev-id: shein_8a47..."></textarea>
       var runBtn = document.getElementById('runbtn');
       var badge = document.getElementById('runbadge');
       var status = document.getElementById('runstatus');
-      var loading = document.getElementById('run-loading');
       runBtn.disabled = on;
       if (on) {
         badge.textContent = 'RUNNING';
         badge.className = 'b b-green';
         status.textContent = '';
-        loading.style.display = 'flex';
-        loading.classList.add('active');
         _results = { claimed: [], failed: [], warned: [], login: [], raw: [] };
+        // Show modal in loading phase
+        document.getElementById('rml-label').textContent = 'Running script\u2026';
+        document.getElementById('rml-sublabel').textContent = 'Connecting to server';
+        var modal = document.getElementById('run-modal');
+        document.getElementById('rml-loading').classList.remove('hidden');
+        document.getElementById('rml-results').classList.remove('visible');
+        modal.classList.add('visible');
       } else {
         badge.textContent = 'READY';
         badge.className = 'b b-green';
         status.textContent = '';
-        loading.style.display = 'none';
-        loading.classList.remove('active');
+        // Auto-disable state is re-evaluated after run ends
+        updateAutoDisable();
       }
     }
 
@@ -1860,10 +1896,6 @@ dev-id: shein_8a47..."></textarea>
     }
 
     document.getElementById('runbtn').addEventListener('click', doRun);
-    document.getElementById('stopbtn').addEventListener('click', function () {
-      if (_runAbort) { _runAbort.abort(); _runAbort = null; }
-      setRunning(false);
-    });
 
     // ================================================================
     // THEME TOGGLE
