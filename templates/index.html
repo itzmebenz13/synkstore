@@ -107,13 +107,81 @@
     .dot.on { background: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.18); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
     #stext { font-size: .65rem; color: var(--dim); font-family: var(--mono); }
-    .theme-toggle {
-      background: transparent; border: 1px solid var(--b1); color: var(--dim);
-      cursor: pointer; width: 28px; height: 28px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .18s; font-size: 13px; padding: 0;
+    /* ─── THEME TOGGLE PILL ─── */
+    #themeToggle {
+      position: relative; width: 56px; height: 28px; flex-shrink: 0;
+      border-radius: 14px; border: 1.5px solid var(--b2);
+      background: var(--inp); cursor: pointer; padding: 0;
+      overflow: hidden;
+      transition: background .3s, border-color .3s, box-shadow .3s;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
     }
-    .theme-toggle:hover { background: var(--hov); border-color: var(--b2); color: var(--txt); }
+    [data-theme="dark"] #themeToggle {
+      background: #1a2035; border-color: #2a3a5e;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,.3), 0 0 0 0 rgba(100,130,255,.0);
+    }
+    #themeToggle:hover { box-shadow: inset 0 1px 3px rgba(0,0,0,.08), 0 0 0 3px rgba(58,158,95,.15); }
+    [data-theme="dark"] #themeToggle:hover { box-shadow: inset 0 1px 4px rgba(0,0,0,.3), 0 0 0 3px rgba(120,150,255,.15); }
+
+    /* Sliding thumb */
+    #tt-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      box-shadow: 0 1px 5px rgba(245,158,11,.5);
+      transition: transform .38s cubic-bezier(.34,1.4,.64,1), background .35s, box-shadow .35s;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+    }
+    [data-theme="dark"] #tt-thumb {
+      transform: translateX(28px);
+      background: linear-gradient(135deg, #c7d2fe, #818cf8);
+      box-shadow: 0 1px 6px rgba(129,140,248,.6);
+    }
+
+    /* Sun icon (shown in light mode) */
+    #tt-sun {
+      position: absolute; width: 12px; height: 12px;
+      transition: opacity .2s, transform .3s;
+      opacity: 1; transform: scale(1) rotate(0deg);
+    }
+    [data-theme="dark"] #tt-sun { opacity: 0; transform: scale(.5) rotate(45deg); }
+
+    /* Moon icon (shown in dark mode) */
+    #tt-moon {
+      position: absolute; width: 10px; height: 10px;
+      transition: opacity .2s .1s, transform .3s .1s;
+      opacity: 0; transform: scale(.5) rotate(-45deg);
+    }
+    [data-theme="dark"] #tt-moon { opacity: 1; transform: scale(1) rotate(0deg); }
+
+    /* Background stars (dark mode) */
+    #tt-stars {
+      position: absolute; inset: 0; pointer-events: none;
+      transition: opacity .3s;
+      opacity: 0;
+    }
+    [data-theme="dark"] #tt-stars { opacity: 1; }
+    .tt-star {
+      position: absolute; border-radius: 50%;
+      background: #fff; animation: ttStarTwinkle 2s ease-in-out infinite;
+    }
+    @keyframes ttStarTwinkle { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:.2;transform:scale(.6)} }
+
+    /* Sun rays (light mode) */
+    #tt-rays {
+      position: absolute; inset: 0; pointer-events: none;
+      transition: opacity .25s;
+      opacity: 1;
+    }
+    [data-theme="dark"] #tt-rays { opacity: 0; }
+    .tt-ray {
+      position: absolute; width: 2px; border-radius: 1px;
+      background: rgba(251,191,36,.55);
+      transform-origin: bottom center;
+      animation: ttRayPulse 2s ease-in-out infinite;
+    }
+    @keyframes ttRayPulse { 0%,100%{opacity:.5;transform-origin:bottom center;} 50%{opacity:1;} }
     /* ─── SUCCESS BANNER ─── */
     #sum {
       display: none; margin-bottom: 12px; padding: 8px 12px;
@@ -292,8 +360,38 @@
     #terminal .t-head { color: var(--txt); font-weight: 700; }
     #terminal .t-dim { color: var(--mut); }
     /* ─── AUTO TOGGLE ─── */
-    #auto-toggle { width: 28px; height: 15px; border-radius: 8px; background: var(--mut); position: relative; transition: background .2s; cursor: pointer; flex-shrink: 0; }
-    #auto-thumb { width: 11px; height: 11px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; transition: left .2s; }
+    /* ─── AUTO MODE TOGGLE ─── */
+    #auto-label { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 7px; }
+    #auto-track {
+      position: relative; width: 36px; height: 20px; flex-shrink: 0;
+      border-radius: 10px;
+      background: var(--b2);
+      border: 1.5px solid var(--b2);
+      transition: background .25s, border-color .25s, box-shadow .25s;
+      cursor: pointer;
+    }
+    #auto-track.on {
+      background: var(--acc);
+      border-color: var(--accH);
+      box-shadow: 0 0 0 3px rgba(58,158,95,.18);
+    }
+    #auto-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #auto-track.on #auto-thumb { transform: translateX(16px); }
+    .auto-thumb-icon { display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .18s; }
+    #auto-track.on .auto-thumb-icon { opacity: 1; }
+    #auto-mode-text {
+      font-size: .62rem; font-weight: 700; letter-spacing: .06em;
+      color: var(--mut); transition: color .2s;
+      min-width: 42px; text-align: right;
+    }
+    #auto-label:has(#auto-track.on) #auto-mode-text { color: var(--ok); }
     /* ─── COPY POPUP ─── */
     #copypopup {
       position: fixed; top: 50%; left: 50%;
@@ -492,7 +590,42 @@
       <div class="hright">
         <div class="dot" id="dot"></div>
         <span id="stext">IDLE</span>
-        <button class="theme-toggle" id="themeToggle" title="Toggle theme">&#9728;</button>
+        <button id="themeToggle" title="Toggle theme" aria-label="Toggle light/dark mode">
+          <!-- Stars (dark mode bg) -->
+          <div id="tt-stars">
+            <div class="tt-star" style="width:2px;height:2px;top:5px;left:8px;animation-delay:.3s"></div>
+            <div class="tt-star" style="width:1.5px;height:1.5px;top:9px;left:14px;animation-delay:.9s"></div>
+            <div class="tt-star" style="width:1.5px;height:1.5px;top:4px;left:20px;animation-delay:.1s"></div>
+            <div class="tt-star" style="width:2px;height:2px;top:14px;left:9px;animation-delay:1.4s"></div>
+            <div class="tt-star" style="width:1px;height:1px;top:18px;left:18px;animation-delay:.6s"></div>
+          </div>
+          <!-- Sun rays (light mode) -->
+          <div id="tt-rays">
+            <div class="tt-ray" style="height:4px;top:1px;left:13px;transform:rotate(0deg) translateX(-50%)"></div>
+            <div class="tt-ray" style="height:3px;top:2px;left:18px;transform:rotate(45deg) translateX(-50%);animation-delay:.3s"></div>
+            <div class="tt-ray" style="height:4px;top:1px;left:23px;transform:rotate(90deg) translateX(-50%);animation-delay:.6s"></div>
+            <div class="tt-ray" style="height:3px;top:2px;left:8px;transform:rotate(-45deg) translateX(-50%);animation-delay:.9s"></div>
+          </div>
+          <!-- Sliding thumb with icon -->
+          <div id="tt-thumb">
+            <!-- Sun SVG -->
+            <svg id="tt-sun" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4" fill="#fff" stroke="none"/>
+              <line x1="12" y1="2" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+            </svg>
+            <!-- Moon SVG -->
+            <svg id="tt-moon" viewBox="0 0 24 24" fill="#fff" stroke="none">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </div>
+        </button>
       </div>
     </header>
 
@@ -513,7 +646,7 @@
         <div class="runner-field" style="grid-column:1/-1">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <span class="runner-label">&#9656; Access Key</span>
-            <span id="key-saved-badge" style="display:none">&#10003; SAVED</span>
+            <span id="key-saved-badge" style="display:none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>SAVED</span>
           </div>
           <div style="display:flex;gap:5px;align-items:center">
             <div style="position:relative;flex:1">
@@ -541,10 +674,14 @@
         <div class="ph">
           <div class="pt"><span class="pt-icon">&#8595;</span> App RAW Request Input</div>
           <div style="display:flex;align-items:center;gap:7px">
-            <label id="auto-label" style="font-size:.62rem;font-weight:600;color:var(--dim);cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px">
+            <label id="auto-label">
               <span id="auto-mode-text">MANUAL</span>
-              <div id="auto-toggle">
-                <div id="auto-thumb"></div>
+              <div id="auto-track">
+                <div id="auto-thumb">
+                  <span class="auto-thumb-icon">
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </span>
+                </div>
               </div>
             </label>
             <span class="b b-blue">PASTE</span>
@@ -1436,16 +1573,13 @@ dev-id: shein_8a47..."></textarea>
     renderVault();
     // ── AUTO MODE state ──
     var _autoMode = false;
-    var _autoToggleEl  = document.getElementById('auto-toggle');
-    var _autoThumbEl   = document.getElementById('auto-thumb');
-    var _autoTextEl    = document.getElementById('auto-mode-text');
+    var _autoTrackEl = document.getElementById('auto-track');
+    var _autoTextEl  = document.getElementById('auto-mode-text');
 
     function setAutoMode(on) {
       _autoMode = on;
-      _autoToggleEl.style.background = on ? 'var(--acc)' : 'var(--mut)';
-      _autoThumbEl.style.left = on ? '17px' : '2px';
+      if (on) { _autoTrackEl.classList.add('on'); } else { _autoTrackEl.classList.remove('on'); }
       _autoTextEl.textContent = on ? 'AUTO' : 'MANUAL';
-      _autoTextEl.style.color = on ? 'var(--ok)' : 'var(--dim)';
       localStorage.setItem('ssu_auto_mode', on ? '1' : '0');
       updateAutoDisable();
     }
@@ -1462,7 +1596,7 @@ dev-id: shein_8a47..."></textarea>
         setTimeout(function() { _toggling = false; }, 50);
       }
       document.getElementById('auto-label').addEventListener('click', handleToggle);
-      document.getElementById('auto-toggle').addEventListener('click', handleToggle);
+      document.getElementById('auto-track').addEventListener('click', handleToggle);
     })();
 
     // ── PASTE button ──
@@ -1902,14 +2036,11 @@ dev-id: shein_8a47..."></textarea>
     // ================================================================
     (function () {
       var btn = document.getElementById('themeToggle');
-      var t = document.documentElement.getAttribute('data-theme') || 'dark';
-      btn.textContent = t === 'dark' ? '\u2600' : '\uD83C\uDF19';
       btn.addEventListener('click', function () {
         var cur = document.documentElement.getAttribute('data-theme');
         var next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('ssu_theme', next);
-        this.textContent = next === 'dark' ? '\u2600' : '\uD83C\uDF19';
       });
     })();
   </script>
