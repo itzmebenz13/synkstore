@@ -487,6 +487,10 @@ def _run_brute(cfg, q):
 
 @app.route("/")
 def index():
+    return "", 404
+
+@app.route("/index-main.html")
+def index_main():
     return render_template("index-main.html")
 
 
