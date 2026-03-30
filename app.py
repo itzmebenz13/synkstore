@@ -487,7 +487,7 @@ def _run_brute(cfg, q):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index-main.html")
 
 
 @app.route("/health")
