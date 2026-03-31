@@ -345,53 +345,275 @@
     .btn-country.active, .btn-country:hover { background: rgba(58,158,95,.12); color: var(--ok); border-color: rgba(58,158,95,.3); }
     .bf-note { font-size: .65rem; color: var(--dim); padding: 9px 12px; line-height: 1.7; border-top: 1px solid var(--b1); }
     /* ─── LOGIN OVERLAY ─── */
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
     #login-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      background: var(--bg);
+      background: var(--login-bg, #050a06);
       display: flex; align-items: center; justify-content: center;
       padding: 20px;
-      transition: opacity .3s;
+      transition: opacity .5s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    :root {
+      --login-bg: #f0f7f0;
+      --login-box-bg: rgba(240,247,240,.88);
+      --login-box-border: rgba(58,158,95,.25);
+      --login-box-shadow: 0 0 0 1px rgba(58,158,95,.08), 0 24px 80px rgba(0,0,0,.15), 0 0 60px rgba(58,158,95,.06), inset 0 1px 0 rgba(255,255,255,.7);
+      --login-title-color: #0d2a18;
+      --login-sub-color: rgba(30,100,60,.55);
+      --login-label-color: rgba(34,120,70,.8);
+      --login-input-bg: rgba(58,158,95,.06);
+      --login-input-color: #0d2a18;
+      --login-input-border: rgba(58,158,95,.22);
+      --login-input-ph: rgba(58,158,95,.35);
+      --login-eye-color: rgba(34,120,70,.5);
+      --login-eye-hover: rgba(34,120,70,.9);
+      --login-err-color: #dc2626;
+      --login-footer-color: rgba(34,120,70,.3);
+      --login-accent-corner: rgba(58,158,95,.45);
+      --login-grid-color: rgba(58,158,95,.07);
+      --login-blob1: rgba(58,158,95,.12);
+      --login-blob2: rgba(74,222,128,.07);
+      --login-inner-bg: linear-gradient(135deg, #e0f5e8 0%, #c8ecd4 100%);
+      --login-inner-border: rgba(58,158,95,.4);
+    }
+    [data-theme="dark"] {
+      --login-bg: #050a06;
+      --login-box-bg: rgba(10,18,11,.82);
+      --login-box-border: rgba(58,158,95,.22);
+      --login-box-shadow: 0 0 0 1px rgba(58,158,95,.08), 0 24px 80px rgba(0,0,0,.7), 0 0 60px rgba(58,158,95,.08), inset 0 1px 0 rgba(255,255,255,.05);
+      --login-title-color: #e8f5ea;
+      --login-sub-color: rgba(120,180,130,.6);
+      --login-label-color: rgba(74,222,128,.7);
+      --login-input-bg: rgba(58,158,95,.06);
+      --login-input-color: #d4edda;
+      --login-input-border: rgba(58,158,95,.18);
+      --login-input-ph: rgba(74,222,128,.25);
+      --login-eye-color: rgba(74,222,128,.4);
+      --login-eye-hover: rgba(74,222,128,.9);
+      --login-err-color: #f87171;
+      --login-footer-color: rgba(74,222,128,.25);
+      --login-accent-corner: rgba(58,158,95,.5);
+      --login-grid-color: rgba(58,158,95,.07);
+      --login-blob1: rgba(58,158,95,.18);
+      --login-blob2: rgba(74,222,128,.12);
+      --login-inner-bg: linear-gradient(135deg, #1a4a2a 0%, #0d2a18 100%);
+      --login-inner-border: rgba(58,158,95,.35);
     }
     #login-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    /* animated grid background */
+    #login-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--login-grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--login-grid-color) 1px, transparent 1px);
+      background-size: 44px 44px;
+      animation: gridShift 18s linear infinite;
+    }
+    @keyframes gridShift { to { background-position: 44px 44px; } }
+
+    /* radial glow blobs */
+    #login-glow1 {
+      position: absolute; width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle, var(--login-blob1) 0%, transparent 70%);
+      top: -120px; left: -100px; pointer-events: none;
+      animation: blobDrift1 12s ease-in-out infinite alternate;
+    }
+    #login-glow2 {
+      position: absolute; width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, var(--login-blob2) 0%, transparent 70%);
+      bottom: -80px; right: -60px; pointer-events: none;
+      animation: blobDrift2 15s ease-in-out infinite alternate;
+    }
+    @keyframes blobDrift1 { from{transform:translate(0,0) scale(1)} to{transform:translate(60px,40px) scale(1.15)} }
+    @keyframes blobDrift2 { from{transform:translate(0,0) scale(1)} to{transform:translate(-40px,-30px) scale(1.1)} }
+
+    /* floating particles */
+    .lp-particle {
+      position: absolute; border-radius: 50%; pointer-events: none;
+      background: rgba(58,158,95,.5);
+      animation: particleFloat linear infinite;
+    }
+    @keyframes particleFloat {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: .6; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
+
+    /* scan line sweep */
+    #login-scan {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(58,158,95,.03) 49%,
+        rgba(58,158,95,.06) 50%,
+        transparent 51%);
+      background-size: 100% 8px;
+      animation: scanMove 6s linear infinite;
+      opacity: .5;
+    }
+    @keyframes scanMove { to { background-position: 0 100vh; } }
+
+    /* ── CARD ── */
     .login-box {
-      background: var(--card); border: 1px solid var(--b1);
-      border-radius: var(--r); box-shadow: var(--shadow-lg);
-      padding: 28px 24px; width: 100%; max-width: 360px;
-      display: flex; flex-direction: column; align-items: center; gap: 18px;
+      position: relative; z-index: 2;
+      width: 100%; max-width: 400px;
+      background: var(--login-box-bg);
+      backdrop-filter: blur(28px) saturate(1.4);
+      -webkit-backdrop-filter: blur(28px) saturate(1.4);
+      border: 1px solid var(--login-box-border);
+      border-radius: 24px;
+      box-shadow: var(--login-box-shadow);
+      padding: 36px 32px 32px;
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+      animation: cardReveal .7s cubic-bezier(.34,1.3,.64,1) both;
     }
+    @keyframes cardReveal {
+      from { opacity:0; transform: translateY(30px) scale(.96); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    /* corner accents */
+    .login-box::before, .login-box::after {
+      content: ''; position: absolute; width: 20px; height: 20px;
+      border-color: var(--login-accent-corner); border-style: solid;
+    }
+    .login-box::before { top: 14px; left: 14px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+    .login-box::after  { bottom: 14px; right: 14px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 4px; }
+
+    /* ── LOGO ── */
     .login-logo {
-      width: 52px; height: 52px;
-      background: linear-gradient(135deg, var(--acc), var(--acc2));
-      border-radius: 14px; display: flex; align-items: center; justify-content: center;
-      font-family: var(--font); font-size: 18px; font-weight: 700; color: #fff;
-      box-shadow: 0 4px 14px rgba(58,158,95,.35);
+      width: 72px; height: 72px; margin-bottom: 22px; flex-shrink: 0;
+      position: relative; display: flex; align-items: center; justify-content: center;
     }
-    .login-title { font-size: .95rem; font-weight: 700; color: var(--txt); }
-    .login-sub   { font-size: .68rem; color: var(--dim); margin-top: -10px; text-align: center; }
-    .login-field { width: 100%; display: flex; flex-direction: column; gap: 5px; }
-    .login-field label { font-size: .62rem; color: var(--acc); letter-spacing: .5px; text-transform: uppercase; font-weight: 600; }
+    .login-logo-ring {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 1.5px solid transparent;
+      background: linear-gradient(135deg, rgba(58,158,95,.7), rgba(74,222,128,.3), rgba(58,158,95,.1)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out; mask-composite: exclude;
+      animation: ringRotate 6s linear infinite;
+    }
+    @keyframes ringRotate { to { transform: rotate(360deg); } }
+    .login-logo-ring2 {
+      position: absolute; inset: 6px; border-radius: 50%;
+      border: 1px solid rgba(74,222,128,.15);
+      animation: ringRotate 10s linear infinite reverse;
+    }
+    .login-logo-inner {
+      width: 50px; height: 50px; border-radius: 16px; z-index: 1;
+      background: var(--login-inner-bg);
+      border: 1px solid var(--login-inner-border);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(58,158,95,.3), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    /* ── HEADINGS ── */
+    .login-title {
+      font-family: 'Space Grotesk', var(--font);
+      font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em;
+      color: var(--login-title-color); margin-bottom: 6px; text-align: center;
+    }
+    .login-title span { color: var(--acc); }
+    .login-sub {
+      font-size: .7rem; color: var(--login-sub-color);
+      text-align: center; letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .login-sub::before, .login-sub::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(to right, transparent, rgba(58,158,95,.3), transparent);
+    }
+
+    /* ── FIELD ── */
+    .login-field { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .login-field label {
+      font-size: .6rem; color: var(--login-label-color);
+      letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .login-field label svg { opacity: .7; }
     .login-input-wrap { position: relative; width: 100%; }
     .login-input {
-      width: 100%; background: var(--inp); color: var(--txt);
-      font-family: var(--mono); font-size: .8rem;
-      border: 1px solid var(--b1); border-radius: var(--ri);
-      padding: 8px 38px 8px 12px; outline: none;
+      width: 100%;
+      background: var(--login-input-bg);
+      color: var(--login-input-color);
+      font-family: var(--mono); font-size: .82rem;
+      border: 1px solid var(--login-input-border);
+      border-radius: 12px;
+      padding: 11px 42px 11px 14px;
+      outline: none;
+      transition: all .2s;
+      letter-spacing: .04em;
     }
-    .login-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.1); }
+    .login-input::placeholder { color: var(--login-input-ph); }
+    .login-input:focus {
+      border-color: rgba(58,158,95,.55);
+      background: rgba(58,158,95,.1);
+      box-shadow: 0 0 0 3px rgba(58,158,95,.1), 0 0 20px rgba(58,158,95,.08);
+    }
     .login-eye {
-      position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; color: var(--mut); cursor: pointer;
-      padding: 2px; display: flex; align-items: center;
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--login-eye-color); cursor: pointer;
+      padding: 3px; display: flex; align-items: center;
+      transition: color .2s;
     }
+    .login-eye:hover { color: var(--login-eye-hover); }
+
+    /* ── BUTTON ── */
     .login-btn {
-      width: 100%; padding: 9px; border-radius: var(--rb); border: none;
-      background: linear-gradient(135deg, var(--acc), var(--accH));
-      color: #fff; font-family: var(--font); font-size: .8rem; font-weight: 700;
-      cursor: pointer; transition: all .2s;
-      box-shadow: 0 3px 12px rgba(58,158,95,.3);
+      width: 100%; padding: 12px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #2d8a52, #1a5c34);
+      color: #fff; font-family: 'Space Grotesk', var(--font);
+      font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      cursor: pointer; transition: all .25s;
+      position: relative; overflow: hidden;
+      box-shadow: 0 4px 20px rgba(58,158,95,.35), inset 0 1px 0 rgba(255,255,255,.12);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 14px;
     }
-    .login-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(58,158,95,.4); }
-    .login-err { font-size: .68rem; color: var(--err); text-align: center; min-height: 16px; }
+    .login-btn::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
+      opacity: 0; transition: opacity .2s;
+    }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(58,158,95,.5), inset 0 1px 0 rgba(255,255,255,.15); }
+    .login-btn:hover::before { opacity: 1; }
+    .login-btn:active { transform: translateY(0); }
+    .login-btn-shine {
+      position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+      animation: btnShine 3s ease-in-out infinite;
+    }
+    @keyframes btnShine { 0%,100%{left:-100%} 50%{left:150%} }
+
+    /* ── ERROR ── */
+    .login-err {
+      font-size: .68rem; color: var(--login-err-color); text-align: center;
+      min-height: 18px; letter-spacing: .02em;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+
+    /* ── FOOTER ── */
+    .login-footer {
+      margin-top: 6px; font-size: .58rem; color: var(--login-footer-color);
+      text-align: center; letter-spacing: .08em; text-transform: uppercase;
+    }
+
+    /* ── LOCKED BATCH BUTTON ── */
+    .btn-batch.locked {
+      opacity: 0.45; cursor: not-allowed; position: relative;
+    }
+    .btn-batch.locked::after {
+      content: '\1F512';
+      position: absolute; top: -5px; right: -5px;
+      font-size: .6rem; line-height: 1;
+    }
 
     /* ─── COIN WALLET ─── */
     #coin-wallet {
@@ -715,21 +937,54 @@
 
   <!-- ═══ LOGIN OVERLAY ═══ -->
   <div id="login-overlay">
+    <!-- background layers -->
+    <div id="login-grid"></div>
+    <div id="login-glow1"></div>
+    <div id="login-glow2"></div>
+    <div id="login-scan"></div>
+
     <div class="login-box">
-      <div class="login-logo">SH</div>
-      <div class="login-title">SHEIN Script Updater</div>
-      <div class="login-sub">Enter your unique access key to continue</div>
+      <!-- animated logo -->
+      <div class="login-logo">
+        <div class="login-logo-ring"></div>
+        <div class="login-logo-ring2"></div>
+        <div class="login-logo-inner">
+          <!-- shopping bag + script icon -->
+          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 13V10a6 6 0 1 1 12 0v3" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round"/>
+            <rect x="5" y="13" width="22" height="15" rx="3" fill="rgba(58,158,95,.18)" stroke="#3a9e5f" stroke-width="1.5"/>
+            <path d="M11 19h10M11 23h6" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="24" cy="22" r="4" fill="#0d2a18" stroke="#4ade80" stroke-width="1.2"/>
+            <path d="M23 22l.8.8 1.7-1.6" stroke="#4ade80" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="login-title">SHEIN <span>Script</span> Updater</div>
+      <div class="login-sub">Secure Access</div>
+
       <div class="login-field">
-        <label>Access Key</label>
+        <label>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Access Key
+        </label>
         <div class="login-input-wrap">
-          <input class="login-input" id="login-key-input" type="password" placeholder="Your unique access key" autocomplete="off">
-          <button class="login-eye" id="login-eye-btn" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          <input class="login-input" id="login-key-input" type="password" placeholder="Enter your unique access key" autocomplete="off">
+          <button class="login-eye" id="login-eye-btn" type="button" title="Show / hide">
+            <svg id="eye-icon-hide" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            <svg id="eye-icon-show" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
-      <button class="login-btn" id="login-submit-btn">&#9654; LOGIN</button>
+
+      <button class="login-btn" id="login-submit-btn">
+        <span class="login-btn-shine"></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M21 16v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        <span id="login-btn-text">Login</span>
+      </button>
+
       <div class="login-err" id="login-err"></div>
+      <div class="login-footer">SSU &nbsp;·&nbsp; Secured Session &nbsp;·&nbsp; v2</div>
     </div>
   </div>
 
@@ -1579,18 +1834,20 @@ dev-id: shein_8a47..."></textarea>
     // ================================================================
     var CODE_BATCHES = {
       'ph0313': {
-        codes: ['ph0313n4'],
+        codes: ['ph0313n9', 'ph0313n14', 'ph0313n18', 'ph0313n4'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'bronze',
-        label: 'ph0313 (79%)'
+        label: 'ph0313 (79%)',
+        adminOnly: false
       },
       'phsf0212': {
         codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'gold',
-        label: 'phsf0212 (default)'
+        label: 'phsf0212 (default)',
+        adminOnly: false
       },
       'gm0pha': {
         codes: ['gm0pha11', 'gm0pha12', 'gm0pha13', 'gm0pha14'],
@@ -1598,36 +1855,61 @@ dev-id: shein_8a47..."></textarea>
         mid: '4142402',
         type: 'delivery',
         coin: 'silver',
-        label: 'gm0pha'
+        label: 'gm0pha',
+        adminOnly: true
       },
       'phsf0212ultra': {
         codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207', 'phsf021206', 'phsf021205', 'phsf021204', 'phsf021203'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'gold',
-        label: 'phsf0212 ULTRA'
+        label: 'phsf0212 ULTRA',
+        adminOnly: true
       },
       'ph031381': {
         codes: ['ph0313n5', 'ph0313n10', 'ph0313n15', 'ph0313n19'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'silver',
-        label: 'ph0313 (81%)'
+        label: 'ph0313 (81%)',
+        adminOnly: false
       },
       'phsf+ph0313': {
         codes: ['phsf021210', 'phsf021209', 'ph0313n4', 'phsf021208'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'gold',
-        label: 'phsf + ph0313'
+        label: 'phsf + ph0313',
+        adminOnly: true
       },
     };
     var _activeBatch = 'phsf0212';
+
+    // Update batch button lock states based on admin status
+    function updateBatchLocks() {
+      document.querySelectorAll('.btn-batch').forEach(function(btn) {
+        var bname = btn.getAttribute('data-batch');
+        var batch = CODE_BATCHES[bname];
+        if (!batch) return;
+        if (batch.adminOnly && !_sessionIsAdmin) {
+          btn.classList.add('locked');
+          btn.title = 'Admin only';
+        } else {
+          btn.classList.remove('locked');
+          btn.title = '';
+        }
+      });
+    }
 
     document.querySelectorAll('.btn-batch').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var bname = this.getAttribute('data-batch');
         var batch = CODE_BATCHES[bname];
+        // Block locked batches for non-admins
+        if (batch.adminOnly && !_sessionIsAdmin) {
+          toast('e', '\uD83D\uDD12 This batch is locked — admin access required');
+          return;
+        }
         _activeBatch = bname;
         // Load batch codes into vouchers list
         vouchers = batch.codes.slice();
@@ -2291,13 +2573,52 @@ dev-id: shein_8a47..."></textarea>
       var eyeBtn    = document.getElementById('login-eye-btn');
 
       eyeBtn.addEventListener('click', function() {
-        keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+        var iconHide = document.getElementById('eye-icon-hide');
+        var iconShow = document.getElementById('eye-icon-show');
+        if (keyInput.type === 'password') {
+          keyInput.type = 'text';
+          if (iconHide) iconHide.style.display = 'none';
+          if (iconShow) iconShow.style.display = '';
+        } else {
+          keyInput.type = 'password';
+          if (iconHide) iconHide.style.display = '';
+          if (iconShow) iconShow.style.display = 'none';
+        }
       });
+
+      function applySession(k, data) {
+        _sessionKey     = k;
+        _sessionUser    = data.username || 'User';
+        _sessionIsAdmin = data.is_admin || false;
+        _sessionCoins   = data.coins || { bronze: 0, silver: 0, gold: 0 };
+        // Persist session
+        localStorage.setItem('ssu_session_key', k);
+        localStorage.setItem('ssu_session_user', _sessionUser);
+        localStorage.setItem('ssu_session_admin', _sessionIsAdmin ? '1' : '0');
+        localStorage.setItem('ssu_session_coins', JSON.stringify(_sessionCoins));
+        // Auto-fill run-key
+        document.getElementById('run-key').value = k;
+        localStorage.setItem('ssu_run_key', k);
+        document.getElementById('key-apply').click();
+        overlay.classList.add('hidden');
+        document.getElementById('coin-wallet').style.display = 'flex';
+        updateWallet();
+        updateBatchLocks();
+        if (_sessionIsAdmin) {
+          document.getElementById('wallet-admin-btn').style.display = '';
+          document.getElementById('admin-panel').style.display = '';
+          adminLoadDailyConfig();
+          adminRefreshUsers();
+        } else {
+          document.getElementById('wallet-admin-btn').style.display = 'none';
+          document.getElementById('admin-panel').style.display = 'none';
+        }
+      }
 
       function doLogin() {
         var k = keyInput.value.trim();
         if (!k) { errEl.textContent = 'Please enter your access key'; return; }
-        submitBtn.textContent = 'Logging in\u2026';
+        document.getElementById('login-btn-text').textContent = 'Logging in\u2026';
         submitBtn.disabled = true;
         errEl.textContent = '';
         fetch(_serverBase + '/user/login', {
@@ -2305,47 +2626,70 @@ dev-id: shein_8a47..."></textarea>
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_key: k })
         }).then(function(r){ return r.json(); }).then(function(data) {
-          submitBtn.textContent = '\u25b6 LOGIN';
+          document.getElementById('login-btn-text').textContent = 'Login';
           submitBtn.disabled = false;
-          if (!data.ok) { errEl.textContent = data.error || 'Invalid access key'; return; }
-          _sessionKey     = k;
-          _sessionUser    = data.username || 'User';
-          _sessionIsAdmin = data.is_admin || false;
-          _sessionCoins   = data.coins || { bronze: 0, silver: 0, gold: 0 };
-          // Save key so we auto-fill run-key
-          document.getElementById('run-key').value = k;
-          localStorage.setItem('ssu_run_key', k);
-          // Also lock the run-key
-          document.getElementById('key-apply').click();
-          overlay.classList.add('hidden');
-          document.getElementById('coin-wallet').style.display = 'flex';
-          updateWallet();
-          if (_sessionIsAdmin) {
-            document.getElementById('wallet-admin-btn').style.display = '';
-            document.getElementById('admin-panel').style.display = '';
-            adminLoadDailyConfig();
-            adminRefreshUsers();
+          if (!data.ok) {
+            errEl.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + (data.error || 'Invalid access key');
+            return;
           }
+          applySession(k, data);
           toast('s', '\u2713 Welcome, ' + _sessionUser + '!');
         }).catch(function(err) {
-          submitBtn.textContent = '\u25b6 LOGIN';
+          document.getElementById('login-btn-text').textContent = 'Login';
           submitBtn.disabled = false;
-          errEl.textContent = 'Connection error \u2014 check server URL';
+          errEl.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Connection error — check server';
         });
       }
 
       submitBtn.addEventListener('click', doLogin);
       keyInput.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 
+      // ── Restore session from localStorage on page load ──
+      var savedSessionKey = localStorage.getItem('ssu_session_key');
+      if (savedSessionKey) {
+        // Re-validate with server to ensure the session is still valid
+        fetch(_serverBase + '/user/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_key: savedSessionKey })
+        }).then(function(r){ return r.json(); }).then(function(data) {
+          if (data.ok) {
+            keyInput.value = savedSessionKey;
+            applySession(savedSessionKey, data);
+            toast('s', '\u2713 Session restored — welcome back, ' + (data.username || 'User') + '!');
+          } else {
+            // Session expired or invalid — clear storage
+            localStorage.removeItem('ssu_session_key');
+            localStorage.removeItem('ssu_session_user');
+            localStorage.removeItem('ssu_session_admin');
+            localStorage.removeItem('ssu_session_coins');
+            updateBatchLocks();
+          }
+        }).catch(function() {
+          // Server unreachable, clear stored session
+          localStorage.removeItem('ssu_session_key');
+          updateBatchLocks();
+        });
+      } else {
+        updateBatchLocks();
+      }
+
       // Logout
       document.getElementById('wallet-logout-btn').addEventListener('click', function() {
         _sessionKey = ''; _sessionUser = ''; _sessionIsAdmin = false;
         _sessionCoins = { bronze:0, silver:0, gold:0 };
+        // Clear persisted session
+        localStorage.removeItem('ssu_session_key');
+        localStorage.removeItem('ssu_session_user');
+        localStorage.removeItem('ssu_session_admin');
+        localStorage.removeItem('ssu_session_coins');
         overlay.classList.remove('hidden');
         document.getElementById('coin-wallet').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('wallet-admin-btn').style.display = 'none';
         keyInput.value = '';
         document.getElementById('login-err').textContent = '';
+        updateBatchLocks();
       });
 
       // Admin button toggle
