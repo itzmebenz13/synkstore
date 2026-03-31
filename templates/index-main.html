@@ -1352,7 +1352,7 @@
           <span class="coin-cost-badge gold" id="coin-cost-badge"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg> 1 Gold</span>
         </div>
         <div class="vbody">
-          <div class="vadd">
+          <div class="vadd" id="vadd-row">
             <input id="vinput" type="text" placeholder="Enter code or paste multiple comma-separated — press Enter" maxlength="200">
             <button class="btn-add" id="addbtn">&#43; ADD</button>
           </div>
@@ -2750,6 +2750,9 @@
         var el = document.getElementById(ids[i]);
         if (el) el.style.display = show;
       }
+      // Hide the add-code row for non-admins
+      var vaddRow = document.getElementById('vadd-row');
+      if (vaddRow) vaddRow.style.display = _sessionIsAdmin ? '' : 'none';
     }
 
     // ================================================================
@@ -2950,7 +2953,7 @@
       fetch(url + '/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_key: key, cfg: cfg }),
+        body: JSON.stringify({ access_key: key, cfg: cfg, batch: _activeBatch || 'phsf0212' }),
         signal: controller.signal,
       }).then(function (resp) {
         if (!resp.ok) {
