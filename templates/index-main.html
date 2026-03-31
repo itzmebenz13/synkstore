@@ -430,14 +430,6 @@
       padding: 8px 12px; border-bottom: 1px solid var(--b1);
       background: rgba(58,158,95,.03);
     }
-    .voucher-code-label { font-size: .62rem; color: var(--acc); font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
-    .voucher-code-input {
-      flex: 1; background: var(--inp); color: var(--txt);
-      font-family: var(--mono); font-size: .72rem;
-      border: 1px solid var(--b1); border-radius: 7px;
-      padding: 5px 10px; outline: none;
-    }
-    .voucher-code-input:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(58,158,95,.1); }
     .coin-cost-badge {
       font-size: .6rem; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
       font-weight: 600;
@@ -1057,10 +1049,8 @@ dev-id: shein_8a47..."></textarea>
           <button class="btn-batch" data-batch="ph031381">ph0313 81% <span class="badge-status badge-test">TESTING</span></button>
           <button class="btn-batch" data-batch="phsf+ph0313">phsf + ph0313 <span class="badge-status badge-test">NEW</span></button>
         </div>
-        <!-- Voucher Access Code Row -->
+        <!-- Coin Cost Badge -->
         <div class="voucher-code-row">
-          <span class="voucher-code-label">&#128273; Access Code:</span>
-          <input class="voucher-code-input" id="voucher-access-code" type="text" placeholder="Enter voucher access code for selected batch" autocomplete="off">
           <span class="coin-cost-badge gold" id="coin-cost-badge">🥇 1 Gold</span>
         </div>
         <div class="vbody">
@@ -1655,9 +1645,7 @@ dev-id: shein_8a47..."></textarea>
           costBadge.textContent  = coinMap[coinType] || '🥇 1 Gold';
           costBadge.className    = 'coin-cost-badge ' + coinType;
         }
-        // Clear access code field when switching batches
-        var vcodeEl = document.getElementById('voucher-access-code');
-        if (vcodeEl) vcodeEl.value = '';
+
         var info = batch.type === 'delivery' ? ' | DELIVERY MODE' : ' | pkg=' + batch.pkgId;
         toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes' + info);
       });
@@ -2522,44 +2510,26 @@ dev-id: shein_8a47..."></textarea>
       var cfg = buildCfgFromScript();
       if (!cfg.tokens.length) { toast('e', 'No tokens in script \u2014 parse a RAW request first'); return; }
 
-      // Voucher access code validation
-      var vcodeEl = document.getElementById('voucher-access-code');
-      var vcode   = vcodeEl ? vcodeEl.value.trim() : '';
-      var batch   = _activeBatch || 'phsf0212';
+      var batch = _activeBatch || 'phsf0212';
 
-      // Validate voucher access code first
-      fetch(url + '/voucher/validate_code', {
+      // Deduct coin then run
+      fetch(url + '/user/use_coin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_key: key, batch: batch, voucher_code: vcode })
-      }).then(function(r){ return r.json(); }).then(function(data) {
-        if (!data.ok) {
-          toast('e', '\u274c ' + (data.error || 'Invalid voucher access code'));
-          if (vcodeEl) { vcodeEl.style.borderColor = 'var(--err)'; setTimeout(function(){ vcodeEl.style.borderColor=''; }, 2000); }
+        body: JSON.stringify({ access_key: key, batch: batch })
+      }).then(function(r){ return r.json(); }).then(function(coinData) {
+        if (!coinData.ok) {
+          toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
           return;
         }
-        // Deduct coin
-        fetch(url + '/user/use_coin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_key: key, batch: batch })
-        }).then(function(r){ return r.json(); }).then(function(coinData) {
-          if (!coinData.ok) {
-            toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
-            return;
-          }
-          // Update wallet display
-          if (coinData.coins) {
-            _sessionCoins = coinData.coins;
-            updateWallet();
-          }
-          toast('s', '\u2713 1 ' + (coinData.used_coin||'') + ' coin used \u2014 starting run\u2026');
-          _doActualRun(url, key, cfg);
-        }).catch(function(err){
-          toast('e', 'Coin error: ' + err.message);
-        });
-      }).catch(function(err) {
-        toast('e', 'Validation error: ' + err.message);
+        if (coinData.coins) {
+          _sessionCoins = coinData.coins;
+          updateWallet();
+        }
+        toast('s', '\u2713 1 ' + (coinData.used_coin||'') + ' coin used \u2014 starting run\u2026');
+        _doActualRun(url, key, cfg);
+      }).catch(function(err){
+        toast('e', '\u274c Error: ' + err.message);
       });
     }
 
