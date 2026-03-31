@@ -9,7 +9,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
-    (function () { var t = localStorage.getItem('ssu_theme') || 'light'; document.documentElement.setAttribute('data-theme', t); })();
+    (function () {
+      var t = localStorage.getItem('ssu_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+      // Pre-hide login overlay if a session key exists — prevents flash on refresh
+      if (localStorage.getItem('ssu_session_key')) {
+        document.addEventListener('DOMContentLoaded', function() {
+          var o = document.getElementById('login-overlay');
+          if (o) o.classList.add('hidden');
+        });
+      }
+    })();
   </script>
   <style>
     :root {
