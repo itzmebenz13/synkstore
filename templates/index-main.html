@@ -1312,10 +1312,9 @@ dev-id: shein_8a47..."></textarea>
           <button class="btn-batch" data-batch="ph031381">ph0313 81% <span class="badge-status badge-test">TESTING</span></button>
           <button class="btn-batch" data-batch="phsf+ph0313">phsf + ph0313 <span class="badge-status badge-test">NEW</span></button>
         </div>
-        <!-- Voucher Access Code Row -->
-        <div class="voucher-code-row">
-          <span class="voucher-code-label">&#128273; Access Code:</span>
-          <input class="voucher-code-input" id="voucher-access-code" type="text" placeholder="Enter voucher access code for selected batch" autocomplete="off">
+        <!-- coin cost badge shown inline with batch row now -->
+        <div style="padding: 5px 12px 0; display:flex; align-items:center; gap:6px;">
+          <span style="font-size:.6rem;color:var(--mut);letter-spacing:.4px;">COST:</span>
           <span class="coin-cost-badge gold" id="coin-cost-badge">🥇 1 Gold</span>
         </div>
         <div class="vbody">
@@ -2855,7 +2854,7 @@ dev-id: shein_8a47..."></textarea>
     });
 
     // ================================================================
-    // PATCHED doRun: validate voucher code + deduct coin first
+    // doRun: deduct coin then run
     // ================================================================
     function doRun() {
       var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
@@ -2866,44 +2865,27 @@ dev-id: shein_8a47..."></textarea>
       var cfg = buildCfgFromScript();
       if (!cfg.tokens.length) { toast('e', 'No tokens in script \u2014 parse a RAW request first'); return; }
 
-      // Voucher access code validation
-      var vcodeEl = document.getElementById('voucher-access-code');
-      var vcode   = vcodeEl ? vcodeEl.value.trim() : '';
-      var batch   = _activeBatch || 'phsf0212';
+      var batch = _activeBatch || 'phsf0212';
 
-      // Validate voucher access code first
-      fetch(url + '/voucher/validate_code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_key: key, batch: batch, voucher_code: vcode })
-      }).then(function(r){ return r.json(); }).then(function(data) {
-        if (!data.ok) {
-          toast('e', '\u274c ' + (data.error || 'Invalid voucher access code'));
-          if (vcodeEl) { vcodeEl.style.borderColor = 'var(--err)'; setTimeout(function(){ vcodeEl.style.borderColor=''; }, 2000); }
-          return;
-        }
-        // Deduct coin
-        fetch(url + '/user/use_coin', {
+      // Deduct coin (coins are the access gate)
+      fetch(url + '/user/use_coin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_key: key, batch: batch })
-        }).then(function(r){ return r.json(); }).then(function(coinData) {
-          if (!coinData.ok) {
-            toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
-            return;
-          }
-          // Update wallet display
-          if (coinData.coins) {
-            _sessionCoins = coinData.coins;
-            updateWallet();
-          }
-          toast('s', '\u2713 1 ' + (coinData.used_coin||'') + ' coin used \u2014 starting run\u2026');
-          _doActualRun(url, key, cfg);
-        }).catch(function(err){
-          toast('e', 'Coin error: ' + err.message);
-        });
-      }).catch(function(err) {
-        toast('e', 'Validation error: ' + err.message);
+      }).then(function(r){ return r.json(); }).then(function(coinData) {
+        if (!coinData.ok) {
+          toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
+          return;
+        }
+        // Update wallet display
+        if (coinData.coins) {
+          _sessionCoins = coinData.coins;
+          updateWallet();
+        }
+        toast('s', '\u2713 1 ' + (coinData.used_coin||'') + ' coin used \u2014 starting run\u2026');
+        _doActualRun(url, key, cfg);
+      }).catch(function(err){
+        toast('e', 'Coin error: ' + err.message);
       });
     }
 
