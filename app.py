@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ─── ADMIN KEY ────────────────────────────────────────────────────────────────
-ADMIN_KEY = "admin-unli2026"
+ADMIN_KEY = "BossJobean2026"
 
 # ─── VOUCHER ACCESS CODES ─────────────────────────────────────────────────────
 # Maps voucher_batch_id -> list of valid access codes for that voucher
