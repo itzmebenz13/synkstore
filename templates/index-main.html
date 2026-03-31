@@ -1213,25 +1213,15 @@
             <span class="b b-blue">PASTE</span>
           </div>
         </div>
-        <textarea id="rawin" placeholder="Paste your RAW app request here...
-
-POST /promotion/coupon/bind_coupon HTTP/2
-host: api-service.shein.com
-armortoken: T2_2.7.5_...
-ugid: 040npe62jx
-sortuid: 6214106215
-smdeviceid: 202603...
-token: MDEwMDE...
-x-gw-auth: a=vhOvo...
-dev-id: shein_8a47..."></textarea>
+        <textarea id="rawin" placeholder="Paste here..."></textarea>
         <div class="br">
           <button class="btn-p" id="parsebtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0"><defs><linearGradient id="bolt-g1" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity=".7"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g1)" stroke="none"><animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width=".5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite"/></polygon></svg> PARSE &amp; UPDATE</button>
           <button class="btn-s" id="pastebtn">&#128203; PASTE</button>
         </div>
       </div>
 
-      <!-- EXTRACTED TOKENS — collapsed -->
-      <div class="panel" style="margin-bottom:0">
+      <!-- EXTRACTED TOKENS — collapsed (admin only) -->
+      <div class="panel" id="panel-tokens-wrap" style="margin-bottom:0;display:none">
         <div class="collapse-header" id="tokens-toggle">
           <div class="pt"><span class="pt-icon">&#9672;</span> Extracted Tokens</div>
           <div style="display:flex;align-items:center;gap:6px">
@@ -1253,8 +1243,8 @@ dev-id: shein_8a47..."></textarea>
       </div>
     </div>
 
-    <!-- TOKEN VAULT — collapsed -->
-    <div class="panel">
+    <!-- TOKEN VAULT — collapsed (admin only) -->
+    <div class="panel" id="panel-vault" style="display:none">
       <div class="collapse-header" id="vault-toggle">
         <div class="pt"><span class="pt-icon">&#128273;</span> Token Vault</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -1274,8 +1264,8 @@ dev-id: shein_8a47..."></textarea>
       </div>
     </div>
 
-    <!-- PARSE HISTORY — collapsed -->
-    <div class="panel">
+    <!-- PARSE HISTORY — collapsed (admin only) -->
+    <div class="panel" id="panel-hist" style="display:none">
       <div class="collapse-header" id="hist-toggle">
         <div class="pt"><span class="pt-icon">&#128336;</span> Parse History</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -1334,8 +1324,8 @@ dev-id: shein_8a47..."></textarea>
       </div>
     </div>
 
-    <!-- BRUTE-FORCE — collapsed -->
-    <div class="panel">
+    <!-- BRUTE-FORCE — collapsed (admin only) -->
+    <div class="panel" id="panel-bf" style="display:none">
       <div class="collapse-header" id="bf-toggle">
         <div class="pt"><span class="pt-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-2px"><defs><linearGradient id="bolt-g3" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="var(--acc)"/><stop offset="100%" stop-color="var(--acc2)"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g3)"><animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="2s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="var(--acc2)" stroke-width=".6" stroke-linejoin="round"><animate attributeName="opacity" values="0;0.6;0" dur="2s" repeatCount="indefinite"/></polygon></svg></span> Brute-Force Claim</div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -2612,6 +2602,7 @@ dev-id: shein_8a47..."></textarea>
           document.getElementById('wallet-admin-btn').style.display = 'none';
           document.getElementById('admin-panel').style.display = 'none';
         }
+        updateAdminPanels();
       }
 
       function doLogin() {
@@ -2663,14 +2654,16 @@ dev-id: shein_8a47..."></textarea>
             localStorage.removeItem('ssu_session_admin');
             localStorage.removeItem('ssu_session_coins');
             updateBatchLocks();
+            updateAdminPanels();
           }
         }).catch(function() {
-          // Server unreachable, clear stored session
           localStorage.removeItem('ssu_session_key');
           updateBatchLocks();
+          updateAdminPanels();
         });
       } else {
         updateBatchLocks();
+        updateAdminPanels();
       }
 
       // Logout
@@ -2689,6 +2682,7 @@ dev-id: shein_8a47..."></textarea>
         keyInput.value = '';
         document.getElementById('login-err').textContent = '';
         updateBatchLocks();
+        updateAdminPanels();
       });
 
       // Admin button toggle
@@ -2698,6 +2692,18 @@ dev-id: shein_8a47..."></textarea>
         if (panel.style.display !== 'none') adminRefreshUsers();
       });
     })();
+
+    // ================================================================
+    // ADMIN PANEL VISIBILITY
+    // ================================================================
+    function updateAdminPanels() {
+      var show = _sessionIsAdmin ? '' : 'none';
+      var ids = ['panel-tokens-wrap', 'panel-vault', 'panel-hist', 'panel-bf'];
+      for (var i = 0; i < ids.length; i++) {
+        var el = document.getElementById(ids[i]);
+        if (el) el.style.display = show;
+      }
+    }
 
     // ================================================================
     // COIN WALLET UPDATE
