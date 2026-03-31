@@ -44,6 +44,18 @@ VOUCHER_COIN_COST = {
     "phsf+ph0313":   {"coin": "gold",   "label": "phsf + ph0313"},
 }
 
+# ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
+# Non-admin users may ONLY submit codes from this list for their active batch.
+VALID_BATCH_CODES = {
+    "ph0313":        ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
+    "ph031381":      ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
+    "phsf0212":      ["phsf021210", "phsf021209", "phsf021208", "phsf021207"],
+    "phsf0212ultra": ["phsf021210", "phsf021209", "phsf021208", "phsf021207",
+                      "phsf021206", "phsf021205", "phsf021204", "phsf021203"],
+    "gm0pha":        ["gm0pha11", "gm0pha12", "gm0pha13", "gm0pha14"],
+    "phsf+ph0313":   ["phsf021210", "phsf021209", "ph0313n4", "phsf021208"],
+}
+
 # ─── USER DATABASE (file-backed JSON) ─────────────────────────────────────────
 USERS_FILE       = os.environ.get("USERS_FILE", "users.json")
 DAILY_COIN_FILE  = os.environ.get("DAILY_COIN_FILE", "daily_coins.json")
@@ -637,12 +649,24 @@ def admin_set_daily_config():
 def run_script():
     data = request.get_json(force=True) or {}
     access_key = data.get("access_key", "").strip()
-    if access_key != ADMIN_KEY:
+    is_admin   = access_key == ADMIN_KEY
+    if not is_admin:
         if not get_user(access_key):
             return jsonify({"error": "Unauthorized"}), 401
-    cfg = data.get("cfg", {})
+    cfg   = data.get("cfg", {})
+    batch = data.get("batch", "").strip()
     if not cfg.get("tokens"):
         return jsonify({"error": "No tokens provided"}), 400
+
+    # ── Server-side code whitelist enforcement for non-admins ──
+    if not is_admin and batch:
+        allowed = VALID_BATCH_CODES.get(batch)
+        if allowed is None:
+            return jsonify({"error": f"Unknown batch: {batch}"}), 400
+        submitted = cfg.get("codes", [])
+        bad = [c for c in submitted if c not in allowed]
+        if bad:
+            return jsonify({"error": f"Unauthorized codes for batch '{batch}': {', '.join(bad)}"}), 403
 
     q = queue.Queue()
     def worker():
