@@ -2195,7 +2195,25 @@
     // INIT (after all functions defined)
     // ================================================================
     document.getElementById('scriptout').value = ORIG;
-    loadCodesFromText(ORIG);
+    // Auto-load the active batch codes on init instead of reading from template
+    (function() {
+      var initBatch = CODE_BATCHES['ph0313new'];
+      if (initBatch) {
+        vouchers = initBatch.codes.slice();
+        renderVouchers();
+        // Patch pkgId in script
+        var src = document.getElementById('scriptout').value;
+        src = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + initBatch.pkgId + '"');
+        src = src.replace(/(^GM0PHA_MODE\s*=\s*).*$/m, '$1False        # Set True to use delivery API mode');
+        // Patch CODES block
+        var vlines = '';
+        for (var vi = 0; vi < initBatch.codes.length; vi++) vlines += '    "' + initBatch.codes[vi] + '",\n';
+        src = src.replace(/CODES\s*=\s*\[[\s\S]*?\]/, 'CODES = [\n' + vlines + ']');
+        document.getElementById('scriptout').value = src;
+      } else {
+        loadCodesFromText(ORIG);
+      }
+    })();
 
     document.getElementById('vaultsavebtn').addEventListener('click', vaultSave);
     document.getElementById('vaultclearbtn').addEventListener('click', function () { _vault = []; vaultPersist(); renderVault(); toast('i', 'Vault cleared'); });
