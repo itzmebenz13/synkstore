@@ -1349,8 +1349,8 @@
       <div class="collapse-body" id="voucher-body">
         <div class="batch-row">
           <span class="batch-label">&#9656; BATCH:</span>
-          <button class="btn-batch active" data-batch="ph0313">ph0313 (79%) <span class="badge-status badge-active">ACTIVE</span></button>
-          <button class="btn-batch" data-batch="phsf0212">phsf0212 <span class="badge-status badge-test">TESTING</span></button>
+          <button class="btn-batch" data-batch="ph0313">ph0313 (79%) <span class="badge-status badge-test">TESTING</span></button>
+          <button class="btn-batch active" data-batch="ph0313new">ph0313 <span class="badge-status badge-active">ACTIVE</span></button>
           <button class="btn-batch" data-batch="gm0pha">gm0pha <span class="badge-status badge-test">TESTING</span></button>
           <button class="btn-batch" data-batch="phsf0212ultra">phsf0212 ULTRA <span class="badge-status badge-test">TESTING</span></button>
           <button class="btn-batch" data-batch="ph031381">ph0313 81% <span class="badge-status badge-test">TESTING</span></button>
@@ -1877,19 +1877,19 @@
     // ================================================================
     var CODE_BATCHES = {
       'ph0313': {
-        codes: ['ph0313n2', 'ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
+        codes: ['ph0313n9', 'ph0313n14', 'ph0313n18', 'ph0313n4'],
         pkgId: '17139475',
         type: 'bind',
         coin: 'bronze',
         label: 'ph0313 (79%)',
         adminOnly: false
       },
-      'phsf0212': {
-        codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207'],
-        pkgId: '17139475',
+      'ph0313new': {
+        codes: ['ph0313n2', 'ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
+        pkgId: '17140250',
         type: 'bind',
         coin: 'gold',
-        label: 'phsf0212 (default)',
+        label: 'ph0313',
         adminOnly: false
       },
       'gm0pha': {
@@ -1926,7 +1926,7 @@
         adminOnly: true
       },
     };
-    var _activeBatch = 'ph0313';
+    var _activeBatch = 'ph0313new';
 
     // Update batch button lock states based on admin status
     function updateBatchLocks() {
@@ -2931,7 +2931,7 @@
       var cfg = buildCfgFromScript();
       if (!cfg.tokens.length) { toast('e', 'No tokens in script \u2014 parse a RAW request first'); return; }
 
-      var batch = _activeBatch || 'phsf0212';
+      var batch = _activeBatch || 'ph0313new';
 
       // Deduct coin (coins are the access gate)
       fetch(url + '/user/use_coin', {
@@ -2963,7 +2963,7 @@
       fetch(url + '/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_key: key, cfg: cfg, batch: _activeBatch || 'phsf0212' }),
+        body: JSON.stringify({ access_key: key, cfg: cfg, batch: _activeBatch || 'ph0313new' }),
         signal: controller.signal,
       }).then(function (resp) {
         if (!resp.ok) {
