@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ─── ADMIN KEY ────────────────────────────────────────────────────────────────
-ADMIN_KEY = "BossJobean2026"
+ADMIN_KEY = "admin-unli2026"
 
 # ─── VOUCHER ACCESS CODES ─────────────────────────────────────────────────────
 # Maps voucher_batch_id -> list of valid access codes for that voucher
@@ -42,18 +42,6 @@ VOUCHER_COIN_COST = {
     "phsf0212ultra": {"coin": "gold",   "label": "phsf0212 ULTRA"},
     "gm0pha":        {"coin": "silver", "label": "gm0pha"},
     "phsf+ph0313":   {"coin": "gold",   "label": "phsf + ph0313"},
-}
-
-# ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
-# Non-admin users may ONLY submit codes from this list for their active batch.
-VALID_BATCH_CODES = {
-    "ph0313":        ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
-    "ph031381":      ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
-    "phsf0212":      ["phsf021210", "phsf021209", "phsf021208", "phsf021207"],
-    "phsf0212ultra": ["phsf021210", "phsf021209", "phsf021208", "phsf021207",
-                      "phsf021206", "phsf021205", "phsf021204", "phsf021203"],
-    "gm0pha":        ["gm0pha11", "gm0pha12", "gm0pha13", "gm0pha14"],
-    "phsf+ph0313":   ["phsf021210", "phsf021209", "ph0313n4", "phsf021208"],
 }
 
 # ─── USER DATABASE (file-backed JSON) ─────────────────────────────────────────
@@ -256,9 +244,10 @@ def run_collect(cfg, q):
 
 def _collect_bind(cfg, token, codes, pkg_id, emit):
     headers = build_headers(cfg, token)
+    # Flat payload — matches what the app actually sends (no couponPackages wrapper)
     payload = {
-        "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
-        "scene": "home", "idempotentCode": str(uuid.uuid4()),
+        "couponPackageId": str(pkg_id),
+        "couponCodes":     ",".join(codes),
     }
     emit(f"\n  {'─'*54}")
     emit(f"  Package  : {pkg_id}")
@@ -273,21 +262,34 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         top_code = str(data.get("code") or data.get("ret_msg_code") or "")
         top_msg  = str(data.get("msg")  or data.get("tips") or "")
         info     = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
+
         success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
         fail_list    = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
-        result_list  = info.get("bindResult") or []
-        result_list  = result_list if isinstance(result_list, list) else []
+        bind_result_raw = info.get("bindResult")          # may be a string OR a list
+        pkg_code        = str(info.get("couponPackageCode") or "")
+        error_code      = str(info.get("errorCode") or "")
 
         if is_login_error(top_code, top_msg):
             emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
             return
+
+        # ── top-level already-claimed (code field itself is 501405) ──
         if top_code == str(ERR_ALREADY_CLAIMED):
             for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+
+        # ── bindResult = "allSuccess" string → confirmed claim ──
+        elif isinstance(bind_result_raw, str) and bind_result_raw.lower() in ("allsuccess", "all_success", "success"):
+            claimed = success_list if success_list else codes
+            emit(f"  \u2705 CLAIMED! codes={', '.join(claimed)}")
+
+        # ── successCodeList populated ──
         elif success_list:
             emit(f"  \u2705 CLAIMED! codes={', '.join(success_list)}")
-        elif result_list:
+
+        # ── bindResult is a list of per-code result objects ──
+        elif isinstance(bind_result_raw, list) and bind_result_raw:
             claimed_c, conflict_c, other_c = [], [], []
-            for item in result_list:
+            for item in bind_result_raw:
                 if not isinstance(item, dict): continue
                 cv = str(item.get("couponCode") or "?")
                 ec = str(item.get("errorCode") or item.get("code") or "")
@@ -297,14 +299,24 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
             if claimed_c: emit(f"  \u2705 CLAIMED! {claimed_c}")
             for code in conflict_c: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
             if other_c: emit(f"  \u274c FAILED \u2192 {other_c}")
+
+        # ── pkg-level already-claimed (couponPackageCode=501405, NOT the pkg ID itself) ──
+        elif pkg_code == str(ERR_ALREADY_CLAIMED) or error_code == str(ERR_ALREADY_CLAIMED):
+            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+
         elif fail_list:
             emit(f"  \u274c FAILED {fail_list}")
+
         elif top_code not in ("0","200",""):
             emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
+
         elif top_code in ("0","200"):
-            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
+            # code=0/200 with no actionable result — treat as ambiguous, not a hard fail
+            emit(f"  \u2753 Ambiguous (code={top_code}) \u2014 bindResult={bind_result_raw!r} pkg={pkg_code}")
+
         else:
-            emit(f"  \u2753 Ambiguous response \u2014 code={top_code} msg={top_msg[:60]}")
+            emit(f"  \u2753 Unknown response \u2014 code={top_code} msg={top_msg[:60]}")
+
     except requests.exceptions.Timeout:
         emit("  \u274c Request timed out")
     except Exception as e:
@@ -412,8 +424,8 @@ def _run_brute(cfg, q):
         if stop_event.is_set(): return
         headers = build_headers(cfg, token)
         payload = {
-            "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
-            "scene": "home", "idempotentCode": str(uuid.uuid4()),
+            "couponPackageId": str(pkg_id),
+            "couponCodes":     ",".join(codes),
         }
         with done_lock:
             done_count[0] += 1
@@ -649,24 +661,12 @@ def admin_set_daily_config():
 def run_script():
     data = request.get_json(force=True) or {}
     access_key = data.get("access_key", "").strip()
-    is_admin   = access_key == ADMIN_KEY
-    if not is_admin:
+    if access_key != ADMIN_KEY:
         if not get_user(access_key):
             return jsonify({"error": "Unauthorized"}), 401
-    cfg   = data.get("cfg", {})
-    batch = data.get("batch", "").strip()
+    cfg = data.get("cfg", {})
     if not cfg.get("tokens"):
         return jsonify({"error": "No tokens provided"}), 400
-
-    # ── Server-side code whitelist enforcement for non-admins ──
-    if not is_admin and batch:
-        allowed = VALID_BATCH_CODES.get(batch)
-        if allowed is None:
-            return jsonify({"error": f"Unknown batch: {batch}"}), 400
-        submitted = cfg.get("codes", [])
-        bad = [c for c in submitted if c not in allowed]
-        if bad:
-            return jsonify({"error": f"Unauthorized codes for batch '{batch}': {', '.join(bad)}"}), 403
 
     q = queue.Queue()
     def worker():
