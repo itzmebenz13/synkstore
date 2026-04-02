@@ -17,31 +17,34 @@ app = Flask(__name__)
 CORS(app)
 
 # ─── ADMIN KEY ────────────────────────────────────────────────────────────────
-ADMIN_KEY = "admin-unli2026"
+ADMIN_KEY = "BossJobean2026"
 
 # ─── VOUCHER ACCESS CODES ─────────────────────────────────────────────────────
 # Maps voucher_batch_id -> list of valid access codes for that voucher
 VOUCHER_ACCESS_CODES = {
-    "phsf0212":      ["phsf0212n1", "phsf0212n2", "phsf0212n3", "phsf0212n4",
-                      "phsf0212n5", "phsf0212n6", "phsf0212n7", "phsf0212n8"],
-    "ph0313":        ["ph0313n4"],
-    "ph031381":      ["ph031381n1", "ph031381n2", "ph031381n3"],
-    "phsf0212ultra": ["phsfultra1", "phsfultra2", "phsfultra3"],
-    "gm0pha":        ["gm0pha_a1", "gm0pha_a2", "gm0pha_a3"],
-    "phsf+ph0313":   ["combo001", "combo002", "combo003"],
+    "ph0313":   ["ph0313n4"],
+    "ph0313 4vc": ["ph0313n3", "ph0313n4", "ph0313n5", "ph0313n6"],
+    "ph031381": ["ph031381n1", "ph031381n2", "ph031381n3"],
+    "gm0pha":   ["gm0pha_a1", "gm0pha_a2", "gm0pha_a3"],
 }
 
 # ─── COIN COST PER VOUCHER ────────────────────────────────────────────────────
-# 1 bronze = 1 generate in ph0313 (79%)
-# 1 silver = 1 generate in ph031381 (81%)
-# 1 gold   = 1 generate in phsf0212 (default)
+# 1 bronze = 1 use in ph0313 (79%)
+# 1 silver = 1 use in ph031381 (81%) / gm0pha
 VOUCHER_COIN_COST = {
-    "ph0313":        {"coin": "bronze", "label": "ph0313 (79%)"},
-    "ph031381":      {"coin": "silver", "label": "ph0313 (81%)"},
-    "phsf0212":      {"coin": "gold",   "label": "phsf0212 (default)"},
-    "phsf0212ultra": {"coin": "gold",   "label": "phsf0212 ULTRA"},
-    "gm0pha":        {"coin": "silver", "label": "gm0pha"},
-    "phsf+ph0313":   {"coin": "gold",   "label": "phsf + ph0313"},
+    "ph0313":   {"coin": "bronze", "label": "ph0313 (79%)"},
+    "ph0313 4vc": {"coin": "bronze", "label": "ph0313 4vc"},
+    "ph031381": {"coin": "silver", "label": "ph0313 (81%)"},
+    "gm0pha":   {"coin": "silver", "label": "gm0pha"},
+}
+
+# ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
+# Non-admin users may ONLY submit codes from this list for their active batch.
+VALID_BATCH_CODES = {
+    "ph0313":   ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
+    "ph0313 4vc": ["ph0313n3", "ph0313n4", "ph0313n5", "ph0313n6"],
+    "ph031381": ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
+    "gm0pha":   ["gm0pha11", "gm0pha12", "gm0pha13", "gm0pha14"],
 }
 
 # ─── USER DATABASE (file-backed JSON) ─────────────────────────────────────────
@@ -150,17 +153,17 @@ def build_headers(cfg, token):
         "clientid": "100", "ugid": cfg.get("ugid", ""),
         "accept": "application/json", "device": cfg.get("device_info", ""),
         "armortoken": cfg.get("armor_token", ""), "applanguage": LANGUAGE,
-        "usercountry": claim_country, "version": cfg.get("app_version", "11.3.4"),
+        "usercountry": claim_country, "version": cfg.get("app_version", "11.2.3"),
         "devicelanguage": LANGUAGE, "dev-id": cfg.get("device_id", ""),
         "sortuid": cfg.get("sortuid", ""), "device_language": LANGUAGE,
         "apptype": "shein", "localcountry": claim_country,
         "smdeviceid": cfg.get("smdevice_id", ""), "deviceid": cfg.get("device_id", ""),
         "platform": "app-native", "appname": "shein app",
-        "appversion": cfg.get("app_version", "11.3.4"), "newuid": cfg.get("sortuid", ""),
+        "appversion": cfg.get("app_version", "11.2.3"), "newuid": cfg.get("sortuid", ""),
         "language": LANGUAGE, "currency": claim_currency, "network-type": "WIFI",
         "token": token, "os-version": "14", "devicesystemversion": "Android14",
         "appcurrency": claim_currency,
-        "user-agent": f"Shein {cfg.get('app_version','11.3.4')} Android 14 {cfg.get('device_info','')} {cfg.get('appcountry','GB')} {LANGUAGE} {cfg.get('sortuid','')}",
+        "user-agent": f"Shein {cfg.get('app_version','11.2.3')} Android 14 {cfg.get('device_info','')} {cfg.get('appcountry','GB')} {LANGUAGE} {cfg.get('sortuid','')}",
         "x-gw-auth": cfg.get("gw_auth", ""), "content-type": "application/json; charset=utf-8",
     }
 
@@ -171,7 +174,7 @@ def build_delivery_headers(cfg, token):
     claim_currency = currency_map.get(claim_country, "PHP")
     gm_device = cfg.get("gm_device_id", cfg.get("device_id", ""))
     gm_site   = cfg.get("gm_site", "andshph")
-    av        = cfg.get("app_version", "11.3.4")
+    av        = cfg.get("app_version", "11.2.3")
     di        = cfg.get("device_info", "")
     return {
         "host": "api-shein.shein.com", "content-type": "application/json",
@@ -244,10 +247,9 @@ def run_collect(cfg, q):
 
 def _collect_bind(cfg, token, codes, pkg_id, emit):
     headers = build_headers(cfg, token)
-    # Flat payload — matches what the app actually sends (no couponPackages wrapper)
     payload = {
-        "couponPackageId": str(pkg_id),
-        "couponCodes":     ",".join(codes),
+        "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
+        "scene": "home", "idempotentCode": str(uuid.uuid4()),
     }
     emit(f"\n  {'─'*54}")
     emit(f"  Package  : {pkg_id}")
@@ -262,34 +264,21 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         top_code = str(data.get("code") or data.get("ret_msg_code") or "")
         top_msg  = str(data.get("msg")  or data.get("tips") or "")
         info     = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
-
         success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
         fail_list    = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
-        bind_result_raw = info.get("bindResult")          # may be a string OR a list
-        pkg_code        = str(info.get("couponPackageCode") or "")
-        error_code      = str(info.get("errorCode") or "")
+        result_list  = info.get("bindResult") or []
+        result_list  = result_list if isinstance(result_list, list) else []
 
         if is_login_error(top_code, top_msg):
             emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
             return
-
-        # ── top-level already-claimed (code field itself is 501405) ──
         if top_code == str(ERR_ALREADY_CLAIMED):
             for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
-
-        # ── bindResult = "allSuccess" string → confirmed claim ──
-        elif isinstance(bind_result_raw, str) and bind_result_raw.lower() in ("allsuccess", "all_success", "success"):
-            claimed = success_list if success_list else codes
-            emit(f"  \u2705 CLAIMED! codes={', '.join(claimed)}")
-
-        # ── successCodeList populated ──
         elif success_list:
             emit(f"  \u2705 CLAIMED! codes={', '.join(success_list)}")
-
-        # ── bindResult is a list of per-code result objects ──
-        elif isinstance(bind_result_raw, list) and bind_result_raw:
+        elif result_list:
             claimed_c, conflict_c, other_c = [], [], []
-            for item in bind_result_raw:
+            for item in result_list:
                 if not isinstance(item, dict): continue
                 cv = str(item.get("couponCode") or "?")
                 ec = str(item.get("errorCode") or item.get("code") or "")
@@ -299,24 +288,14 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
             if claimed_c: emit(f"  \u2705 CLAIMED! {claimed_c}")
             for code in conflict_c: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
             if other_c: emit(f"  \u274c FAILED \u2192 {other_c}")
-
-        # ── pkg-level already-claimed (couponPackageCode=501405, NOT the pkg ID itself) ──
-        elif pkg_code == str(ERR_ALREADY_CLAIMED) or error_code == str(ERR_ALREADY_CLAIMED):
-            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
-
         elif fail_list:
             emit(f"  \u274c FAILED {fail_list}")
-
         elif top_code not in ("0","200",""):
             emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
-
         elif top_code in ("0","200"):
-            # code=0/200 with no actionable result — treat as ambiguous, not a hard fail
-            emit(f"  \u2753 Ambiguous (code={top_code}) \u2014 bindResult={bind_result_raw!r} pkg={pkg_code}")
-
+            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
         else:
-            emit(f"  \u2753 Unknown response \u2014 code={top_code} msg={top_msg[:60]}")
-
+            emit(f"  \u2753 Ambiguous response \u2014 code={top_code} msg={top_msg[:60]}")
     except requests.exceptions.Timeout:
         emit("  \u274c Request timed out")
     except Exception as e:
@@ -329,7 +308,7 @@ def _collect_delivery(cfg, token, emit):
     gm_mid  = cfg.get("gm_mid", "4142402")
     claim_country  = cfg.get("claim_country", "PH")
     claim_currency = {"PH":"PHP","MY":"MYR","TH":"THB"}.get(claim_country, "PHP")
-    av        = cfg.get("app_version", "11.3.4")
+    av        = cfg.get("app_version", "11.2.3")
     gm_device = cfg.get("gm_device_id", cfg.get("device_id", ""))
 
     headers = build_delivery_headers(cfg, token)
@@ -424,8 +403,8 @@ def _run_brute(cfg, q):
         if stop_event.is_set(): return
         headers = build_headers(cfg, token)
         payload = {
-            "couponPackageId": str(pkg_id),
-            "couponCodes":     ",".join(codes),
+            "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
+            "scene": "home", "idempotentCode": str(uuid.uuid4()),
         }
         with done_lock:
             done_count[0] += 1
@@ -661,12 +640,24 @@ def admin_set_daily_config():
 def run_script():
     data = request.get_json(force=True) or {}
     access_key = data.get("access_key", "").strip()
-    if access_key != ADMIN_KEY:
+    is_admin   = access_key == ADMIN_KEY
+    if not is_admin:
         if not get_user(access_key):
             return jsonify({"error": "Unauthorized"}), 401
-    cfg = data.get("cfg", {})
+    cfg   = data.get("cfg", {})
+    batch = data.get("batch", "").strip()
     if not cfg.get("tokens"):
         return jsonify({"error": "No tokens provided"}), 400
+
+    # ── Server-side code whitelist enforcement for non-admins ──
+    if not is_admin and batch:
+        allowed = VALID_BATCH_CODES.get(batch)
+        if allowed is None:
+            return jsonify({"error": f"Unknown batch: {batch}"}), 400
+        submitted = cfg.get("codes", [])
+        bad = [c for c in submitted if c not in allowed]
+        if bad:
+            return jsonify({"error": f"Unauthorized codes for batch '{batch}': {', '.join(bad)}"}), 403
 
     q = queue.Queue()
     def worker():
