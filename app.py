@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ─── ADMIN KEY ────────────────────────────────────────────────────────────────
-ADMIN_KEY = "adminjoven143"
+ADMIN_KEY = "BossJobean2026"
 
 # ─── VOUCHER ACCESS CODES ─────────────────────────────────────────────────────
 # Maps voucher_batch_id -> list of valid access codes for that voucher
@@ -485,9 +485,9 @@ def _run_brute(cfg, q):
 def index():
     return "", 404
 
-@app.route("/index-main.html")
-def index_main():
-    return render_template("index-main.html")
+@app.route("/mainscript.html")
+def mainscript():
+    return render_template("mainscript.html")
 
 @app.route("/health")
 def health():
