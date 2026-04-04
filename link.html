@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opening SHEIN...</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f5f5f5;
+    }
+    .box {
+      text-align: center;
+      padding: 30px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #eee;
+      border-top-color: #e53935;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { color: #555; margin: 0 0 12px; }
+    a { color: #e53935; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <p>Opening SHEIN app...</p>
+    <a href="#" id="fallback-link">Open in browser instead</a>
+  </div>
+
+  <script>
+    const deepLink = "shein://applink/pushtoweb2?data=%7B%22url%22%3A%22https%3A%2F%2Fapi-shein.shein.com%2Fark%2F11893%3Fgoods_id%3D143823215%26test%3D5051%26url_from%3Daffiliate_koc_5317869020%26scene%3D1%26ad_type%3DKOC%26language%3Den%26siteuid%3Dmph%26version_bid%3D101804616%2C101804641%26version_eid%3D100693341%26middle_page_id%3D7287%26ad_test_id%3D45475%26campaign%3Dgoods%26koc_id%3D4823981585%26picks_delivery_id%3D4091622%26requestId%3Dolw-5dll0zvbe3gw%26tv_b%3D2%26behaviorId%3Dgoods.0cd75c9b-c739-4022-a870-4c80e48dcd1a%26onelink%3D26%2F5dlkyd5uhq26%26campaign_id%3D540%26dt_shopping%3D1%22%7D";
+
+    const webFallback = "https://api-shein.shein.com/ark/11893?goods_id=143823215&test=5051&url_from=affiliate_koc_5317869020&scene=1&ad_type=KOC&language=en&siteuid=mph&version_bid=101804616,101804641&version_eid=100693341&middle_page_id=7287&ad_test_id=45475&campaign=goods&koc_id=4823981585&picks_delivery_id=4091622&requestId=olw-5dll0zvbe3gw&tv_b=2&behaviorId=goods.0cd75c9b-c739-4022-a870-4c80e48dcd1a&onelink=26/5dlkyd5uhq26&campaign_id=540&dt_shopping=1";
+
+    document.getElementById("fallback-link").href = webFallback;
+
+    // Try to open the app
+    window.location.href = deepLink;
+
+    // If app doesn't open within 2 seconds, redirect to web
+    setTimeout(() => {
+      window.location.href = webFallback;
+    }, 2000);
+  </script>
+</body>
+</html>
