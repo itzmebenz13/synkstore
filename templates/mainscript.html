@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,14 +8,16 @@
   <title>SHEIN Script Updater</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
   <script>
     (function () {
       var t = localStorage.getItem('ssu_theme') || 'light';
       document.documentElement.setAttribute('data-theme', t);
       // Pre-hide login overlay if a session key exists — prevents flash on refresh
       if (localStorage.getItem('ssu_session_key')) {
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
           var o = document.getElementById('login-overlay');
           if (o) o.classList.add('hidden');
         });
@@ -41,14 +44,15 @@
       --ok: #2e7d4f;
       --warn: #d97706;
       --err: #dc2626;
-      --shadow: 0 1px 3px rgba(0,0,0,.05), 0 8px 24px -6px rgba(0,0,0,.08);
-      --shadow-lg: 0 4px 6px rgba(0,0,0,.04), 0 20px 48px -12px rgba(0,0,0,.12);
+      --shadow: 0 1px 3px rgba(0, 0, 0, .05), 0 8px 24px -6px rgba(0, 0, 0, .08);
+      --shadow-lg: 0 4px 6px rgba(0, 0, 0, .04), 0 20px 48px -12px rgba(0, 0, 0, .12);
       --r: 16px;
       --rb: 10px;
       --ri: 10px;
       --font: 'Sora', sans-serif;
       --mono: 'JetBrains Mono', monospace;
     }
+
     [data-theme="dark"] {
       --bg: #0a0b0e;
       --card: #111318;
@@ -68,11 +72,23 @@
       --ok: #22c55e;
       --warn: #fbbf24;
       --err: #f87171;
-      --shadow: 0 2px 8px rgba(0,0,0,.4), 0 16px 48px -8px rgba(0,0,0,.6);
-      --shadow-lg: 0 8px 16px rgba(0,0,0,.5), 0 32px 64px -16px rgba(0,0,0,.7);
+      --shadow: 0 2px 8px rgba(0, 0, 0, .4), 0 16px 48px -8px rgba(0, 0, 0, .6);
+      --shadow-lg: 0 8px 16px rgba(0, 0, 0, .5), 0 32px 64px -16px rgba(0, 0, 0, .7);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
-    html { font-size: 12px; scroll-behavior: smooth }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      font-size: 12px;
+      scroll-behavior: smooth
+    }
+
     body {
       background: var(--bg);
       color: var(--txt);
@@ -81,6 +97,7 @@
       overflow-x: hidden;
       transition: background .25s, color .25s;
     }
+
     /* ─── LAYOUT ─── */
     .wrap {
       position: relative;
@@ -89,6 +106,7 @@
       margin: 0 auto;
       padding: 18px 16px 50px;
     }
+
     /* ─── HEADER ─── */
     header {
       display: flex;
@@ -101,376 +119,1117 @@
       border-radius: var(--r);
       box-shadow: var(--shadow);
     }
+
     .logo {
-      width: 34px; height: 34px; flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
       background: linear-gradient(135deg, var(--acc), var(--acc2));
       border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--font); font-size: 12px; font-weight: 700; color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
       letter-spacing: -.3px;
-      box-shadow: 0 2px 8px rgba(58,158,95,.35);
+      box-shadow: 0 2px 8px rgba(58, 158, 95, .35);
     }
-    header h1 { font-size: .88rem; font-weight: 700; letter-spacing: -.02em; color: var(--txt); }
-    header p { font-size: .65rem; color: var(--dim); margin-top: 1px; }
-    .hright { margin-left: auto; display: flex; align-items: center; gap: 7px; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mut); flex-shrink: 0; }
-    .dot.on { background: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.18); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-    #stext { font-size: .65rem; color: var(--dim); font-family: var(--mono); }
+
+    header h1 {
+      font-size: .88rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--txt);
+    }
+
+    header p {
+      font-size: .65rem;
+      color: var(--dim);
+      margin-top: 1px;
+    }
+
+    .hright {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mut);
+      flex-shrink: 0;
+    }
+
+    .dot.on {
+      background: var(--acc);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .18);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    #stext {
+      font-size: .65rem;
+      color: var(--dim);
+      font-family: var(--mono);
+    }
+
     /* ─── THEME TOGGLE PILL ─── */
     #themeToggle {
-      position: relative; width: 56px; height: 28px; flex-shrink: 0;
-      border-radius: 14px; border: 1.5px solid var(--b2);
-      background: var(--inp); cursor: pointer; padding: 0;
+      position: relative;
+      width: 56px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: 14px;
+      border: 1.5px solid var(--b2);
+      background: var(--inp);
+      cursor: pointer;
+      padding: 0;
       overflow: hidden;
       transition: background .3s, border-color .3s, box-shadow .3s;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, .08);
     }
+
     [data-theme="dark"] #themeToggle {
-      background: #1a2035; border-color: #2a3a5e;
-      box-shadow: inset 0 1px 4px rgba(0,0,0,.3), 0 0 0 0 rgba(100,130,255,.0);
+      background: #1a2035;
+      border-color: #2a3a5e;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, .3), 0 0 0 0 rgba(100, 130, 255, .0);
     }
-    #themeToggle:hover { box-shadow: inset 0 1px 3px rgba(0,0,0,.08), 0 0 0 3px rgba(58,158,95,.15); }
-    [data-theme="dark"] #themeToggle:hover { box-shadow: inset 0 1px 4px rgba(0,0,0,.3), 0 0 0 3px rgba(120,150,255,.15); }
+
+    #themeToggle:hover {
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, .08), 0 0 0 3px rgba(58, 158, 95, .15);
+    }
+
+    [data-theme="dark"] #themeToggle:hover {
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, .3), 0 0 0 3px rgba(120, 150, 255, .15);
+    }
 
     /* Sliding thumb */
     #tt-thumb {
-      position: absolute; top: 3px; left: 3px;
-      width: 20px; height: 20px; border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
       background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      box-shadow: 0 1px 5px rgba(245,158,11,.5);
-      transition: transform .38s cubic-bezier(.34,1.4,.64,1), background .35s, box-shadow .35s;
-      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 5px rgba(245, 158, 11, .5);
+      transition: transform .38s cubic-bezier(.34, 1.4, .64, 1), background .35s, box-shadow .35s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 2;
     }
+
     [data-theme="dark"] #tt-thumb {
       transform: translateX(28px);
       background: linear-gradient(135deg, #c7d2fe, #818cf8);
-      box-shadow: 0 1px 6px rgba(129,140,248,.6);
+      box-shadow: 0 1px 6px rgba(129, 140, 248, .6);
     }
 
     /* Sun icon (shown in light mode) */
     #tt-sun {
-      position: absolute; width: 12px; height: 12px;
+      position: absolute;
+      width: 12px;
+      height: 12px;
       transition: opacity .2s, transform .3s;
-      opacity: 1; transform: scale(1) rotate(0deg);
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
     }
-    [data-theme="dark"] #tt-sun { opacity: 0; transform: scale(.5) rotate(45deg); }
+
+    [data-theme="dark"] #tt-sun {
+      opacity: 0;
+      transform: scale(.5) rotate(45deg);
+    }
 
     /* Moon icon (shown in dark mode) */
     #tt-moon {
-      position: absolute; width: 10px; height: 10px;
+      position: absolute;
+      width: 10px;
+      height: 10px;
       transition: opacity .2s .1s, transform .3s .1s;
-      opacity: 0; transform: scale(.5) rotate(-45deg);
+      opacity: 0;
+      transform: scale(.5) rotate(-45deg);
     }
-    [data-theme="dark"] #tt-moon { opacity: 1; transform: scale(1) rotate(0deg); }
+
+    [data-theme="dark"] #tt-moon {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
 
     /* Background stars (dark mode) */
     #tt-stars {
-      position: absolute; inset: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
       transition: opacity .3s;
       opacity: 0;
     }
-    [data-theme="dark"] #tt-stars { opacity: 1; }
-    .tt-star {
-      position: absolute; border-radius: 50%;
-      background: #fff; animation: ttStarTwinkle 2s ease-in-out infinite;
+
+    [data-theme="dark"] #tt-stars {
+      opacity: 1;
     }
-    @keyframes ttStarTwinkle { 0%,100%{opacity:.7;transform:scale(1)} 50%{opacity:.2;transform:scale(.6)} }
+
+    .tt-star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: ttStarTwinkle 2s ease-in-out infinite;
+    }
+
+    @keyframes ttStarTwinkle {
+
+      0%,
+      100% {
+        opacity: .7;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .2;
+        transform: scale(.6)
+      }
+    }
 
     /* Sun rays (light mode) */
     #tt-rays {
-      position: absolute; inset: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
       transition: opacity .25s;
       opacity: 1;
     }
-    [data-theme="dark"] #tt-rays { opacity: 0; }
+
+    [data-theme="dark"] #tt-rays {
+      opacity: 0;
+    }
+
     .tt-ray {
-      position: absolute; width: 2px; border-radius: 1px;
-      background: rgba(251,191,36,.55);
+      position: absolute;
+      width: 2px;
+      border-radius: 1px;
+      background: rgba(251, 191, 36, .55);
       transform-origin: bottom center;
       animation: ttRayPulse 2s ease-in-out infinite;
     }
-    @keyframes ttRayPulse { 0%,100%{opacity:.5;transform-origin:bottom center;} 50%{opacity:1;} }
+
+    @keyframes ttRayPulse {
+
+      0%,
+      100% {
+        opacity: .5;
+        transform-origin: bottom center;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
     /* ─── SUCCESS BANNER ─── */
     #sum {
-      display: none; margin-bottom: 12px; padding: 8px 12px;
-      background: rgba(58,158,95,.07); border: 1px solid rgba(58,158,95,.2);
-      border-radius: 10px; font-size: .72rem; color: var(--ok);
-      align-items: center; gap: 7px; flex-wrap: wrap;
+      display: none;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: rgba(58, 158, 95, .07);
+      border: 1px solid rgba(58, 158, 95, .2);
+      border-radius: 10px;
+      font-size: .72rem;
+      color: var(--ok);
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
     }
-    #sum.on { display: flex; }
+
+    #sum.on {
+      display: flex;
+    }
+
     .chip {
-      background: rgba(58,158,95,.12); border: 1px solid rgba(58,158,95,.25);
-      border-radius: 4px; padding: 1px 7px; font-size: .65rem;
+      background: rgba(58, 158, 95, .12);
+      border: 1px solid rgba(58, 158, 95, .25);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: .65rem;
     }
+
     /* ─── PANELS ─── */
     .panel {
-      background: var(--card); border: 1px solid var(--b1);
-      border-radius: var(--r); overflow: hidden;
-      box-shadow: var(--shadow); margin-bottom: 12px;
+      background: var(--card);
+      border: 1px solid var(--b1);
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
       transition: box-shadow .2s;
     }
-    .panel:hover { box-shadow: var(--shadow-lg); }
+
+    .panel:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
     .ph {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-bottom: 1px solid var(--b1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--b1);
     }
+
     .pt {
-      font-size: .62rem; font-weight: 700;
-      letter-spacing: .08em; text-transform: uppercase; color: var(--dim);
-      display: flex; align-items: center; gap: 6px;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .pt-icon { opacity: .7; font-size: .85rem; }
+
+    .pt-icon {
+      opacity: .7;
+      font-size: .85rem;
+    }
+
     /* ─── BADGES ─── */
-    .b { font-size: .62rem; padding: 2px 7px; border-radius: 5px; font-weight: 600; letter-spacing: .2px; }
-    .b-blue { background: rgba(59,130,246,.1); color: #3b82f6; border: 1px solid rgba(59,130,246,.2); }
-    .b-orange { background: rgba(249,115,22,.1); color: #f97316; border: 1px solid rgba(249,115,22,.2); }
-    .b-green { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); }
-    .b-yellow { background: rgba(245,158,11,.1); color: var(--warn); border: 1px solid rgba(245,158,11,.2); border-radius: 5px; padding: 2px 7px; }
-    #nchanged { display: none; }
+    .b {
+      font-size: .62rem;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+
+    .b-blue {
+      background: rgba(59, 130, 246, .1);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, .2);
+    }
+
+    .b-orange {
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .2);
+    }
+
+    .b-green {
+      background: rgba(58, 158, 95, .1);
+      color: var(--ok);
+      border: 1px solid rgba(58, 158, 95, .2);
+    }
+
+    .b-yellow {
+      background: rgba(245, 158, 11, .1);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, .2);
+      border-radius: 5px;
+      padding: 2px 7px;
+    }
+
+    #nchanged {
+      display: none;
+    }
+
     /* ─── GRID ─── */
-    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    @media(max-width:640px) { .g2 { grid-template-columns: 1fr; } }
+    .g2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media(max-width:640px) {
+      .g2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* ─── COLLAPSIBLE ─── */
     .collapse-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; cursor: pointer; user-select: none;
-      border-bottom: 1px solid transparent; transition: border-color .2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s;
     }
-    .collapse-header:hover { background: var(--hov); }
-    .collapse-header.open { border-bottom-color: var(--b1); }
+
+    .collapse-header:hover {
+      background: var(--hov);
+    }
+
+    .collapse-header.open {
+      border-bottom-color: var(--b1);
+    }
+
     .collapse-arrow {
-      width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
-      color: var(--mut); font-size: .7rem; transition: transform .25s;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--mut);
+      font-size: .7rem;
+      transition: transform .25s;
     }
-    .collapse-arrow.open { transform: rotate(180deg); }
-    .collapse-body { display: none; }
-    .collapse-body.open { display: block; }
+
+    .collapse-arrow.open {
+      transform: rotate(180deg);
+    }
+
+    .collapse-body {
+      display: none;
+    }
+
+    .collapse-body.open {
+      display: block;
+    }
+
     /* ─── TEXTAREA ─── */
     textarea {
-      width: 100%; background: var(--inp); color: var(--txt);
-      font-family: var(--mono); font-size: .72rem; line-height: 1.7;
-      border: none; outline: none; padding: 11px 13px;
-      resize: vertical; min-height: 200px; tab-size: 2;
+      width: 100%;
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .72rem;
+      line-height: 1.7;
+      border: none;
+      outline: none;
+      padding: 11px 13px;
+      resize: vertical;
+      min-height: 200px;
+      tab-size: 2;
     }
-    textarea::placeholder { color: var(--mut); }
-    textarea:focus { box-shadow: inset 0 0 0 1.5px rgba(58,158,95,.25); }
-    .script-ta { color: var(--codeT); font-size: .7rem; min-height: 280px; white-space: pre; tab-size: 4; }
+
+    textarea::placeholder {
+      color: var(--mut);
+    }
+
+    textarea:focus {
+      box-shadow: inset 0 0 0 1.5px rgba(58, 158, 95, .25);
+    }
+
+    .script-ta {
+      color: var(--codeT);
+      font-size: .7rem;
+      min-height: 280px;
+      white-space: pre;
+      tab-size: 4;
+    }
+
     /* ─── BUTTON ROW ─── */
     .br {
-      padding: 10px 12px; display: flex; gap: 6px;
-      border-top: 1px solid var(--b1); flex-wrap: nowrap; align-items: center;
+      padding: 10px 12px;
+      display: flex;
+      gap: 6px;
+      border-top: 1px solid var(--b1);
+      flex-wrap: nowrap;
+      align-items: center;
     }
+
     /* ─── BUTTONS ─── */
     button {
-      font-family: var(--font); font-size: .72rem; font-weight: 600;
-      padding: 6px 12px; border-radius: var(--rb); border: none;
-      cursor: pointer; letter-spacing: .2px; transition: all .18s;
-      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+      font-family: var(--font);
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--rb);
+      border: none;
+      cursor: pointer;
+      letter-spacing: .2px;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
+
     .btn-p {
       background: linear-gradient(135deg, var(--acc), var(--accH));
-      color: #fff; flex: 1; justify-content: center;
-      box-shadow: 0 2px 8px rgba(58,158,95,.25);
+      color: #fff;
+      flex: 1;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(58, 158, 95, .25);
     }
-    .btn-p:hover { background: linear-gradient(135deg, var(--accH), #1a5c30); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(58,158,95,.35); }
-    .btn-s { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); }
-    .btn-s:hover { background: var(--b1); color: var(--txt); }
-    .btn-g { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); }
-    .btn-g:hover { background: rgba(58,158,95,.18); }
-    .btn-o { background: rgba(249,115,22,.1); color: #f97316; border: 1px solid rgba(249,115,22,.2); }
-    .btn-o:hover { background: rgba(249,115,22,.18); }
-    .btn-add { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); padding: 5px 10px; }
-    .btn-add:hover { background: rgba(58,158,95,.2); }
-    .btn-rm { background: rgba(220,38,38,.07); color: var(--err); border: 1px solid rgba(220,38,38,.18); padding: 3px 7px; font-size: .62rem; border-radius: 5px; }
-    .btn-rm:hover { background: rgba(220,38,38,.14); }
-    .btn-load { background: rgba(58,158,95,.1); color: var(--ok); border: 1px solid rgba(58,158,95,.2); padding: 3px 8px; border-radius: 5px; font-size: .62rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
-    .btn-load:hover { background: rgba(58,158,95,.22); }
-    .btn-del { background: rgba(220,38,38,.07); color: var(--err); border: 1px solid rgba(220,38,38,.18); padding: 3px 7px; border-radius: 5px; font-size: .62rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-del:hover { background: rgba(220,38,38,.15); }
+
+    .btn-p:hover {
+      background: linear-gradient(135deg, var(--accH), #1a5c30);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(58, 158, 95, .35);
+    }
+
+    .btn-s {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+    }
+
+    .btn-s:hover {
+      background: var(--b1);
+      color: var(--txt);
+    }
+
+    .btn-g {
+      background: rgba(58, 158, 95, .1);
+      color: var(--ok);
+      border: 1px solid rgba(58, 158, 95, .2);
+    }
+
+    .btn-g:hover {
+      background: rgba(58, 158, 95, .18);
+    }
+
+    .btn-o {
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .2);
+    }
+
+    .btn-o:hover {
+      background: rgba(249, 115, 22, .18);
+    }
+
+    .btn-add {
+      background: rgba(58, 158, 95, .1);
+      color: var(--ok);
+      border: 1px solid rgba(58, 158, 95, .2);
+      padding: 5px 10px;
+    }
+
+    .btn-add:hover {
+      background: rgba(58, 158, 95, .2);
+    }
+
+    .btn-rm {
+      background: rgba(220, 38, 38, .07);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .18);
+      padding: 3px 7px;
+      font-size: .62rem;
+      border-radius: 5px;
+    }
+
+    .btn-rm:hover {
+      background: rgba(220, 38, 38, .14);
+    }
+
+    .btn-load {
+      background: rgba(58, 158, 95, .1);
+      color: var(--ok);
+      border: 1px solid rgba(58, 158, 95, .2);
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: .62rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .15s;
+    }
+
+    .btn-load:hover {
+      background: rgba(58, 158, 95, .22);
+    }
+
+    .btn-del {
+      background: rgba(220, 38, 38, .07);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .18);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: .62rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-del:hover {
+      background: rgba(220, 38, 38, .15);
+    }
+
     /* ─── RUN BUTTON ─── */
     .btn-run {
-      flex: 1; background: linear-gradient(135deg, var(--acc), var(--accH));
-      color: #fff; font-size: .76rem; font-weight: 700; letter-spacing: .04em;
-      padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
-      transition: all .2s; justify-content: center;
-      box-shadow: 0 3px 12px rgba(58,158,95,.3);
+      flex: 1;
+      background: linear-gradient(135deg, var(--acc), var(--accH));
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 9px 18px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+      justify-content: center;
+      box-shadow: 0 3px 12px rgba(58, 158, 95, .3);
     }
-    .btn-run:hover { background: linear-gradient(135deg, var(--accH), #1a5c30); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(58,158,95,.4); }
-    .btn-run:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-    .run-status { font-size: .65rem; color: var(--dim); font-family: var(--mono); }
+
+    .btn-run:hover {
+      background: linear-gradient(135deg, var(--accH), #1a5c30);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(58, 158, 95, .4);
+    }
+
+    .btn-run:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .run-status {
+      font-size: .65rem;
+      color: var(--dim);
+      font-family: var(--mono);
+    }
+
     /* ─── TOKEN TABLE ─── */
-    .tg { display: flex; flex-direction: column; gap: 1px; background: var(--b1); }
-    .tr { display: grid; grid-template-columns: 110px 1fr; background: var(--card); }
-    .tk { padding: 5px 10px; font-size: .62rem; color: var(--acc); border-right: 1px solid var(--b1); letter-spacing: .4px; display: flex; align-items: center; font-family: var(--mono); }
-    .tv { padding: 5px 10px; font-size: .62rem; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
-    .tv.ok { color: var(--ok); background: rgba(58,158,95,.05); }
-    .tv.dim { color: var(--mut); }
-    /* ─── VAULT LIST ─── */
-    .tv-list { display: flex; flex-direction: column; gap: 3px; max-height: 210px; overflow-y: auto; padding: 10px 12px; }
-    .tv-bar { padding: 8px 12px; border-top: 1px solid var(--b1); display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
-    .tv-count { font-size: .62rem; color: var(--mut); margin-left: auto; }
-    .tv-empty { text-align: center; padding: 18px; color: var(--mut); font-size: .72rem; }
-    .tv-item { display: grid; grid-template-columns: 22px 1fr auto auto; align-items: center; gap: 6px; background: var(--inp); border: 1px solid var(--b1); border-radius: 8px; padding: 6px 8px; transition: border-color .15s; }
-    .tv-item:hover { border-color: var(--b2); }
-    .tv-num { font-size: .7rem; color: var(--mut); font-weight: 700; text-align: center; }
-    .tv-tok { font-size: .65rem; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .2px; font-family: var(--mono); }
-    .tv-tok span { color: var(--mut); font-size: .6rem; display: block; margin-top: 1px; }
-    /* ─── VOUCHER BODY ─── */
-    .vbody { padding: 11px 12px; }
-    .vadd { display: flex; gap: 6px; margin-bottom: 9px; }
-    #vinput {
-      flex: 1; background: var(--inp); color: var(--txt); font-family: var(--mono);
-      font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri);
-      padding: 5px 10px; outline: none;
+    .tg {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--b1);
     }
-    #vinput:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
-    #vinput::placeholder { color: var(--mut); }
-    .vlist { display: flex; flex-direction: column; gap: 3px; max-height: 190px; overflow-y: auto; }
-    .vi { display: flex; align-items: center; justify-content: space-between; background: var(--inp); border: 1px solid var(--b1); border-radius: 7px; padding: 5px 9px; }
-    .vi:hover { border-color: var(--b2); }
-    .vc { font-size: .75rem; color: var(--txt); letter-spacing: .2px; font-family: var(--mono); }
-    .vempty { text-align: center; padding: 18px; color: var(--mut); font-size: .72rem; }
+
+    .tr {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      background: var(--card);
+    }
+
+    .tk {
+      padding: 5px 10px;
+      font-size: .62rem;
+      color: var(--acc);
+      border-right: 1px solid var(--b1);
+      letter-spacing: .4px;
+      display: flex;
+      align-items: center;
+      font-family: var(--mono);
+    }
+
+    .tv {
+      padding: 5px 10px;
+      font-size: .62rem;
+      color: var(--dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mono);
+    }
+
+    .tv.ok {
+      color: var(--ok);
+      background: rgba(58, 158, 95, .05);
+    }
+
+    .tv.dim {
+      color: var(--mut);
+    }
+
+    /* ─── VAULT LIST ─── */
+    .tv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 210px;
+      overflow-y: auto;
+      padding: 10px 12px;
+    }
+
+    .tv-bar {
+      padding: 8px 12px;
+      border-top: 1px solid var(--b1);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .tv-count {
+      font-size: .62rem;
+      color: var(--mut);
+      margin-left: auto;
+    }
+
+    .tv-empty {
+      text-align: center;
+      padding: 18px;
+      color: var(--mut);
+      font-size: .72rem;
+    }
+
+    .tv-item {
+      display: grid;
+      grid-template-columns: 22px 1fr auto auto;
+      align-items: center;
+      gap: 6px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 6px 8px;
+      transition: border-color .15s;
+    }
+
+    .tv-item:hover {
+      border-color: var(--b2);
+    }
+
+    .tv-num {
+      font-size: .7rem;
+      color: var(--mut);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .tv-tok {
+      font-size: .65rem;
+      color: var(--txt);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: .2px;
+      font-family: var(--mono);
+    }
+
+    .tv-tok span {
+      color: var(--mut);
+      font-size: .6rem;
+      display: block;
+      margin-top: 1px;
+    }
+
+    /* ─── VOUCHER BODY ─── */
+    .vbody {
+      padding: 11px 12px;
+    }
+
+    .vadd {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 9px;
+    }
+
+    #vinput {
+      flex: 1;
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .75rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 5px 10px;
+      outline: none;
+    }
+
+    #vinput:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .08);
+    }
+
+    #vinput::placeholder {
+      color: var(--mut);
+    }
+
+    .vlist {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 190px;
+      overflow-y: auto;
+    }
+
+    .vi {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 7px;
+      padding: 5px 9px;
+    }
+
+    .vi:hover {
+      border-color: var(--b2);
+    }
+
+    .vc {
+      font-size: .75rem;
+      color: var(--txt);
+      letter-spacing: .2px;
+      font-family: var(--mono);
+    }
+
+    .vempty {
+      text-align: center;
+      padding: 18px;
+      color: var(--mut);
+      font-size: .72rem;
+    }
+
     /* ─── BATCH SELECTOR ─── */
-    .batch-row { display: flex; gap: 5px; padding: 9px 12px; border-bottom: 1px solid var(--b1); flex-wrap: wrap; align-items: center; }
-    .batch-label { font-size: .62rem; color: var(--mut); letter-spacing: .5px; margin-right: 2px; }
-    .btn-batch { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 4px 10px; border-radius: 6px; font-size: .68rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-batch:hover { background: var(--b1); color: var(--txt); }
-    .btn-batch.active { background: rgba(58,158,95,.12); color: var(--ok); border-color: rgba(58,158,95,.3); }
-    .badge-status { font-size: .55rem; padding: 1px 4px; border-radius: 3px; margin-left: 2px; vertical-align: middle; }
-    .badge-active { background: rgba(58,158,95,.15); color: var(--ok); border: 1px solid rgba(58,158,95,.3); }
-    .badge-test { background: rgba(245,158,11,.12); color: var(--warn); border: 1px solid rgba(245,158,11,.28); }
+    .batch-row {
+      display: flex;
+      gap: 5px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--b1);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .batch-label {
+      font-size: .62rem;
+      color: var(--mut);
+      letter-spacing: .5px;
+      margin-right: 2px;
+    }
+
+    .btn-batch {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: .68rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-batch:hover {
+      background: var(--b1);
+      color: var(--txt);
+    }
+
+    .btn-batch.active {
+      background: rgba(58, 158, 95, .12);
+      color: var(--ok);
+      border-color: rgba(58, 158, 95, .3);
+    }
+
+    .badge-status {
+      font-size: .55rem;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+
+    .badge-active {
+      background: rgba(58, 158, 95, .15);
+      color: var(--ok);
+      border: 1px solid rgba(58, 158, 95, .3);
+    }
+
+    .badge-test {
+      background: rgba(245, 158, 11, .12);
+      color: var(--warn);
+      border: 1px solid rgba(245, 158, 11, .28);
+    }
+
     /* ─── BRUTE FORCE ─── */
-    .bf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 11px 12px; }
-    @media(max-width:500px) { .bf-grid { grid-template-columns: 1fr; } }
-    .bf-field { display: flex; flex-direction: column; gap: 4px; }
-    .bf-label { font-size: .62rem; color: var(--acc); letter-spacing: .5px; text-transform: uppercase; font-weight: 600; }
-    .bf-input { background: var(--inp); color: var(--txt); font-family: var(--mono); font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri); padding: 5px 10px; outline: none; width: 100%; }
-    .bf-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
-    .btn-thread { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 5px 12px; border-radius: 6px; font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-thread.active, .btn-thread:hover { background: rgba(249,115,22,.12); color: #f97316; border-color: rgba(249,115,22,.3); }
-    .thread-row, .country-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .btn-country { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 5px 12px; border-radius: 6px; font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-country.active, .btn-country:hover { background: rgba(58,158,95,.12); color: var(--ok); border-color: rgba(58,158,95,.3); }
-    .bf-note { font-size: .65rem; color: var(--dim); padding: 9px 12px; line-height: 1.7; border-top: 1px solid var(--b1); }
+    .bf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      padding: 11px 12px;
+    }
+
+    @media(max-width:500px) {
+      .bf-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .bf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bf-label {
+      font-size: .62rem;
+      color: var(--acc);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .bf-input {
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .75rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 5px 10px;
+      outline: none;
+      width: 100%;
+    }
+
+    .bf-input:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .08);
+    }
+
+    .btn-thread {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-thread.active,
+    .btn-thread:hover {
+      background: rgba(249, 115, 22, .12);
+      color: #f97316;
+      border-color: rgba(249, 115, 22, .3);
+    }
+
+    .thread-row,
+    .country-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-country {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-country.active,
+    .btn-country:hover {
+      background: rgba(58, 158, 95, .12);
+      color: var(--ok);
+      border-color: rgba(58, 158, 95, .3);
+    }
+
+    .bf-note {
+      font-size: .65rem;
+      color: var(--dim);
+      padding: 9px 12px;
+      line-height: 1.7;
+      border-top: 1px solid var(--b1);
+    }
+
     /* ─── LOGIN OVERLAY ─── */
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
     #login-overlay {
-      position: fixed; inset: 0; z-index: 9999;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
       background: var(--login-bg, #050a06);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 20px;
-      transition: opacity .5s cubic-bezier(.4,0,.2,1);
+      transition: opacity .5s cubic-bezier(.4, 0, .2, 1);
       overflow: hidden;
     }
+
     :root {
       --login-bg: #f0f7f0;
-      --login-box-bg: rgba(240,247,240,.88);
-      --login-box-border: rgba(58,158,95,.25);
-      --login-box-shadow: 0 0 0 1px rgba(58,158,95,.08), 0 24px 80px rgba(0,0,0,.15), 0 0 60px rgba(58,158,95,.06), inset 0 1px 0 rgba(255,255,255,.7);
+      --login-box-bg: rgba(240, 247, 240, .88);
+      --login-box-border: rgba(58, 158, 95, .25);
+      --login-box-shadow: 0 0 0 1px rgba(58, 158, 95, .08), 0 24px 80px rgba(0, 0, 0, .15), 0 0 60px rgba(58, 158, 95, .06), inset 0 1px 0 rgba(255, 255, 255, .7);
       --login-title-color: #0d2a18;
-      --login-sub-color: rgba(30,100,60,.55);
-      --login-label-color: rgba(34,120,70,.8);
-      --login-input-bg: rgba(58,158,95,.06);
+      --login-sub-color: rgba(30, 100, 60, .55);
+      --login-label-color: rgba(34, 120, 70, .8);
+      --login-input-bg: rgba(58, 158, 95, .06);
       --login-input-color: #0d2a18;
-      --login-input-border: rgba(58,158,95,.22);
-      --login-input-ph: rgba(58,158,95,.35);
-      --login-eye-color: rgba(34,120,70,.5);
-      --login-eye-hover: rgba(34,120,70,.9);
+      --login-input-border: rgba(58, 158, 95, .22);
+      --login-input-ph: rgba(58, 158, 95, .35);
+      --login-eye-color: rgba(34, 120, 70, .5);
+      --login-eye-hover: rgba(34, 120, 70, .9);
       --login-err-color: #dc2626;
-      --login-footer-color: rgba(34,120,70,.3);
-      --login-accent-corner: rgba(58,158,95,.45);
-      --login-grid-color: rgba(58,158,95,.07);
-      --login-blob1: rgba(58,158,95,.12);
-      --login-blob2: rgba(74,222,128,.07);
+      --login-footer-color: rgba(34, 120, 70, .3);
+      --login-accent-corner: rgba(58, 158, 95, .45);
+      --login-grid-color: rgba(58, 158, 95, .07);
+      --login-blob1: rgba(58, 158, 95, .12);
+      --login-blob2: rgba(74, 222, 128, .07);
       --login-inner-bg: linear-gradient(135deg, #e0f5e8 0%, #c8ecd4 100%);
-      --login-inner-border: rgba(58,158,95,.4);
+      --login-inner-border: rgba(58, 158, 95, .4);
     }
+
     [data-theme="dark"] {
       --login-bg: #050a06;
-      --login-box-bg: rgba(10,18,11,.82);
-      --login-box-border: rgba(58,158,95,.22);
-      --login-box-shadow: 0 0 0 1px rgba(58,158,95,.08), 0 24px 80px rgba(0,0,0,.7), 0 0 60px rgba(58,158,95,.08), inset 0 1px 0 rgba(255,255,255,.05);
+      --login-box-bg: rgba(10, 18, 11, .82);
+      --login-box-border: rgba(58, 158, 95, .22);
+      --login-box-shadow: 0 0 0 1px rgba(58, 158, 95, .08), 0 24px 80px rgba(0, 0, 0, .7), 0 0 60px rgba(58, 158, 95, .08), inset 0 1px 0 rgba(255, 255, 255, .05);
       --login-title-color: #e8f5ea;
-      --login-sub-color: rgba(120,180,130,.6);
-      --login-label-color: rgba(74,222,128,.7);
-      --login-input-bg: rgba(58,158,95,.06);
+      --login-sub-color: rgba(120, 180, 130, .6);
+      --login-label-color: rgba(74, 222, 128, .7);
+      --login-input-bg: rgba(58, 158, 95, .06);
       --login-input-color: #d4edda;
-      --login-input-border: rgba(58,158,95,.18);
-      --login-input-ph: rgba(74,222,128,.25);
-      --login-eye-color: rgba(74,222,128,.4);
-      --login-eye-hover: rgba(74,222,128,.9);
+      --login-input-border: rgba(58, 158, 95, .18);
+      --login-input-ph: rgba(74, 222, 128, .25);
+      --login-eye-color: rgba(74, 222, 128, .4);
+      --login-eye-hover: rgba(74, 222, 128, .9);
       --login-err-color: #f87171;
-      --login-footer-color: rgba(74,222,128,.25);
-      --login-accent-corner: rgba(58,158,95,.5);
-      --login-grid-color: rgba(58,158,95,.07);
-      --login-blob1: rgba(58,158,95,.18);
-      --login-blob2: rgba(74,222,128,.12);
+      --login-footer-color: rgba(74, 222, 128, .25);
+      --login-accent-corner: rgba(58, 158, 95, .5);
+      --login-grid-color: rgba(58, 158, 95, .07);
+      --login-blob1: rgba(58, 158, 95, .18);
+      --login-blob2: rgba(74, 222, 128, .12);
       --login-inner-bg: linear-gradient(135deg, #1a4a2a 0%, #0d2a18 100%);
-      --login-inner-border: rgba(58,158,95,.35);
+      --login-inner-border: rgba(58, 158, 95, .35);
     }
-    #login-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    #login-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
 
     /* animated grid background */
     #login-grid {
-      position: absolute; inset: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
       background-image:
         linear-gradient(var(--login-grid-color) 1px, transparent 1px),
         linear-gradient(90deg, var(--login-grid-color) 1px, transparent 1px);
       background-size: 44px 44px;
       animation: gridShift 18s linear infinite;
     }
-    @keyframes gridShift { to { background-position: 44px 44px; } }
+
+    @keyframes gridShift {
+      to {
+        background-position: 44px 44px;
+      }
+    }
 
     /* radial glow blobs */
     #login-glow1 {
-      position: absolute; width: 520px; height: 520px; border-radius: 50%;
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
       background: radial-gradient(circle, var(--login-blob1) 0%, transparent 70%);
-      top: -120px; left: -100px; pointer-events: none;
+      top: -120px;
+      left: -100px;
+      pointer-events: none;
       animation: blobDrift1 12s ease-in-out infinite alternate;
     }
+
     #login-glow2 {
-      position: absolute; width: 400px; height: 400px; border-radius: 50%;
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
       background: radial-gradient(circle, var(--login-blob2) 0%, transparent 70%);
-      bottom: -80px; right: -60px; pointer-events: none;
+      bottom: -80px;
+      right: -60px;
+      pointer-events: none;
       animation: blobDrift2 15s ease-in-out infinite alternate;
     }
-    @keyframes blobDrift1 { from{transform:translate(0,0) scale(1)} to{transform:translate(60px,40px) scale(1.15)} }
-    @keyframes blobDrift2 { from{transform:translate(0,0) scale(1)} to{transform:translate(-40px,-30px) scale(1.1)} }
+
+    @keyframes blobDrift1 {
+      from {
+        transform: translate(0, 0) scale(1)
+      }
+
+      to {
+        transform: translate(60px, 40px) scale(1.15)
+      }
+    }
+
+    @keyframes blobDrift2 {
+      from {
+        transform: translate(0, 0) scale(1)
+      }
+
+      to {
+        transform: translate(-40px, -30px) scale(1.1)
+      }
+    }
 
     /* floating particles */
     .lp-particle {
-      position: absolute; border-radius: 50%; pointer-events: none;
-      background: rgba(58,158,95,.5);
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      background: rgba(58, 158, 95, .5);
       animation: particleFloat linear infinite;
     }
+
     @keyframes particleFloat {
-      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: .6; }
-      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 1;
+      }
+
+      90% {
+        opacity: .6;
+      }
+
+      100% {
+        transform: translateY(-10vh) scale(1);
+        opacity: 0;
+      }
     }
 
     /* scan line sweep */
     #login-scan {
-      position: absolute; inset: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
       background: linear-gradient(to bottom,
-        transparent 0%,
-        rgba(58,158,95,.03) 49%,
-        rgba(58,158,95,.06) 50%,
-        transparent 51%);
+          transparent 0%,
+          rgba(58, 158, 95, .03) 49%,
+          rgba(58, 158, 95, .06) 50%,
+          transparent 51%);
       background-size: 100% 8px;
       animation: scanMove 6s linear infinite;
       opacity: .5;
     }
-    @keyframes scanMove { to { background-position: 0 100vh; } }
+
+    @keyframes scanMove {
+      to {
+        background-position: 0 100vh;
+      }
+    }
 
     /* ── CARD ── */
     .login-box {
-      position: relative; z-index: 2;
-      width: 100%; max-width: 400px;
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 400px;
       background: var(--login-box-bg);
       backdrop-filter: blur(28px) saturate(1.4);
       -webkit-backdrop-filter: blur(28px) saturate(1.4);
@@ -478,82 +1237,172 @@
       border-radius: 24px;
       box-shadow: var(--login-box-shadow);
       padding: 36px 32px 32px;
-      display: flex; flex-direction: column; align-items: center; gap: 0;
-      animation: cardReveal .7s cubic-bezier(.34,1.3,.64,1) both;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: cardReveal .7s cubic-bezier(.34, 1.3, .64, 1) both;
     }
+
     @keyframes cardReveal {
-      from { opacity:0; transform: translateY(30px) scale(.96); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
 
     /* corner accents */
-    .login-box::before, .login-box::after {
-      content: ''; position: absolute; width: 20px; height: 20px;
-      border-color: var(--login-accent-corner); border-style: solid;
+    .login-box::before,
+    .login-box::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: var(--login-accent-corner);
+      border-style: solid;
     }
-    .login-box::before { top: 14px; left: 14px; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
-    .login-box::after  { bottom: 14px; right: 14px; border-width: 0 2px 2px 0; border-radius: 0 0 4px 4px; }
+
+    .login-box::before {
+      top: 14px;
+      left: 14px;
+      border-width: 2px 0 0 2px;
+      border-radius: 4px 0 0 0;
+    }
+
+    .login-box::after {
+      bottom: 14px;
+      right: 14px;
+      border-width: 0 2px 2px 0;
+      border-radius: 0 0 4px 4px;
+    }
 
     /* ── LOGO ── */
     .login-logo {
-      width: 72px; height: 72px; margin-bottom: 22px; flex-shrink: 0;
-      position: relative; display: flex; align-items: center; justify-content: center;
+      width: 72px;
+      height: 72px;
+      margin-bottom: 22px;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+
     .login-logo-ring {
-      position: absolute; inset: 0; border-radius: 50%;
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
       border: 1.5px solid transparent;
-      background: linear-gradient(135deg, rgba(58,158,95,.7), rgba(74,222,128,.3), rgba(58,158,95,.1)) border-box;
+      background: linear-gradient(135deg, rgba(58, 158, 95, .7), rgba(74, 222, 128, .3), rgba(58, 158, 95, .1)) border-box;
       -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: destination-out; mask-composite: exclude;
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
       animation: ringRotate 6s linear infinite;
     }
-    @keyframes ringRotate { to { transform: rotate(360deg); } }
+
+    @keyframes ringRotate {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .login-logo-ring2 {
-      position: absolute; inset: 6px; border-radius: 50%;
-      border: 1px solid rgba(74,222,128,.15);
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(74, 222, 128, .15);
       animation: ringRotate 10s linear infinite reverse;
     }
+
     .login-logo-inner {
-      width: 50px; height: 50px; border-radius: 16px; z-index: 1;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      z-index: 1;
       background: var(--login-inner-bg);
       border: 1px solid var(--login-inner-border);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 20px rgba(58,158,95,.3), inset 0 1px 0 rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(58, 158, 95, .3), inset 0 1px 0 rgba(255, 255, 255, .08);
     }
 
     /* ── HEADINGS ── */
     .login-title {
       font-family: 'Space Grotesk', var(--font);
-      font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em;
-      color: var(--login-title-color); margin-bottom: 6px; text-align: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--login-title-color);
+      margin-bottom: 6px;
+      text-align: center;
     }
-    .login-title span { color: var(--acc); }
+
+    .login-title span {
+      color: var(--acc);
+    }
+
     .login-sub {
-      font-size: .7rem; color: var(--login-sub-color);
-      text-align: center; letter-spacing: .06em; text-transform: uppercase;
+      font-size: .7rem;
+      color: var(--login-sub-color);
+      text-align: center;
+      letter-spacing: .06em;
+      text-transform: uppercase;
       margin-bottom: 28px;
-      display: flex; align-items: center; gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .login-sub::before, .login-sub::after {
-      content: ''; flex: 1; height: 1px;
-      background: linear-gradient(to right, transparent, rgba(58,158,95,.3), transparent);
+
+    .login-sub::before,
+    .login-sub::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(58, 158, 95, .3), transparent);
     }
 
     /* ── FIELD ── */
-    .login-field { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-    .login-field label {
-      font-size: .6rem; color: var(--login-label-color);
-      letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
-      display: flex; align-items: center; gap: 6px;
+    .login-field {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
     }
-    .login-field label svg { opacity: .7; }
-    .login-input-wrap { position: relative; width: 100%; }
+
+    .login-field label {
+      font-size: .6rem;
+      color: var(--login-label-color);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .login-field label svg {
+      opacity: .7;
+    }
+
+    .login-input-wrap {
+      position: relative;
+      width: 100%;
+    }
+
     .login-input {
       width: 100%;
       background: var(--login-input-bg);
       color: var(--login-input-color);
-      font-family: var(--mono); font-size: .82rem;
+      font-family: var(--mono);
+      font-size: .82rem;
       border: 1px solid var(--login-input-border);
       border-radius: 12px;
       padding: 11px 42px 11px 14px;
@@ -561,342 +1410,1091 @@
       transition: all .2s;
       letter-spacing: .04em;
     }
-    .login-input::placeholder { color: var(--login-input-ph); }
-    .login-input:focus {
-      border-color: rgba(58,158,95,.55);
-      background: rgba(58,158,95,.1);
-      box-shadow: 0 0 0 3px rgba(58,158,95,.1), 0 0 20px rgba(58,158,95,.08);
+
+    .login-input::placeholder {
+      color: var(--login-input-ph);
     }
+
+    .login-input:focus {
+      border-color: rgba(58, 158, 95, .55);
+      background: rgba(58, 158, 95, .1);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .1), 0 0 20px rgba(58, 158, 95, .08);
+    }
+
     .login-eye {
-      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; color: var(--login-eye-color); cursor: pointer;
-      padding: 3px; display: flex; align-items: center;
+      position: absolute;
+      right: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--login-eye-color);
+      cursor: pointer;
+      padding: 3px;
+      display: flex;
+      align-items: center;
       transition: color .2s;
     }
-    .login-eye:hover { color: var(--login-eye-hover); }
+
+    .login-eye:hover {
+      color: var(--login-eye-hover);
+    }
 
     /* ── BUTTON ── */
     .login-btn {
-      width: 100%; padding: 12px; border-radius: 12px; border: none;
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
       background: linear-gradient(135deg, #2d8a52, #1a5c34);
-      color: #fff; font-family: 'Space Grotesk', var(--font);
-      font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-      cursor: pointer; transition: all .25s;
-      position: relative; overflow: hidden;
-      box-shadow: 0 4px 20px rgba(58,158,95,.35), inset 0 1px 0 rgba(255,255,255,.12);
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      color: #fff;
+      font-family: 'Space Grotesk', var(--font);
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .25s;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(58, 158, 95, .35), inset 0 1px 0 rgba(255, 255, 255, .12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       margin-bottom: 14px;
     }
+
     .login-btn::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
-      opacity: 0; transition: opacity .2s;
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, .12), transparent);
+      opacity: 0;
+      transition: opacity .2s;
     }
-    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(58,158,95,.5), inset 0 1px 0 rgba(255,255,255,.15); }
-    .login-btn:hover::before { opacity: 1; }
-    .login-btn:active { transform: translateY(0); }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(58, 158, 95, .5), inset 0 1px 0 rgba(255, 255, 255, .15);
+    }
+
+    .login-btn:hover::before {
+      opacity: 1;
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
     .login-btn-shine {
-      position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .15), transparent);
       animation: btnShine 3s ease-in-out infinite;
     }
-    @keyframes btnShine { 0%,100%{left:-100%} 50%{left:150%} }
+
+    @keyframes btnShine {
+
+      0%,
+      100% {
+        left: -100%
+      }
+
+      50% {
+        left: 150%
+      }
+    }
 
     /* ── ERROR ── */
     .login-err {
-      font-size: .68rem; color: var(--login-err-color); text-align: center;
-      min-height: 18px; letter-spacing: .02em;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: .68rem;
+      color: var(--login-err-color);
+      text-align: center;
+      min-height: 18px;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
     }
 
     /* ── FOOTER ── */
     .login-footer {
-      margin-top: 6px; font-size: .58rem; color: var(--login-footer-color);
-      text-align: center; letter-spacing: .08em; text-transform: uppercase;
+      margin-top: 6px;
+      font-size: .58rem;
+      color: var(--login-footer-color);
+      text-align: center;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     /* ── LOCKED BATCH BUTTON ── */
     .btn-batch.locked {
-      opacity: 0.45; cursor: not-allowed; position: relative;
+      opacity: 0.45;
+      cursor: not-allowed;
+      position: relative;
     }
+
     .btn-batch.locked::after {
       content: '\1F512';
-      position: absolute; top: -5px; right: -5px;
-      font-size: .6rem; line-height: 1;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      font-size: .6rem;
+      line-height: 1;
     }
 
     /* ─── COIN WALLET ─── */
     #coin-wallet {
-      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-      background: var(--card); border: 1px solid var(--b1);
-      border-radius: var(--r); padding: 10px 14px; margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--card);
+      border: 1px solid var(--b1);
+      border-radius: var(--r);
+      padding: 10px 14px;
+      margin-bottom: 12px;
       box-shadow: var(--shadow);
     }
-    .wallet-user { font-size: .72rem; font-weight: 700; color: var(--txt); margin-right: 4px; }
+
+    .wallet-user {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--txt);
+      margin-right: 4px;
+    }
+
     .coin-badge {
-      display: flex; align-items: center; gap: 4px;
-      background: var(--inp); border: 1px solid var(--b1);
-      border-radius: 8px; padding: 4px 10px;
-      font-size: .72rem; font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: .72rem;
+      font-weight: 600;
     }
-    .coin-badge.bronze { border-color: rgba(180,100,30,.3); color: #b46422; background: rgba(180,100,30,.08); }
-    .coin-badge.silver { border-color: rgba(100,120,150,.35); color: #6b7a99; background: rgba(100,120,150,.08); }
-    .coin-badge.gold   { border-color: rgba(220,170,20,.4); color: #b38b00; background: rgba(220,170,20,.1); }
-    .coin-icon { font-size: .85rem; }
+
+    .coin-badge.bronze {
+      border-color: rgba(180, 100, 30, .3);
+      color: #b46422;
+      background: rgba(180, 100, 30, .08);
+    }
+
+    .coin-badge.silver {
+      border-color: rgba(100, 120, 150, .35);
+      color: #6b7a99;
+      background: rgba(100, 120, 150, .08);
+    }
+
+    .coin-badge.gold {
+      border-color: rgba(220, 170, 20, .4);
+      color: #b38b00;
+      background: rgba(220, 170, 20, .1);
+    }
+
+    .coin-icon {
+      font-size: .85rem;
+    }
+
     .wallet-logout {
-      margin-left: auto; background: none; border: 1px solid var(--b1);
-      color: var(--dim); font-size: .62rem; padding: 3px 8px;
-      border-radius: 5px; cursor: pointer; transition: all .15s;
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--b1);
+      color: var(--dim);
+      font-size: .62rem;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all .15s;
     }
-    .wallet-logout:hover { border-color: var(--err); color: var(--err); }
+
+    .wallet-logout:hover {
+      border-color: var(--err);
+      color: var(--err);
+    }
+
     .wallet-admin-btn {
-      background: rgba(249,115,22,.1); color: #f97316;
-      border: 1px solid rgba(249,115,22,.25); font-size: .62rem;
-      padding: 3px 8px; border-radius: 5px; cursor: pointer; transition: all .15s;
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .25);
+      font-size: .62rem;
+      padding: 3px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all .15s;
     }
-    .wallet-admin-btn:hover { background: rgba(249,115,22,.18); }
+
+    .wallet-admin-btn:hover {
+      background: rgba(249, 115, 22, .18);
+    }
 
     /* ─── VOUCHER CODE INPUT (per batch) ─── */
     .voucher-code-row {
-      display: flex; gap: 7px; align-items: center;
-      padding: 8px 12px; border-bottom: 1px solid var(--b1);
-      background: rgba(58,158,95,.03);
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--b1);
+      background: rgba(58, 158, 95, .03);
     }
-    .voucher-code-label { font-size: .62rem; color: var(--acc); font-weight: 600; letter-spacing: .3px; white-space: nowrap; }
+
+    .voucher-code-label {
+      font-size: .62rem;
+      color: var(--acc);
+      font-weight: 600;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+
     .voucher-code-input {
-      flex: 1; background: var(--inp); color: var(--txt);
-      font-family: var(--mono); font-size: .72rem;
-      border: 1px solid var(--b1); border-radius: 7px;
-      padding: 5px 10px; outline: none;
+      flex: 1;
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .72rem;
+      border: 1px solid var(--b1);
+      border-radius: 7px;
+      padding: 5px 10px;
+      outline: none;
     }
-    .voucher-code-input:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(58,158,95,.1); }
+
+    .voucher-code-input:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 2px rgba(58, 158, 95, .1);
+    }
+
     .coin-cost-badge {
-      font-size: .6rem; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+      font-size: .6rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
       font-weight: 600;
     }
-    .coin-cost-badge.bronze { background: rgba(180,100,30,.1); color: #b46422; border: 1px solid rgba(180,100,30,.25); }
-    .coin-cost-badge.silver { background: rgba(100,120,150,.1); color: #6b7a99; border: 1px solid rgba(100,120,150,.25); }
-    .coin-cost-badge.gold   { background: rgba(220,170,20,.1);  color: #b38b00; border: 1px solid rgba(220,170,20,.3); }
+
+    .coin-cost-badge.bronze {
+      background: rgba(180, 100, 30, .1);
+      color: #b46422;
+      border: 1px solid rgba(180, 100, 30, .25);
+    }
+
+    .coin-cost-badge.silver {
+      background: rgba(100, 120, 150, .1);
+      color: #6b7a99;
+      border: 1px solid rgba(100, 120, 150, .25);
+    }
+
+    .coin-cost-badge.gold {
+      background: rgba(220, 170, 20, .1);
+      color: #b38b00;
+      border: 1px solid rgba(220, 170, 20, .3);
+    }
 
     /* ─── ADMIN PANEL ─── */
     #admin-panel {
-      background: var(--card); border: 1px solid rgba(249,115,22,.3);
-      border-radius: var(--r); box-shadow: var(--shadow);
-      margin-bottom: 12px; overflow: hidden;
+      background: var(--card);
+      border: 1px solid rgba(249, 115, 22, .3);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+      overflow: hidden;
     }
+
     .admin-ph {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-bottom: 1px solid rgba(249,115,22,.2);
-      background: rgba(249,115,22,.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(249, 115, 22, .2);
+      background: rgba(249, 115, 22, .04);
     }
-    .admin-tabs { display: flex; gap: 5px; padding: 10px 12px; border-bottom: 1px solid var(--b1); flex-wrap: wrap; }
-    .admin-tab { background: var(--hov); color: var(--dim); border: 1px solid var(--b1); padding: 4px 10px; border-radius: 6px; font-size: .68rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .admin-tab.active { background: rgba(249,115,22,.12); color: #f97316; border-color: rgba(249,115,22,.3); }
-    .admin-body { padding: 12px; display: none; }
-    .admin-body.active { display: block; }
-    .admin-row { display: flex; gap: 8px; margin-bottom: 9px; align-items: flex-end; flex-wrap: wrap; }
-    .admin-field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 120px; }
-    .admin-label { font-size: .6rem; color: var(--acc); letter-spacing: .4px; text-transform: uppercase; font-weight: 600; }
-    .admin-input { background: var(--inp); color: var(--txt); font-family: var(--mono); font-size: .72rem; border: 1px solid var(--b1); border-radius: var(--ri); padding: 5px 9px; outline: none; width: 100%; }
-    .admin-input:focus { border-color: rgba(249,115,22,.5); box-shadow: 0 0 0 2px rgba(249,115,22,.08); }
-    .btn-admin { background: rgba(249,115,22,.1); color: #f97316; border: 1px solid rgba(249,115,22,.25); padding: 6px 12px; border-radius: var(--rb); font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .15s; }
-    .btn-admin:hover { background: rgba(249,115,22,.2); }
-    .admin-user-list { display: flex; flex-direction: column; gap: 5px; max-height: 280px; overflow-y: auto; }
-    .admin-user-item { background: var(--inp); border: 1px solid var(--b1); border-radius: 8px; padding: 7px 10px; display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 7px; align-items: center; }
-    .admin-user-name { font-size: .72rem; font-weight: 600; color: var(--txt); }
-    .admin-user-key  { font-size: .6rem; color: var(--mut); font-family: var(--mono); }
-    .admin-coin-mini { font-size: .62rem; display: flex; gap: 5px; }
-    .btn-admin-sm { background: rgba(249,115,22,.08); color: #f97316; border: 1px solid rgba(249,115,22,.2); padding: 3px 7px; border-radius: 5px; font-size: .6rem; font-weight: 600; cursor: pointer; }
-    .btn-admin-del { background: rgba(220,38,38,.07); color: var(--err); border: 1px solid rgba(220,38,38,.18); padding: 3px 6px; border-radius: 5px; font-size: .6rem; font-weight: 600; cursor: pointer; }
-    .admin-status { font-size: .65rem; color: var(--ok); margin-top: 6px; min-height: 14px; }
+
+    .admin-tabs {
+      display: flex;
+      gap: 5px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--b1);
+      flex-wrap: wrap;
+    }
+
+    .admin-tab {
+      background: var(--hov);
+      color: var(--dim);
+      border: 1px solid var(--b1);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: .68rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .admin-tab.active {
+      background: rgba(249, 115, 22, .12);
+      color: #f97316;
+      border-color: rgba(249, 115, 22, .3);
+    }
+
+    .admin-body {
+      padding: 12px;
+      display: none;
+    }
+
+    .admin-body.active {
+      display: block;
+    }
+
+    .admin-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 9px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .admin-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .admin-label {
+      font-size: .6rem;
+      color: var(--acc);
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .admin-input {
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .72rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 5px 9px;
+      outline: none;
+      width: 100%;
+    }
+
+    .admin-input:focus {
+      border-color: rgba(249, 115, 22, .5);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, .08);
+    }
+
+    .btn-admin {
+      background: rgba(249, 115, 22, .1);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .25);
+      padding: 6px 12px;
+      border-radius: var(--rb);
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-admin:hover {
+      background: rgba(249, 115, 22, .2);
+    }
+
+    .admin-user-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .admin-user-item {
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .admin-user-name {
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--txt);
+    }
+
+    .admin-user-key {
+      font-size: .6rem;
+      color: var(--mut);
+      font-family: var(--mono);
+    }
+
+    .admin-coin-mini {
+      font-size: .62rem;
+      display: flex;
+      gap: 5px;
+    }
+
+    .btn-admin-sm {
+      background: rgba(249, 115, 22, .08);
+      color: #f97316;
+      border: 1px solid rgba(249, 115, 22, .2);
+      padding: 3px 7px;
+      border-radius: 5px;
+      font-size: .6rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-admin-del {
+      background: rgba(220, 38, 38, .07);
+      color: var(--err);
+      border: 1px solid rgba(220, 38, 38, .18);
+      padding: 3px 6px;
+      border-radius: 5px;
+      font-size: .6rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .admin-status {
+      font-size: .65rem;
+      color: var(--ok);
+      margin-top: 6px;
+      min-height: 14px;
+    }
 
     /* ─── RUNNER ─── */
-    .runner-cfg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 11px 12px; }
-    @media(max-width:500px) { .runner-cfg { grid-template-columns: 1fr; } }
-    .runner-field { display: flex; flex-direction: column; gap: 4px; }
-    .runner-label { font-size: .62rem; color: var(--acc); letter-spacing: .5px; text-transform: uppercase; font-weight: 600; }
-    .runner-input { background: var(--inp); color: var(--txt); font-family: var(--mono); font-size: .75rem; border: 1px solid var(--b1); border-radius: var(--ri); padding: 5px 10px; outline: none; width: 100%; }
-    .runner-input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(58,158,95,.08); }
-    .runner-input::placeholder { color: var(--mut); }
+    .runner-cfg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 11px 12px;
+    }
+
+    @media(max-width:500px) {
+      .runner-cfg {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .runner-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .runner-label {
+      font-size: .62rem;
+      color: var(--acc);
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .runner-input {
+      background: var(--inp);
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: .75rem;
+      border: 1px solid var(--b1);
+      border-radius: var(--ri);
+      padding: 5px 10px;
+      outline: none;
+      width: 100%;
+    }
+
+    .runner-input:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .08);
+    }
+
+    .runner-input::placeholder {
+      color: var(--mut);
+    }
+
     /* ─── TERMINAL ─── */
-    #terminal { background: var(--code); border-top: 1px solid var(--b1); padding: 10px 12px; font-family: var(--mono); font-size: .7rem; line-height: 1.75; color: var(--codeT); min-height: 160px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-    #terminal .t-ok { color: var(--ok); }
-    #terminal .t-err { color: var(--err); }
-    #terminal .t-warn { color: var(--warn); }
-    #terminal .t-head { color: var(--txt); font-weight: 700; }
-    #terminal .t-dim { color: var(--mut); }
+    #terminal {
+      background: var(--code);
+      border-top: 1px solid var(--b1);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: .7rem;
+      line-height: 1.75;
+      color: var(--codeT);
+      min-height: 160px;
+      max-height: 360px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    #terminal .t-ok {
+      color: var(--ok);
+    }
+
+    #terminal .t-err {
+      color: var(--err);
+    }
+
+    #terminal .t-warn {
+      color: var(--warn);
+    }
+
+    #terminal .t-head {
+      color: var(--txt);
+      font-weight: 700;
+    }
+
+    #terminal .t-dim {
+      color: var(--mut);
+    }
+
     /* ─── AUTO TOGGLE ─── */
     /* ─── AUTO MODE TOGGLE ─── */
-    #auto-label { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 7px; }
+    #auto-label {
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
     #auto-track {
-      position: relative; width: 36px; height: 20px; flex-shrink: 0;
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
       border-radius: 10px;
       background: var(--b2);
       border: 1.5px solid var(--b2);
       transition: background .25s, border-color .25s, box-shadow .25s;
       cursor: pointer;
     }
+
     #auto-track.on {
       background: var(--acc);
       border-color: var(--accH);
-      box-shadow: 0 0 0 3px rgba(58,158,95,.18);
+      box-shadow: 0 0 0 3px rgba(58, 158, 95, .18);
     }
+
     #auto-thumb {
-      position: absolute; top: 2px; left: 2px;
-      width: 13px; height: 13px; border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
       background: #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,.22);
-      transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s;
-      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .22);
+      transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), opacity .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    #auto-track.on #auto-thumb { transform: translateX(16px); }
-    .auto-thumb-icon { display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .18s; }
-    #auto-track.on .auto-thumb-icon { opacity: 1; }
+
+    #auto-track.on #auto-thumb {
+      transform: translateX(16px);
+    }
+
+    .auto-thumb-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity .18s;
+    }
+
+    #auto-track.on .auto-thumb-icon {
+      opacity: 1;
+    }
+
     #auto-mode-text {
-      font-size: .62rem; font-weight: 700; letter-spacing: .06em;
-      color: var(--mut); transition: color .2s;
-      min-width: 42px; text-align: right;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      color: var(--mut);
+      transition: color .2s;
+      min-width: 42px;
+      text-align: right;
     }
-    #auto-label:has(#auto-track.on) #auto-mode-text { color: var(--ok); }
+
+    #auto-label:has(#auto-track.on) #auto-mode-text {
+      color: var(--ok);
+    }
+
     /* ─── COPY POPUP ─── */
     #copypopup {
-      position: fixed; top: 50%; left: 50%;
+      position: fixed;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%) scale(.88);
-      opacity: 0; pointer-events: none; z-index: 998;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 998;
       transition: all .22s cubic-bezier(.34, 1.56, .64, 1);
-      background: var(--card); border: 1px solid var(--b2);
-      border-radius: var(--r); padding: 20px 24px;
-      text-align: center; min-width: 220px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      background: var(--card);
+      border: 1px solid var(--b2);
+      border-radius: var(--r);
+      padding: 20px 24px;
+      text-align: center;
+      min-width: 220px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
     }
-    #copypopup.on { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
-    #copypopup h3 { font-family: var(--font); font-size: .95rem; font-weight: 700; color: var(--acc); margin-bottom: 4px; }
-    #copypopup p { font-size: .7rem; color: var(--dim); margin-bottom: 14px; }
-    #copypopcopy { background: linear-gradient(135deg, var(--acc), var(--accH)); color: #fff; font-family: var(--font); font-size: .76rem; font-weight: 700; padding: 8px 20px; border-radius: var(--rb); border: none; cursor: pointer; width: 100%; transition: all .15s; }
-    #copypopcopy:hover { opacity: .9; }
-    #copypopclose { background: transparent; color: var(--mut); font-size: .67rem; border: none; cursor: pointer; margin-top: 7px; width: 100%; padding: 4px; }
-    #copypopclose:hover { color: var(--txt); }
-    #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 997; opacity: 0; pointer-events: none; transition: opacity .2s; backdrop-filter: blur(4px); }
-    #overlay.on { opacity: 1; pointer-events: all; }
+
+    #copypopup.on {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #copypopup h3 {
+      font-family: var(--font);
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--acc);
+      margin-bottom: 4px;
+    }
+
+    #copypopup p {
+      font-size: .7rem;
+      color: var(--dim);
+      margin-bottom: 14px;
+    }
+
+    #copypopcopy {
+      background: linear-gradient(135deg, var(--acc), var(--accH));
+      color: #fff;
+      font-family: var(--font);
+      font-size: .76rem;
+      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: var(--rb);
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      transition: all .15s;
+    }
+
+    #copypopcopy:hover {
+      opacity: .9;
+    }
+
+    #copypopclose {
+      background: transparent;
+      color: var(--mut);
+      font-size: .67rem;
+      border: none;
+      cursor: pointer;
+      margin-top: 7px;
+      width: 100%;
+      padding: 4px;
+    }
+
+    #copypopclose:hover {
+      color: var(--txt);
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 997;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+      backdrop-filter: blur(4px);
+    }
+
+    #overlay.on {
+      opacity: 1;
+      pointer-events: all;
+    }
+
     /* ─── TOAST ─── */
     #toast {
-      position: fixed; bottom: 20px; left: 50%;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
       transform: translateX(-50%) translateY(10px);
-      background: var(--card); border: 1px solid var(--b2);
-      border-radius: 10px; padding: 8px 16px; font-size: .72rem;
-      font-weight: 600; opacity: 0; pointer-events: none;
-      transition: all .3s; z-index: 999; max-width: 320px; text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+      background: var(--card);
+      border: 1px solid var(--b2);
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: .72rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all .3s;
+      z-index: 999;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
     }
-    #toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
-    #toast.s { color: var(--ok); border-color: rgba(58,158,95,.3); }
-    #toast.e { color: var(--err); border-color: rgba(220,38,38,.3); }
-    #toast.w { color: var(--warn); border-color: rgba(245,158,11,.3); }
-    #toast.i { color: var(--dim); }
+
+    #toast.on {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.s {
+      color: var(--ok);
+      border-color: rgba(58, 158, 95, .3);
+    }
+
+    #toast.e {
+      color: var(--err);
+      border-color: rgba(220, 38, 38, .3);
+    }
+
+    #toast.w {
+      color: var(--warn);
+      border-color: rgba(245, 158, 11, .3);
+    }
+
+    #toast.i {
+      color: var(--dim);
+    }
+
     /* ─── UNIFIED RUN MODAL (loading + results) ─── */
     #run-modal {
-      display: none; position: fixed; inset: 0; z-index: 901;
-      background: rgba(0,0,0,.38);
-      align-items: center; justify-content: center; padding: 16px;
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 901;
+      background: rgba(0, 0, 0, .38);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
       transition: opacity .22s;
     }
-    #run-modal.visible { display: flex; }
-    #run-modal-card {
-      background: var(--card); border: 1px solid var(--b1);
-      border-radius: 20px; width: 100%; max-width: 360px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.13), 0 1.5px 4px rgba(0,0,0,.07);
-      overflow: hidden;
-      animation: modalIn .28s cubic-bezier(.22,1,.36,1);
+
+    #run-modal.visible {
+      display: flex;
     }
-    @keyframes modalIn { from { opacity:0; transform:translateY(18px) scale(.97); } to { opacity:1; transform:none; } }
+
+    #run-modal-card {
+      background: var(--card);
+      border: 1px solid var(--b1);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .13), 0 1.5px 4px rgba(0, 0, 0, .07);
+      overflow: hidden;
+      animation: modalIn .28s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
 
     /* ── Loading phase ── */
-    #rml-loading { padding: 28px 24px 24px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
-    #rml-loading.hidden { display: none; }
+    #rml-loading {
+      padding: 28px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    #rml-loading.hidden {
+      display: none;
+    }
+
     .rml-bar-wrap {
-      width: 100%; height: 3px; background: var(--b1); border-radius: 2px; overflow: hidden;
+      width: 100%;
+      height: 3px;
+      background: var(--b1);
+      border-radius: 2px;
+      overflow: hidden;
     }
+
     .rml-bar {
-      height: 100%; width: 0%; border-radius: 2px;
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
       background: linear-gradient(90deg, var(--acc), var(--acc2));
-      animation: rmlBarFlow 2.2s cubic-bezier(.4,0,.2,1) infinite;
+      animation: rmlBarFlow 2.2s cubic-bezier(.4, 0, .2, 1) infinite;
     }
+
     @keyframes rmlBarFlow {
-      0%   { width: 0%;   margin-left: 0%; }
-      40%  { width: 60%;  margin-left: 0%; }
-      60%  { width: 60%;  margin-left: 40%; }
-      100% { width: 0%;   margin-left: 100%; }
+      0% {
+        width: 0%;
+        margin-left: 0%;
+      }
+
+      40% {
+        width: 60%;
+        margin-left: 0%;
+      }
+
+      60% {
+        width: 60%;
+        margin-left: 40%;
+      }
+
+      100% {
+        width: 0%;
+        margin-left: 100%;
+      }
     }
-    .rml-dots { display: flex; gap: 7px; align-items: center; }
+
+    .rml-dots {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
     .rml-dot {
-      width: 7px; height: 7px; border-radius: 50%;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
       background: var(--acc);
       animation: rmlDotPulse 1.2s ease-in-out infinite;
     }
-    .rml-dot:nth-child(2) { animation-delay: .18s; }
-    .rml-dot:nth-child(3) { animation-delay: .36s; }
+
+    .rml-dot:nth-child(2) {
+      animation-delay: .18s;
+    }
+
+    .rml-dot:nth-child(3) {
+      animation-delay: .36s;
+    }
+
     @keyframes rmlDotPulse {
-      0%,100% { opacity: .25; transform: scale(.8); }
-      50%      { opacity: 1;   transform: scale(1.2); }
+
+      0%,
+      100% {
+        opacity: .25;
+        transform: scale(.8);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
     }
+
     #rml-label {
-      font-size: .78rem; font-weight: 600; color: var(--txt);
-      letter-spacing: .01em; text-align: center;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--txt);
+      letter-spacing: .01em;
+      text-align: center;
     }
-    #rml-sublabel { font-size: .65rem; color: var(--dim); text-align: center; margin-top: -10px; }
-    .rml-stop-row { width: 100%; display: flex; justify-content: center; padding-bottom: 2px; }
+
+    #rml-sublabel {
+      font-size: .65rem;
+      color: var(--dim);
+      text-align: center;
+      margin-top: -10px;
+    }
+
+    .rml-stop-row {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 2px;
+    }
+
     #rml-stopbtn {
-      font-size: .65rem; font-weight: 600; color: var(--err);
-      background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.18);
-      border-radius: 7px; padding: 5px 16px; cursor: pointer;
-      transition: background .15s; letter-spacing: .3px;
-      display: flex; align-items: center; gap: 5px;
+      font-size: .65rem;
+      font-weight: 600;
+      color: var(--err);
+      background: rgba(220, 38, 38, .07);
+      border: 1px solid rgba(220, 38, 38, .18);
+      border-radius: 7px;
+      padding: 5px 16px;
+      cursor: pointer;
+      transition: background .15s;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-    #rml-stopbtn:hover { background: rgba(220,38,38,.14); }
+
+    #rml-stopbtn:hover {
+      background: rgba(220, 38, 38, .14);
+    }
 
     /* ── Results phase ── */
-    #rml-results { display: none; }
-    #rml-results.visible { display: block; }
+    #rml-results {
+      display: none;
+    }
+
+    #rml-results.visible {
+      display: block;
+    }
+
     #rml-res-top {
       padding: 22px 20px 14px;
       border-bottom: 1px solid var(--b1);
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
     }
-    #rml-res-icon { line-height: 1; }
-    #rml-res-icon svg { width: 44px; height: 44px; }
-    #rml-res-title { font-size: .92rem; font-weight: 700; color: var(--txt); text-align: center; }
-    #rml-res-sub { font-size: .68rem; color: var(--dim); text-align: center; }
-    #rml-res-items { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; max-height: 190px; overflow-y: auto; }
-    .rm-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 8px; background: var(--inp); border: 1px solid var(--b1); }
-    .rm-item.ok { border-color: rgba(58,158,95,.2); }
-    .rm-item.err { border-color: rgba(220,38,38,.2); }
-    .rm-item.warn { border-color: rgba(245,158,11,.2); }
-    .rm-icon { font-size: .95rem; flex-shrink: 0; }
-    .rm-text { font-size: .72rem; font-weight: 600; color: var(--txt); }
-    .rm-sub { font-size: .62rem; color: var(--dim); }
-    .rm-chip { background: rgba(58,158,95,.1); border: 1px solid rgba(58,158,95,.22); border-radius: 4px; padding: 1px 6px; font-size: .6rem; color: var(--ok); margin-right: 2px; font-family: var(--mono); }
+
+    #rml-res-icon {
+      line-height: 1;
+    }
+
+    #rml-res-icon svg {
+      width: 44px;
+      height: 44px;
+    }
+
+    #rml-res-title {
+      font-size: .92rem;
+      font-weight: 700;
+      color: var(--txt);
+      text-align: center;
+    }
+
+    #rml-res-sub {
+      font-size: .68rem;
+      color: var(--dim);
+      text-align: center;
+    }
+
+    #rml-res-items {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 16px;
+      max-height: 190px;
+      overflow-y: auto;
+    }
+
+    .rm-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+    }
+
+    .rm-item.ok {
+      border-color: rgba(58, 158, 95, .2);
+    }
+
+    .rm-item.err {
+      border-color: rgba(220, 38, 38, .2);
+    }
+
+    .rm-item.warn {
+      border-color: rgba(245, 158, 11, .2);
+    }
+
+    .rm-icon {
+      font-size: .95rem;
+      flex-shrink: 0;
+    }
+
+    .rm-text {
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--txt);
+    }
+
+    .rm-sub {
+      font-size: .62rem;
+      color: var(--dim);
+    }
+
+    .rm-chip {
+      background: rgba(58, 158, 95, .1);
+      border: 1px solid rgba(58, 158, 95, .22);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: .6rem;
+      color: var(--ok);
+      margin-right: 2px;
+      font-family: var(--mono);
+    }
+
     #rml-res-foot {
-      padding: 10px 16px 16px; display: flex; justify-content: center;
+      padding: 10px 16px 16px;
+      display: flex;
+      justify-content: center;
     }
+
     #rml-res-done {
-      min-width: 120px; justify-content: center;
+      min-width: 120px;
+      justify-content: center;
     }
 
     /* ── RUN btn grayed in auto mode ── */
     #runbtn.auto-disabled {
-      opacity: .38; cursor: not-allowed; pointer-events: none;
+      opacity: .38;
+      cursor: not-allowed;
+      pointer-events: none;
       filter: grayscale(.4);
     }
+
     /* ─── SCROLLBAR ─── */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--mut); }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--b2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--mut);
+    }
+
     /* ─── KEY EYE BUTTON ─── */
-    #key-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--dim); padding: 2px; line-height: 1; display: flex; align-items: center; }
-    #key-saved-badge { font-size: .6rem; color: var(--ok); font-weight: 600; letter-spacing: .4px; }
+    #key-eye {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--dim);
+      padding: 2px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    #key-saved-badge {
+      font-size: .6rem;
+      color: var(--ok);
+      font-weight: 600;
+      letter-spacing: .4px;
+    }
   </style>
 </head>
+
 <body>
   <script type="text/plain" id="py-template">
 #!/usr/bin/env -S python3 -u
@@ -983,7 +2581,7 @@ CODES = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 COUPON_URL    = "https://api-service.shein.com/promotion/coupon/bind_coupon"
-COUPON_PKG_ID = "17140250"
+COUPON_PKG_ID = "17141415"
 ACCOUNT_DELAY = 3   # seconds between accounts
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1417,35 +3015,35 @@ if __name__ == "__main__":
     main()
 </script>
   <script>
-  // ================================================================
-// HELPERS
-// ================================================================
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+    // ================================================================
+    // HELPERS
+    // ================================================================
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-var _tt;
-function toast(type, msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'on ' + type;
-  clearTimeout(_tt);
-  _tt = setTimeout(function(){ t.className = ''; }, 3200);
-}
+    var _tt;
+    function toast(type, msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'on ' + type;
+      clearTimeout(_tt);
+      _tt = setTimeout(function () { t.className = ''; }, 3200);
+    }
 
-function markUpdated(label) {
-  document.getElementById('obadge').textContent = 'UPDATED: ' + label;
-  document.getElementById('obadge').className = 'b b-green';
-  document.getElementById('dot').className = 'dot on';
-  document.getElementById('stext').textContent = 'READY';
-}
+    function markUpdated(label) {
+      document.getElementById('obadge').textContent = 'UPDATED: ' + label;
+      document.getElementById('obadge').className = 'b b-green';
+      document.getElementById('dot').className = 'dot on';
+      document.getElementById('stext').textContent = 'READY';
+    }
 
-// ================================================================
-// LOAD ORIG FROM TEMPLATE TAG (no escaping issues!)
-// ================================================================
-var ORIG = document.getElementById('py-template').textContent;
-// Trim leading newline from the template
-if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
+    // ================================================================
+    // LOAD ORIG FROM TEMPLATE TAG (no escaping issues!)
+    // ================================================================
+    var ORIG = document.getElementById('py-template').textContent;
+    // Trim leading newline from the template
+    if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
   </script>
 
 
@@ -1465,11 +3063,13 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         <div class="login-logo-inner">
           <!-- shopping bag + script icon -->
           <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 13V10a6 6 0 1 1 12 0v3" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round"/>
-            <rect x="5" y="13" width="22" height="15" rx="3" fill="rgba(58,158,95,.18)" stroke="#3a9e5f" stroke-width="1.5"/>
-            <path d="M11 19h10M11 23h6" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round"/>
-            <circle cx="24" cy="22" r="4" fill="#0d2a18" stroke="#4ade80" stroke-width="1.2"/>
-            <path d="M23 22l.8.8 1.7-1.6" stroke="#4ade80" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 13V10a6 6 0 1 1 12 0v3" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" />
+            <rect x="5" y="13" width="22" height="15" rx="3" fill="rgba(58,158,95,.18)" stroke="#3a9e5f"
+              stroke-width="1.5" />
+            <path d="M11 19h10M11 23h6" stroke="#4ade80" stroke-width="1.6" stroke-linecap="round" />
+            <circle cx="24" cy="22" r="4" fill="#0d2a18" stroke="#4ade80" stroke-width="1.2" />
+            <path d="M23 22l.8.8 1.7-1.6" stroke="#4ade80" stroke-width="1.2" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </div>
       </div>
@@ -1479,21 +3079,41 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
       <div class="login-field">
         <label>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
           Access Key
         </label>
         <div class="login-input-wrap">
-          <input class="login-input" id="login-key-input" type="password" placeholder="Enter your unique access key" autocomplete="off">
+          <input class="login-input" id="login-key-input" type="password" placeholder="Enter your unique access key"
+            autocomplete="off">
           <button class="login-eye" id="login-eye-btn" type="button" title="Show / hide">
-            <svg id="eye-icon-hide" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            <svg id="eye-icon-show" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eye-icon-hide" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+            <svg id="eye-icon-show" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="display:none">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
           </button>
         </div>
       </div>
 
       <button class="login-btn" id="login-submit-btn">
         <span class="login-btn-shine"></span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M10 14L21 3"/><path d="M21 16v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9" />
+          <path d="M10 14L21 3" />
+          <path d="M21 16v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+        </svg>
         <span id="login-btn-text">Login</span>
       </button>
 
@@ -1508,9 +3128,24 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     <!-- ═══ COIN WALLET ═══ -->
     <div id="coin-wallet" style="display:none">
       <span class="wallet-user" id="wallet-username">User</span>
-      <span class="coin-badge bronze" id="wallet-bronze"><span class="coin-icon"><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/><circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,230,180,.5)"/></svg></span> <span id="bronze-count">0</span> Bronze</span>
-      <span class="coin-badge silver" id="wallet-silver"><span class="coin-icon"><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/><circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,255,255,.45)"/></svg></span> <span id="silver-count">0</span> Silver</span>
-      <span class="coin-badge gold"   id="wallet-gold">  <span class="coin-icon"><svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/><circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,255,200,.55)"/></svg></span> <span id="gold-count">0</span> Gold</span>
+      <span class="coin-badge bronze" id="wallet-bronze"><span class="coin-icon"><svg width="13" height="13"
+            viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2" />
+            <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1" />
+            <circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,230,180,.5)" />
+          </svg></span> <span id="bronze-count">0</span> Bronze</span>
+      <span class="coin-badge silver" id="wallet-silver"><span class="coin-icon"><svg width="13" height="13"
+            viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2" />
+            <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" />
+            <circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,255,255,.45)" />
+          </svg></span> <span id="silver-count">0</span> Silver</span>
+      <span class="coin-badge gold" id="wallet-gold"> <span class="coin-icon"><svg width="13" height="13"
+            viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2" />
+            <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1" />
+            <circle cx="7.5" cy="7.5" r="1.4" fill="rgba(255,255,200,.55)" />
+          </svg></span> <span id="gold-count">0</span> Gold</span>
       <button class="wallet-admin-btn" id="wallet-admin-btn" style="display:none">&#9881; Admin</button>
       <button class="wallet-logout" id="wallet-logout-btn">&#10132; Logout</button>
     </div>
@@ -1554,15 +3189,27 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         </div>
         <div class="admin-row">
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg> Bronze</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1" />
+              </svg> Bronze</span>
             <input class="admin-input" id="admin-new-bronze" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg> Silver</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" />
+              </svg> Silver</span>
             <input class="admin-input" id="admin-new-silver" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg> Gold</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1" />
+              </svg> Gold</span>
             <input class="admin-input" id="admin-new-gold" type="number" value="0" min="0">
           </div>
         </div>
@@ -1575,44 +3222,72 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         <div class="admin-row">
           <div class="admin-field" style="flex:2">
             <span class="admin-label">User Access Key</span>
-            <input class="admin-input" id="admin-coins-key" type="text" placeholder="User's access key" autocomplete="off">
+            <input class="admin-input" id="admin-coins-key" type="text" placeholder="User's access key"
+              autocomplete="off">
           </div>
         </div>
         <div class="admin-row">
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg> Bronze</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1" />
+              </svg> Bronze</span>
             <input class="admin-input" id="admin-coins-bronze" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg> Silver</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" />
+              </svg> Silver</span>
             <input class="admin-input" id="admin-coins-silver" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg> Gold</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1" />
+              </svg> Gold</span>
             <input class="admin-input" id="admin-coins-gold" type="number" value="0" min="0">
           </div>
         </div>
         <div style="display:flex;gap:7px;flex-wrap:wrap">
           <button class="btn-admin" id="admin-set-coins-btn">&#128393; Set Coins</button>
-          <button class="btn-admin" id="admin-add-coins-btn" style="background:rgba(58,158,95,.1);color:var(--ok);border-color:rgba(58,158,95,.25)">&#43; Add Coins</button>
+          <button class="btn-admin" id="admin-add-coins-btn"
+            style="background:rgba(58,158,95,.1);color:var(--ok);border-color:rgba(58,158,95,.25)">&#43; Add
+            Coins</button>
         </div>
         <div class="admin-status" id="admin-coins-status"></div>
       </div>
 
       <!-- Daily Auto-Give Tab -->
       <div class="admin-body" id="atab-daily">
-        <div style="font-size:.65rem;color:var(--dim);margin-bottom:10px">Coins given automatically to every user each day (resets at midnight).</div>
+        <div style="font-size:.65rem;color:var(--dim);margin-bottom:10px">Coins given automatically to every user each
+          day (resets at midnight).</div>
         <div class="admin-row">
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg> Bronze / day</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1" />
+              </svg> Bronze / day</span>
             <input class="admin-input" id="admin-daily-bronze" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg> Silver / day</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" />
+              </svg> Silver / day</span>
             <input class="admin-input" id="admin-daily-silver" type="number" value="0" min="0">
           </div>
           <div class="admin-field">
-            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg> Gold / day</span>
+            <span class="admin-label"><svg width="11" height="11" viewBox="0 0 20 20" fill="none"
+                style="vertical-align:-1px">
+                <circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2" />
+                <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1" />
+              </svg> Gold / day</span>
             <input class="admin-input" id="admin-daily-gold" type="number" value="1" min="0">
           </div>
         </div>
@@ -1642,27 +3317,30 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           <!-- Sun rays (light mode) -->
           <div id="tt-rays">
             <div class="tt-ray" style="height:4px;top:1px;left:13px;transform:rotate(0deg) translateX(-50%)"></div>
-            <div class="tt-ray" style="height:3px;top:2px;left:18px;transform:rotate(45deg) translateX(-50%);animation-delay:.3s"></div>
-            <div class="tt-ray" style="height:4px;top:1px;left:23px;transform:rotate(90deg) translateX(-50%);animation-delay:.6s"></div>
-            <div class="tt-ray" style="height:3px;top:2px;left:8px;transform:rotate(-45deg) translateX(-50%);animation-delay:.9s"></div>
+            <div class="tt-ray"
+              style="height:3px;top:2px;left:18px;transform:rotate(45deg) translateX(-50%);animation-delay:.3s"></div>
+            <div class="tt-ray"
+              style="height:4px;top:1px;left:23px;transform:rotate(90deg) translateX(-50%);animation-delay:.6s"></div>
+            <div class="tt-ray"
+              style="height:3px;top:2px;left:8px;transform:rotate(-45deg) translateX(-50%);animation-delay:.9s"></div>
           </div>
           <!-- Sliding thumb with icon -->
           <div id="tt-thumb">
             <!-- Sun SVG -->
             <svg id="tt-sun" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
-              <circle cx="12" cy="12" r="4" fill="#fff" stroke="none"/>
-              <line x1="12" y1="2" x2="12" y2="5"/>
-              <line x1="12" y1="19" x2="12" y2="22"/>
-              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
-              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
-              <line x1="2" y1="12" x2="5" y2="12"/>
-              <line x1="19" y1="12" x2="22" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
-              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+              <circle cx="12" cy="12" r="4" fill="#fff" stroke="none" />
+              <line x1="12" y1="2" x2="12" y2="5" />
+              <line x1="12" y1="19" x2="12" y2="22" />
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78" />
+              <line x1="2" y1="12" x2="5" y2="12" />
+              <line x1="19" y1="12" x2="22" y2="12" />
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22" />
             </svg>
             <!-- Moon SVG -->
             <svg id="tt-moon" viewBox="0 0 24 24" fill="#fff" stroke="none">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </div>
         </button>
@@ -1672,7 +3350,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     <div id="sum"><span id="schips">&#10003; Token parsed successfully &mdash; ready to run!</span></div>
 
     <!-- PATCHED APP DOWNLOAD BANNER -->
-    <a id="apk-banner" href="https://download1325.mediafire.com/wsj1esi0dlhgHCkVYR3RDR7a81IJ_l51pAce7ijsQ6x1KIFAF9fpAJS8CPhQZfOOYKoPd9YMzAmLgakQjeL2BJrg0zeqh7BEDkF85CrbpqybmnOf5-wE_yKd8AwN-n_vlrTTbfrf2LXeKCpFMiOHxAG9-doDxoz8HzLo_0my_qFiFA/6idjnne02hm3t3v/shein-patched.apk" target="_blank" rel="noopener" style="text-decoration:none">
+    <a id="apk-banner"
+      href="https://download1325.mediafire.com/wsj1esi0dlhgHCkVYR3RDR7a81IJ_l51pAce7ijsQ6x1KIFAF9fpAJS8CPhQZfOOYKoPd9YMzAmLgakQjeL2BJrg0zeqh7BEDkF85CrbpqybmnOf5-wE_yKd8AwN-n_vlrTTbfrf2LXeKCpFMiOHxAG9-doDxoz8HzLo_0my_qFiFA/6idjnne02hm3t3v/shein-patched.apk"
+      target="_blank" rel="noopener" style="text-decoration:none">
       <div style="
         display:flex; align-items:center; gap:10px;
         background:var(--card); border:1px solid var(--b1);
@@ -1680,24 +3360,31 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         box-shadow:var(--shadow); cursor:pointer;
         transition: box-shadow .2s, border-color .2s;
         position:relative; overflow:hidden;
-      " onmouseover="this.style.boxShadow='var(--shadow-lg)';this.style.borderColor='rgba(58,158,95,.35)'" onmouseout="this.style.boxShadow='var(--shadow)';this.style.borderColor='var(--b1)'">
+      " onmouseover="this.style.boxShadow='var(--shadow-lg)';this.style.borderColor='rgba(58,158,95,.35)'"
+        onmouseout="this.style.boxShadow='var(--shadow)';this.style.borderColor='var(--b1)'">
         <!-- shimmer -->
-        <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(58,158,95,.05),transparent);animation:btnShine 3s ease-in-out infinite;pointer-events:none"></div>
+        <div
+          style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(58,158,95,.05),transparent);animation:btnShine 3s ease-in-out infinite;pointer-events:none">
+        </div>
         <!-- android icon -->
-        <div style="width:34px;height:34px;flex-shrink:0;background:linear-gradient(135deg,rgba(58,158,95,.15),rgba(74,222,128,.1));border:1px solid rgba(58,158,95,.25);border-radius:9px;display:flex;align-items:center;justify-content:center;">
+        <div
+          style="width:34px;height:34px;flex-shrink:0;background:linear-gradient(135deg,rgba(58,158,95,.15),rgba(74,222,128,.1));border:1px solid rgba(58,158,95,.25);border-radius:9px;display:flex;align-items:center;justify-content:center;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.5 16.5A9.5 9.5 0 0 1 12 7a9.5 9.5 0 0 1 9.5 9.5" stroke="var(--acc)" stroke-width="1.6" stroke-linecap="round"/>
-            <circle cx="8.5" cy="11" r="1" fill="var(--acc)"/>
-            <circle cx="15.5" cy="11" r="1" fill="var(--acc)"/>
-            <line x1="6" y1="5.5" x2="8.5" y2="8.5" stroke="var(--acc)" stroke-width="1.4" stroke-linecap="round"/>
-            <line x1="18" y1="5.5" x2="15.5" y2="8.5" stroke="var(--acc)" stroke-width="1.4" stroke-linecap="round"/>
-            <rect x="2.5" y="16.5" width="19" height="5" rx="2" fill="rgba(58,158,95,.1)" stroke="rgba(58,158,95,.3)" stroke-width="1.2"/>
+            <path d="M2.5 16.5A9.5 9.5 0 0 1 12 7a9.5 9.5 0 0 1 9.5 9.5" stroke="var(--acc)" stroke-width="1.6"
+              stroke-linecap="round" />
+            <circle cx="8.5" cy="11" r="1" fill="var(--acc)" />
+            <circle cx="15.5" cy="11" r="1" fill="var(--acc)" />
+            <line x1="6" y1="5.5" x2="8.5" y2="8.5" stroke="var(--acc)" stroke-width="1.4" stroke-linecap="round" />
+            <line x1="18" y1="5.5" x2="15.5" y2="8.5" stroke="var(--acc)" stroke-width="1.4" stroke-linecap="round" />
+            <rect x="2.5" y="16.5" width="19" height="5" rx="2" fill="rgba(58,158,95,.1)" stroke="rgba(58,158,95,.3)"
+              stroke-width="1.2" />
           </svg>
         </div>
         <!-- text -->
         <div style="flex:1;min-width:0;">
           <div style="font-size:.72rem;font-weight:700;color:var(--txt);letter-spacing:-.01em;">SHEIN Patched App</div>
-          <div style="font-size:.62rem;color:var(--dim);margin-top:1px;">Download the modified APK to capture RAW requests</div>
+          <div style="font-size:.62rem;color:var(--dim);margin-top:1px;">Download the modified APK to capture RAW
+            requests</div>
         </div>
         <!-- download button -->
         <div style="
@@ -1707,8 +3394,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           padding:5px 11px;border-radius:7px;
           box-shadow:0 2px 8px rgba(58,158,95,.3);
         ">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14M5 12l7 7 7-7"/>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12l7 7 7-7" />
           </svg>
           Download
         </div>
@@ -1730,14 +3418,28 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         <div class="runner-field" style="grid-column:1/-1">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <span class="runner-label">&#9656; Access Key</span>
-            <span id="key-saved-badge" style="display:none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>SAVED</span>
+            <span id="key-saved-badge" style="display:none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                style="display:inline-block;vertical-align:-1px;margin-right:3px">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>SAVED</span>
           </div>
           <div style="display:flex;gap:5px;align-items:center">
             <div style="position:relative;flex:1">
-              <input class="runner-input" id="run-key" type="password" placeholder="Enter your access key" autocomplete="off" style="width:100%;padding-right:34px">
-              <button id="key-eye" type="button" title="Show/hide key"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+              <input class="runner-input" id="run-key" type="password" placeholder="Enter your access key"
+                autocomplete="off" style="width:100%;padding-right:34px">
+              <button id="key-eye" type="button" title="Show/hide key"><svg xmlns="http://www.w3.org/2000/svg"
+                  width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg></button>
             </div>
-            <button id="key-apply" class="btn-g"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Apply</button>
+            <button id="key-apply" class="btn-g"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg> Apply</button>
             <button id="key-edit" class="btn-s" style="display:none">&#9998; Edit</button>
           </div>
         </div>
@@ -1763,7 +3465,10 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
               <div id="auto-track">
                 <div id="auto-thumb">
                   <span class="auto-thumb-icon">
-                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="3.5"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
                   </span>
                 </div>
               </div>
@@ -1773,7 +3478,23 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         </div>
         <textarea id="rawin" placeholder="Paste here..."></textarea>
         <div class="br">
-          <button class="btn-p" id="parsebtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0"><defs><linearGradient id="bolt-g1" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity=".7"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g1)" stroke="none"><animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width=".5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite"/></polygon></svg> PARSE &amp; UPDATE</button>
+          <button class="btn-p" id="parsebtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0">
+              <defs>
+                <linearGradient id="bolt-g1" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                  <stop offset="100%" stop-color="#fff" stop-opacity=".7" />
+                </linearGradient>
+              </defs>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g1)" stroke="none">
+                <animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s"
+                  repeatCount="indefinite" additive="sum" origin="12 12" />
+              </polygon>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)"
+                stroke-width=".5">
+                <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite" />
+              </polygon>
+            </svg> PARSE &amp; UPDATE</button>
           <button class="btn-s" id="pastebtn">&#128203; PASTE</button>
         </div>
       </div>
@@ -1789,13 +3510,34 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         </div>
         <div class="collapse-body" id="tokens-body">
           <div id="tpreview" class="tg">
-            <div class="tr"><div class="tk">TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">GW_AUTH</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">ARMOR_TOKEN</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">SMDEVICE_ID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">UGID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">SORTUID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
-            <div class="tr"><div class="tk">DEVICE_ID</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>
+            <div class="tr">
+              <div class="tk">TOKEN</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">GW_AUTH</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">ARMOR_TOKEN</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">SMDEVICE_ID</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">UGID</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">SORTUID</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
+            <div class="tr">
+              <div class="tk">DEVICE_ID</div>
+              <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1812,7 +3554,8 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       </div>
       <div class="collapse-body" id="vault-body">
         <div id="tv-list" class="tv-list">
-          <div class="tv-empty" id="tv-empty">No tokens stored. Parse a RAW request and click <b>SAVE TO VAULT</b>.</div>
+          <div class="tv-empty" id="tv-empty">No tokens stored. Parse a RAW request and click <b>SAVE TO VAULT</b>.
+          </div>
         </div>
         <div class="tv-bar">
           <button class="btn-g" id="vaultsavebtn">&#43; SAVE TO VAULT</button>
@@ -1853,19 +3596,28 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       <div class="collapse-body" id="voucher-body">
         <div class="batch-row">
           <span class="batch-label">&#9656; BATCH:</span>
-          <button class="btn-batch active" data-batch="ph0313">ph0313 (79%) <span class="badge-status badge-active">ACTIVE</span></button>
-          <button class="btn-batch" data-batch="ph031381">ph0313 (81%) <span class="badge-status badge-active">ACTIVE</span></button>
-          <button class="btn-batch" data-batch="ph0313 4vc">ph0313 4vc <span class="badge-status badge-active">ACTIVE</span></button>
-          <button class="btn-batch" data-batch="gm0pha">gm0pha <span class="badge-status badge-test">TESTING</span></button>
+          <button class="btn-batch active" data-batch="ph0313">ph0313 (79%) <span
+              class="badge-status badge-active">ACTIVE</span></button>
+          <button class="btn-batch" data-batch="ph031381">ph0313 (81%) <span
+              class="badge-status badge-active">ACTIVE</span></button>
+          <button class="btn-batch" data-batch="ph0313 4vc">ph0313 4vc <span
+              class="badge-status badge-active">ACTIVE</span></button>
+          <button class="btn-batch" data-batch="gm0pha">gm0pha <span
+              class="badge-status badge-test">TESTING</span></button>
         </div>
         <!-- coin cost badge shown inline with batch row now -->
         <div style="padding: 5px 12px 0; display:flex; align-items:center; gap:6px;">
           <span style="font-size:.6rem;color:var(--mut);letter-spacing:.4px;">COST:</span>
-          <span class="coin-cost-badge gold" id="coin-cost-badge"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg> 1 Gold</span>
+          <span class="coin-cost-badge gold" id="coin-cost-badge"><svg width="11" height="11" viewBox="0 0 20 20"
+              fill="none" style="vertical-align:-1px">
+              <circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2" />
+              <circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1" />
+            </svg> 1 Gold</span>
         </div>
         <div class="vbody">
           <div class="vadd" id="vadd-row">
-            <input id="vinput" type="text" placeholder="Enter code or paste multiple comma-separated — press Enter" maxlength="200">
+            <input id="vinput" type="text" placeholder="Enter code or paste multiple comma-separated — press Enter"
+              maxlength="200">
             <button class="btn-add" id="addbtn">&#43; ADD</button>
           </div>
           <div id="vlist" class="vlist">
@@ -1873,7 +3625,23 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           </div>
         </div>
         <div class="br">
-          <button class="btn-p" id="applybtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0"><defs><linearGradient id="bolt-g2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity=".7"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g2)" stroke="none"><animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width=".5"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite"/></polygon></svg> APPLY</button>
+          <button class="btn-p" id="applybtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-1px;flex-shrink:0">
+              <defs>
+                <linearGradient id="bolt-g2" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                  <stop offset="100%" stop-color="#fff" stop-opacity=".7" />
+                </linearGradient>
+              </defs>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g2)" stroke="none">
+                <animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s"
+                  repeatCount="indefinite" additive="sum" origin="12 12" />
+              </polygon>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="rgba(255,255,255,0.5)"
+                stroke-width=".5">
+                <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite" />
+              </polygon>
+            </svg> APPLY</button>
           <button class="btn-s" id="reloadbtn">&#8635; RELOAD</button>
           <button class="btn-s" id="clearvbtn">&#10005; CLEAR</button>
         </div>
@@ -1883,7 +3651,23 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     <!-- BRUTE-FORCE — collapsed (admin only) -->
     <div class="panel" id="panel-bf" style="display:none">
       <div class="collapse-header" id="bf-toggle">
-        <div class="pt"><span class="pt-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-2px"><defs><linearGradient id="bolt-g3" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="var(--acc)"/><stop offset="100%" stop-color="var(--acc2)"/></linearGradient></defs><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g3)"><animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="2s" repeatCount="indefinite" additive="sum" origin="12 12"/></polygon><polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="var(--acc2)" stroke-width=".6" stroke-linejoin="round"><animate attributeName="opacity" values="0;0.6;0" dur="2s" repeatCount="indefinite"/></polygon></svg></span> Brute-Force Claim</div>
+        <div class="pt"><span class="pt-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:-2px">
+              <defs>
+                <linearGradient id="bolt-g3" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="var(--acc)" />
+                  <stop offset="100%" stop-color="var(--acc2)" />
+                </linearGradient>
+              </defs>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="url(#bolt-g3)">
+                <animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="2s"
+                  repeatCount="indefinite" additive="sum" origin="12 12" />
+              </polygon>
+              <polygon points="13,2 4,13 11,13 11,22 20,11 13,11" fill="none" stroke="var(--acc2)" stroke-width=".6"
+                stroke-linejoin="round">
+                <animate attributeName="opacity" values="0;0.6;0" dur="2s" repeatCount="indefinite" />
+              </polygon>
+            </svg></span> Brute-Force Claim</div>
         <div style="display:flex;align-items:center;gap:6px">
           <span class="b b-orange" id="bfbadge">DISABLED</span>
           <div class="collapse-arrow" id="bf-arrow">&#9660;</div>
@@ -1921,8 +3705,10 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           </div>
         </div>
         <div class="bf-note">
-          &#9432; <b>Sign in to Malaysia (MY)</b> when capturing RAW data — prevents random PH coupons from auto-claiming during capture.<br>
-          The <b>Claim Country</b> above overrides only <code>usercountry</code> / <code>localcountry</code> / <code>currency</code> in the claim headers.<br>
+          &#9432; <b>Sign in to Malaysia (MY)</b> when capturing RAW data — prevents random PH coupons from
+          auto-claiming during capture.<br>
+          The <b>Claim Country</b> above overrides only <code>usercountry</code> / <code>localcountry</code> /
+          <code>currency</code> in the claim headers.<br>
           &#9432; <b>Max Claims</b>: script stops after this many successful claims. Set 0 for unlimited.
         </div>
         <div class="br">
@@ -1941,7 +3727,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
         <!-- Loading phase -->
         <div id="rml-loading">
-          <div class="rml-bar-wrap"><div class="rml-bar"></div></div>
+          <div class="rml-bar-wrap">
+            <div class="rml-bar"></div>
+          </div>
           <div class="rml-dots">
             <div class="rml-dot"></div>
             <div class="rml-dot"></div>
@@ -1951,7 +3739,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           <div id="rml-sublabel">Connecting to server</div>
           <div class="rml-stop-row">
             <button id="rml-stopbtn">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+              </svg>
               STOP
             </button>
           </div>
@@ -1967,8 +3757,12 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           <div id="rml-res-items"></div>
           <div id="rml-res-foot">
             <button id="run-modal-close" class="btn-p rml-res-done">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Done <span id="modal-countdown" style="opacity:.7;font-size:.85em;min-width:1.4em;display:inline-block;text-align:right"></span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Done <span id="modal-countdown"
+                style="opacity:.7;font-size:.85em;min-width:1.4em;display:inline-block;text-align:right"></span>
             </button>
           </div>
         </div>
@@ -1995,7 +3789,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       var body = document.getElementById(bodyId);
       var arrow = document.getElementById(arrowId);
       if (!toggle || !body || !arrow) return;
-      toggle.addEventListener('click', function() {
+      toggle.addEventListener('click', function () {
         var isOpen = body.classList.contains('open');
         if (isOpen) {
           body.classList.remove('open');
@@ -2336,7 +4130,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         document.getElementById('runbadge').className = 'b b-orange';
         // Dismiss the keyboard / blur any focused input before the loading overlay appears
         if (document.activeElement) document.activeElement.blur();
-        setTimeout(function() {
+        setTimeout(function () {
           document.getElementById('runbtn').click();
         }, 600);
       }
@@ -2414,7 +4208,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
     // Update batch button lock states based on admin status
     function updateBatchLocks() {
-      document.querySelectorAll('.btn-batch').forEach(function(btn) {
+      document.querySelectorAll('.btn-batch').forEach(function (btn) {
         var bname = btn.getAttribute('data-batch');
         var batch = CODE_BATCHES[bname];
         if (!batch) return;
@@ -2458,14 +4252,14 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         // Update coin cost badge
         var _SVG_BRONZE = '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg>';
         var _SVG_SILVER = '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg>';
-        var _SVG_GOLD   = '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg>';
+        var _SVG_GOLD = '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg>';
         var coinMap = { bronze: _SVG_BRONZE + ' 1 Bronze', silver: _SVG_SILVER + ' 1 Silver', gold: _SVG_GOLD + ' 1 Gold' };
         var coinTypeMap = { bronze: 'bronze', silver: 'silver', gold: 'gold' };
         var costBadge = document.getElementById('coin-cost-badge');
-        var coinType  = batch.coin || 'gold';
+        var coinType = batch.coin || 'gold';
         if (costBadge) {
-          costBadge.innerHTML  = coinMap[coinType] || (_SVG_GOLD + ' 1 Gold');
-          costBadge.className    = 'coin-cost-badge ' + coinType;
+          costBadge.innerHTML = coinMap[coinType] || (_SVG_GOLD + ' 1 Gold');
+          costBadge.className = 'coin-cost-badge ' + coinType;
         }
         // Clear access code field when switching batches
         var vcodeEl = document.getElementById('voucher-access-code');
@@ -2687,7 +4481,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     // ── AUTO MODE state ──
     var _autoMode = false;
     var _autoTrackEl = document.getElementById('auto-track');
-    var _autoTextEl  = document.getElementById('auto-mode-text');
+    var _autoTextEl = document.getElementById('auto-mode-text');
 
     function setAutoMode(on) {
       _autoMode = on;
@@ -2700,13 +4494,13 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     // Restore saved auto mode
     setAutoMode(localStorage.getItem('ssu_auto_mode') === '1');
 
-    (function() {
+    (function () {
       var _toggling = false;
       function handleToggle() {
         if (_toggling) return;
         _toggling = true;
         setAutoMode(!isAutoMode());
-        setTimeout(function() { _toggling = false; }, 50);
+        setTimeout(function () { _toggling = false; }, 50);
       }
       document.getElementById('auto-label').addEventListener('click', handleToggle);
       document.getElementById('auto-track').addEventListener('click', handleToggle);
@@ -2720,19 +4514,19 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
       // Try Clipboard API first (works in all modern browsers when page has focus)
       if (navigator.clipboard && navigator.clipboard.readText) {
-        navigator.clipboard.readText().then(function(text) {
+        navigator.clipboard.readText().then(function (text) {
           if (!text) { toast('w', 'Clipboard is empty'); return; }
           el.value = text;
           if (isAutoMode()) {
             if (document.activeElement) document.activeElement.blur();
-            setTimeout(function() { doParse(text); }, 80);
+            setTimeout(function () { doParse(text); }, 80);
           } else {
             toast('s', '\u2713 Pasted! Hit PARSE or Ctrl+Enter');
           }
-        }).catch(function(err) {
+        }).catch(function (err) {
           // Permission denied or not available — fall back to execCommand
           var ok = false;
-          try { ok = document.execCommand('paste'); } catch(e) {}
+          try { ok = document.execCommand('paste'); } catch (e) { }
           if (!ok) {
             toast('w', '\u261D Permission denied \u2014 click the field and use Ctrl+V / Cmd+V');
           }
@@ -2751,14 +4545,14 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
     document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
     // Single paste handler — AUTO fires parse+run, MANUAL just lets text land
-    document.getElementById('rawin').addEventListener('paste', function(e) {
+    document.getElementById('rawin').addEventListener('paste', function (e) {
       var text = (e.clipboardData || window.clipboardData).getData('text');
       if (isAutoMode()) {
         if (!text) { toast('w', 'Clipboard data is empty'); return; }
         e.preventDefault(); // prevent double-paste
         this.value = text;  // set value manually so doParse has it
         if (document.activeElement) document.activeElement.blur();
-        setTimeout(function() { doParse(text); }, 80);
+        setTimeout(function () { doParse(text); }, 80);
       }
     });
     document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
@@ -2772,8 +4566,8 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     // ── SVG icon strings ──
     var _EYE_SHOW = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
     var _EYE_HIDE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-    var _ICON_OK   = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#22c55e" stroke-width="1.5"/><polyline points="9 12 11 14 15 10" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    var _ICON_ERR  = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="1.5"/><line x1="15" y1="9" x2="9" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="9" x2="15" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>';
+    var _ICON_OK = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#22c55e" stroke-width="1.5"/><polyline points="9 12 11 14 15 10" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var _ICON_ERR = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="1.5"/><line x1="15" y1="9" x2="9" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="9" x2="15" y2="15" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>';
     var _ICON_WARN = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#fbbf24" stroke-width="1.5" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fbbf24"/></svg>';
     var _ICON_STOP = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="1.5"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg>';
     var _ICON_INFO = '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#71717a" stroke-width="1.5"/><line x1="12" y1="16" x2="12" y2="12" stroke="#71717a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="#71717a"/></svg>';
@@ -2845,8 +4639,8 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       if (line.indexOf('\u26a0') >= 0 || line.indexOf('501405') >= 0 || line.indexOf('ALREADY') >= 0) return 'warn';
       // Success: star/checkmark emoji, CLAIMED keyword, or delivery-mode "N claimed"
       if (line.indexOf('\u2605') >= 0 || line.indexOf('\u2705') >= 0 ||
-          (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0) ||
-          /\d+\s+claimed/.test(line)) return 'ok';
+        (line.indexOf('CLAIMED') >= 0 && line.indexOf('ALREADY') < 0) ||
+        /\d+\s+claimed/.test(line)) return 'ok';
       if (line.indexOf('\u274c') >= 0 || line.indexOf('\u2717') >= 0 || line.indexOf('EXC') >= 0 || line.indexOf('TIMEOUT') >= 0 || line.indexOf('Connection error') >= 0) return 'err';
       return '';
     }
@@ -2855,61 +4649,77 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       // Helper: parse a claimed line into an array of code strings
       function parseClaimedCodes(line) {
         var mBracket = line.match(/CLAIMED[^[]*\[([^\]]+)\]/);
-        if (mBracket) return mBracket[1].split(',').map(function(s){ return s.trim().replace(/['"]/g,''); }).filter(Boolean);
+        if (mBracket) return mBracket[1].split(',').map(function (s) { return s.trim().replace(/['"]/g, ''); }).filter(Boolean);
         var mEq = line.match(/CLAIMED[^=]*=\s*([^[]+?)(?:\s+total=|$)/);
-        if (mEq) return mEq[1].split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        if (mEq) return mEq[1].split(',').map(function (s) { return s.trim(); }).filter(Boolean);
         var mCount = line.match(/(\d+)\s+claimed/);
-        if (mCount) { var n=parseInt(mCount[1],10); var c=[]; for(var x=0;x<n;x++) c.push('\u2713'); return c; }
+        if (mCount) { var n = parseInt(mCount[1], 10); var c = []; for (var x = 0; x < n; x++) c.push('\u2713'); return c; }
         return ['\u2713'];
       }
 
-      var nLogin   = _results.login.length;
-      var nClaimed = _results.claimed.reduce(function(s,l){ return s + parseClaimedCodes(l).length; }, 0);
-      var nFailed  = _results.failed.length;
-      var nWarned  = _results.warned.length;
+      var nLogin = _results.login.length;
+      var nClaimed = _results.claimed.reduce(function (s, l) { return s + parseClaimedCodes(l).length; }, 0);
+      var nFailed = _results.failed.length;
+      var nWarned = _results.warned.length;
 
       // Populate results pane
-      var icon  = document.getElementById('rml-res-icon');
+      var icon = document.getElementById('rml-res-icon');
       var title = document.getElementById('rml-res-title');
-      var sub   = document.getElementById('rml-res-sub');
+      var sub = document.getElementById('rml-res-sub');
       var items = document.getElementById('rml-res-items');
 
       if (aborted) {
-        icon.innerHTML  = _ICON_STOP;
+        icon.innerHTML = _ICON_STOP;
         title.textContent = 'Stopped';
-        sub.textContent   = 'Run was cancelled by user.';
+        sub.textContent = 'Run was cancelled by user.';
       } else if (nClaimed > 0) {
-        icon.innerHTML  = _ICON_OK;
+        icon.innerHTML = _ICON_OK;
         title.textContent = nClaimed + ' Coupon' + (nClaimed > 1 ? 's' : '') + ' Claimed!';
-        sub.textContent   = (nLogin > 0 ? nLogin + ' account(s) not logged in · ' : '') +
+        sub.textContent = (nLogin > 0 ? nLogin + ' account(s) not logged in · ' : '') +
           (nFailed + nWarned > 0 ? nFailed + ' failed · ' + nWarned + ' already owned' : (nLogin === 0 ? 'All codes collected successfully' : ''));
       } else if (nFailed > 0) {
-        icon.innerHTML  = _ICON_ERR;
+        icon.innerHTML = _ICON_ERR;
         title.textContent = 'Claim Failed';
-        sub.textContent   = nFailed + ' error' + (nFailed > 1 ? 's' : '') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
+        sub.textContent = nFailed + ' error' + (nFailed > 1 ? 's' : '') + (nWarned > 0 ? ' · ' + nWarned + ' already owned' : '');
       } else if (nWarned > 0) {
-        icon.innerHTML  = _ICON_WARN;
+        icon.innerHTML = _ICON_WARN;
         title.textContent = 'Already Claimed';
-        sub.textContent   = 'These coupons are already in your account.';
+        sub.textContent = 'These coupons are already in your account.';
       } else {
-        icon.innerHTML  = _ICON_INFO;
+        icon.innerHTML = _ICON_INFO;
         title.textContent = 'Session Complete';
-        sub.textContent   = 'No actionable results detected.';
+        sub.textContent = 'No actionable results detected.';
       }
 
       var html = '';
       if (_results.claimed.length) {
         html += '<div class="rm-chips">';
-        _results.claimed.forEach(function(l) {
-          parseClaimedCodes(l).forEach(function(code) {
-            if (code !== '\u2713') html += '<span class="rm-chip ok">\u2713 ' + esc(code.substring(0,40)) + '</span>';
+        _results.claimed.forEach(function (l) {
+          parseClaimedCodes(l).forEach(function (code) {
+            if (code !== '\u2713') html += '<span class="rm-chip ok">\u2713 ' + esc(code.substring(0, 40)) + '</span>';
           });
         });
         html += '</div>';
       }
-      if (_results.failed.length)  html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">' + _results.failed.length + ' error(s)</div><div class="rm-sub">Check server / tokens</div></div></div>';
-      if (_results.warned.length)  html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">' + _results.warned.length + ' already owned</div><div class="rm-sub">Codes already in account</div></div></div>';
-      if (_results.login.length)   html += '<div class="rm-item err"><span class="rm-icon">&#128274;</span><div><div class="rm-text">' + _results.login.length + ' account(s) not logged in</div><div class="rm-sub">Please login &mdash; token may be expired</div></div></div>';
+      // Extract numeric error code from a terminal line (e.g. 501402, 501405)
+      function extractErrCode(line) {
+        var m = line.match(/\b(5\d{5}|1000)\b/);
+        return m ? m[1] : null;
+      }
+      if (_results.failed.length) {
+        _results.failed.forEach(function (line) {
+          var code = extractErrCode(line);
+          var sub = code ? 'Error code: ' + code : 'Check server / tokens';
+          html += '<div class="rm-item err"><span class="rm-icon">\u274c</span><div><div class="rm-text">Claim failed</div><div class="rm-sub">' + sub + '</div></div></div>';
+        });
+      }
+      if (_results.warned.length) {
+        _results.warned.forEach(function (line) {
+          var code = extractErrCode(line) || '501405';
+          html += '<div class="rm-item warn"><span class="rm-icon">\u26a0\uFE0F</span><div><div class="rm-text">Already owned</div><div class="rm-sub">Error code: ' + code + '</div></div></div>';
+        });
+      }
+      if (_results.login.length) html += '<div class="rm-item err"><span class="rm-icon">&#128274;</span><div><div class="rm-text">' + _results.login.length + ' account(s) not logged in</div><div class="rm-sub">Please login &mdash; token may be expired</div></div></div>';
       if (!html) html = '<div class="rm-item"><span class="rm-icon">\u2139\uFE0F</span><div class="rm-text">No result data</div></div>';
       items.innerHTML = html;
 
@@ -2930,7 +4740,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       if (_modalWorker) { _modalWorker.terminate(); _modalWorker = null; }
       var blob = new Blob([_makeWorkerSrc()], { type: 'application/javascript' });
       _modalWorker = new Worker(URL.createObjectURL(blob));
-      _modalWorker.onmessage = function(e) {
+      _modalWorker.onmessage = function (e) {
         var n = e.data;
         if (_modalCountdownEl) _modalCountdownEl.textContent = n > 0 ? '(' + n + ')' : '';
         if (n <= 0) hideRunModal();
@@ -2948,8 +4758,8 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     }
 
     document.getElementById('run-modal-close').addEventListener('click', hideRunModal);
-    document.getElementById('run-modal').addEventListener('click', function(e) { if (e.target === this) hideRunModal(); });
-    document.getElementById('rml-stopbtn').addEventListener('click', function() {
+    document.getElementById('run-modal').addEventListener('click', function (e) { if (e.target === this) hideRunModal(); });
+    document.getElementById('rml-stopbtn').addEventListener('click', function () {
       if (_runAbort) { _runAbort.abort(); _runAbort = null; }
       setRunning(false);
       showRunModal(true);
@@ -3086,23 +4896,23 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     // ================================================================
     // SESSION STATE
     // ================================================================
-    var _sessionKey      = '';
-    var _sessionUser     = '';
-    var _sessionIsAdmin  = false;
-    var _sessionCoins    = { bronze: 0, silver: 0, gold: 0 };
-    var _serverBase      = window.location.origin;
+    var _sessionKey = '';
+    var _sessionUser = '';
+    var _sessionIsAdmin = false;
+    var _sessionCoins = { bronze: 0, silver: 0, gold: 0 };
+    var _serverBase = window.location.origin;
 
     // ================================================================
     // LOGIN SYSTEM
     // ================================================================
-    (function() {
-      var overlay   = document.getElementById('login-overlay');
-      var keyInput  = document.getElementById('login-key-input');
+    (function () {
+      var overlay = document.getElementById('login-overlay');
+      var keyInput = document.getElementById('login-key-input');
       var submitBtn = document.getElementById('login-submit-btn');
-      var errEl     = document.getElementById('login-err');
-      var eyeBtn    = document.getElementById('login-eye-btn');
+      var errEl = document.getElementById('login-err');
+      var eyeBtn = document.getElementById('login-eye-btn');
 
-      eyeBtn.addEventListener('click', function() {
+      eyeBtn.addEventListener('click', function () {
         var iconHide = document.getElementById('eye-icon-hide');
         var iconShow = document.getElementById('eye-icon-show');
         if (keyInput.type === 'password') {
@@ -3117,10 +4927,10 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       });
 
       function applySession(k, data) {
-        _sessionKey     = k;
-        _sessionUser    = data.username || 'User';
+        _sessionKey = k;
+        _sessionUser = data.username || 'User';
         _sessionIsAdmin = data.is_admin || false;
-        _sessionCoins   = data.coins || { bronze: 0, silver: 0, gold: 0 };
+        _sessionCoins = data.coins || { bronze: 0, silver: 0, gold: 0 };
         // Persist session
         localStorage.setItem('ssu_session_key', k);
         localStorage.setItem('ssu_session_user', _sessionUser);
@@ -3156,7 +4966,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_key: k })
-        }).then(function(r){ return r.json(); }).then(function(data) {
+        }).then(function (r) { return r.json(); }).then(function (data) {
           document.getElementById('login-btn-text').textContent = 'Login';
           submitBtn.disabled = false;
           if (!data.ok) {
@@ -3165,7 +4975,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           }
           applySession(k, data);
           toast('s', '\u2713 Welcome, ' + _sessionUser + '!');
-        }).catch(function(err) {
+        }).catch(function (err) {
           document.getElementById('login-btn-text').textContent = 'Login';
           submitBtn.disabled = false;
           errEl.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Connection error — check server';
@@ -3173,7 +4983,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       }
 
       submitBtn.addEventListener('click', doLogin);
-      keyInput.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+      keyInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
 
       // ── Restore session from localStorage on page load ──
       var savedSessionKey = localStorage.getItem('ssu_session_key');
@@ -3183,7 +4993,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_key: savedSessionKey })
-        }).then(function(r){ return r.json(); }).then(function(data) {
+        }).then(function (r) { return r.json(); }).then(function (data) {
           if (data.ok) {
             keyInput.value = savedSessionKey;
             applySession(savedSessionKey, data);
@@ -3197,7 +5007,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
             updateBatchLocks();
             updateAdminPanels();
           }
-        }).catch(function() {
+        }).catch(function () {
           localStorage.removeItem('ssu_session_key');
           updateBatchLocks();
           updateAdminPanels();
@@ -3208,9 +5018,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       }
 
       // Logout
-      document.getElementById('wallet-logout-btn').addEventListener('click', function() {
+      document.getElementById('wallet-logout-btn').addEventListener('click', function () {
         _sessionKey = ''; _sessionUser = ''; _sessionIsAdmin = false;
-        _sessionCoins = { bronze:0, silver:0, gold:0 };
+        _sessionCoins = { bronze: 0, silver: 0, gold: 0 };
         // Clear persisted session
         localStorage.removeItem('ssu_session_key');
         localStorage.removeItem('ssu_session_user');
@@ -3227,7 +5037,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       });
 
       // Admin button toggle
-      document.getElementById('wallet-admin-btn').addEventListener('click', function() {
+      document.getElementById('wallet-admin-btn').addEventListener('click', function () {
         var panel = document.getElementById('admin-panel');
         panel.style.display = panel.style.display === 'none' ? '' : 'none';
         if (panel.style.display !== 'none') adminRefreshUsers();
@@ -3257,11 +5067,11 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       if (_sessionIsAdmin) {
         document.getElementById('bronze-count').textContent = '\u221e';
         document.getElementById('silver-count').textContent = '\u221e';
-        document.getElementById('gold-count').textContent   = '\u221e';
+        document.getElementById('gold-count').textContent = '\u221e';
       } else {
         document.getElementById('bronze-count').textContent = _sessionCoins.bronze || 0;
         document.getElementById('silver-count').textContent = _sessionCoins.silver || 0;
-        document.getElementById('gold-count').textContent   = _sessionCoins.gold   || 0;
+        document.getElementById('gold-count').textContent = _sessionCoins.gold || 0;
       }
     }
 
@@ -3269,11 +5079,11 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     // ADMIN PANEL JS
     // ================================================================
     // Tab switching
-    document.querySelectorAll('.admin-tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
+    document.querySelectorAll('.admin-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
         var t = this.getAttribute('data-atab');
-        document.querySelectorAll('.admin-tab').forEach(function(b){ b.classList.remove('active'); });
-        document.querySelectorAll('.admin-body').forEach(function(b){ b.classList.remove('active'); });
+        document.querySelectorAll('.admin-tab').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelectorAll('.admin-body').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         document.getElementById('atab-' + t).classList.add('active');
         if (t === 'users') adminRefreshUsers();
@@ -3287,41 +5097,41 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-      }).then(function(r){ return r.json(); }).then(cb).catch(function(e){ cb({ error: e.message }); });
+      }).then(function (r) { return r.json(); }).then(cb).catch(function (e) { cb({ error: e.message }); });
     }
 
     function adminRefreshUsers() {
-      adminPost('/admin/users', {}, function(data) {
+      adminPost('/admin/users', {}, function (data) {
         var list = document.getElementById('admin-user-list');
-        if (!data.ok) { list.innerHTML = '<div style="color:var(--err);font-size:.7rem;padding:10px">' + (data.error||'Error') + '</div>'; return; }
+        if (!data.ok) { list.innerHTML = '<div style="color:var(--err);font-size:.7rem;padding:10px">' + (data.error || 'Error') + '</div>'; return; }
         if (!data.users.length) { list.innerHTML = '<div style="text-align:center;padding:18px;color:var(--mut);font-size:.72rem">No users yet. Create one in the Create tab.</div>'; return; }
         var html = '';
-        data.users.forEach(function(u) {
+        data.users.forEach(function (u) {
           html += '<div class="admin-user-item">'
             + '<div><div class="admin-user-name">' + esc(u.username) + '</div>'
             + '<div class="admin-user-key">' + esc(u.key) + '</div></div>'
             + '<div class="admin-coin-mini">'
-            + '<span style="color:#b46422"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg>' + (u.coins.bronze||0) + '</span>'
-            + '<span style="color:#6b7a99"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg>' + (u.coins.silver||0) + '</span>'
-            + '<span style="color:#b38b00"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg>' + (u.coins.gold||0) + '</span>'
+            + '<span style="color:#b46422"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,220,160,.45)" stroke-width="1"/></svg>' + (u.coins.bronze || 0) + '</span>'
+            + '<span style="color:#6b7a99"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1"/></svg>' + (u.coins.silver || 0) + '</span>'
+            + '<span style="color:#b38b00"><svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/><circle cx="10" cy="10" r="5.5" fill="none" stroke="rgba(255,245,160,.5)" stroke-width="1"/></svg>' + (u.coins.gold || 0) + '</span>'
             + '</div>'
             + '<button class="btn-admin-sm" data-ukey="' + esc(u.key) + '" data-action="edit-coins">&#128393; Coins</button>'
             + '<button class="btn-admin-del" data-ukey="' + esc(u.key) + '" data-action="del">&#10005;</button>'
             + '</div>';
         });
         list.innerHTML = html;
-        list.querySelectorAll('[data-action="edit-coins"]').forEach(function(btn) {
-          btn.addEventListener('click', function() {
+        list.querySelectorAll('[data-action="edit-coins"]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
             var k = this.getAttribute('data-ukey');
             document.querySelector('.admin-tab[data-atab="coins"]').click();
             document.getElementById('admin-coins-key').value = k;
           });
         });
-        list.querySelectorAll('[data-action="del"]').forEach(function(btn) {
-          btn.addEventListener('click', function() {
+        list.querySelectorAll('[data-action="del"]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
             var k = this.getAttribute('data-ukey');
             if (!confirm('Delete user "' + k + '"?')) return;
-            adminPost('/admin/delete_user', { key: k }, function(d) {
+            adminPost('/admin/delete_user', { key: k }, function (d) {
               if (d.ok) { toast('s', 'User deleted'); adminRefreshUsers(); }
               else toast('e', d.error || 'Error');
             });
@@ -3332,15 +5142,15 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
     document.getElementById('admin-refresh-users').addEventListener('click', adminRefreshUsers);
 
-    document.getElementById('admin-create-user-btn').addEventListener('click', function() {
-      var key  = document.getElementById('admin-new-key').value.trim();
+    document.getElementById('admin-create-user-btn').addEventListener('click', function () {
+      var key = document.getElementById('admin-new-key').value.trim();
       var uname = document.getElementById('admin-new-username').value.trim() || 'User';
       var b = parseInt(document.getElementById('admin-new-bronze').value) || 0;
       var s = parseInt(document.getElementById('admin-new-silver').value) || 0;
-      var g = parseInt(document.getElementById('admin-new-gold').value)   || 0;
+      var g = parseInt(document.getElementById('admin-new-gold').value) || 0;
       var status = document.getElementById('admin-create-status');
-      if (!key) { status.style.color='var(--err)'; status.textContent = 'Enter an access key'; return; }
-      adminPost('/admin/create_user', { key: key, username: uname, coins: { bronze:b, silver:s, gold:g } }, function(data) {
+      if (!key) { status.style.color = 'var(--err)'; status.textContent = 'Enter an access key'; return; }
+      adminPost('/admin/create_user', { key: key, username: uname, coins: { bronze: b, silver: s, gold: g } }, function (data) {
         if (data.ok) {
           status.style.color = 'var(--ok)';
           status.textContent = '\u2713 User "' + key + '" created!';
@@ -3348,7 +5158,7 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           document.getElementById('admin-new-username').value = '';
           document.getElementById('admin-new-bronze').value = '0';
           document.getElementById('admin-new-silver').value = '0';
-          document.getElementById('admin-new-gold').value   = '0';
+          document.getElementById('admin-new-gold').value = '0';
         } else {
           status.style.color = 'var(--err)';
           status.textContent = data.error || 'Error';
@@ -3356,84 +5166,84 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
       });
     });
 
-    document.getElementById('admin-set-coins-btn').addEventListener('click', function() {
+    document.getElementById('admin-set-coins-btn').addEventListener('click', function () {
       var key = document.getElementById('admin-coins-key').value.trim();
-      var b   = parseInt(document.getElementById('admin-coins-bronze').value) || 0;
-      var s   = parseInt(document.getElementById('admin-coins-silver').value) || 0;
-      var g   = parseInt(document.getElementById('admin-coins-gold').value)   || 0;
-      var st  = document.getElementById('admin-coins-status');
-      if (!key) { st.style.color='var(--err)'; st.textContent='Enter user key'; return; }
-      adminPost('/admin/set_coins', { key:key, coins:{bronze:b,silver:s,gold:g} }, function(data) {
-        if (data.ok) { st.style.color='var(--ok)'; st.textContent='\u2713 Coins set: B'+data.coins.bronze+' S'+data.coins.silver+' G'+data.coins.gold; }
-        else { st.style.color='var(--err)'; st.textContent=data.error||'Error'; }
+      var b = parseInt(document.getElementById('admin-coins-bronze').value) || 0;
+      var s = parseInt(document.getElementById('admin-coins-silver').value) || 0;
+      var g = parseInt(document.getElementById('admin-coins-gold').value) || 0;
+      var st = document.getElementById('admin-coins-status');
+      if (!key) { st.style.color = 'var(--err)'; st.textContent = 'Enter user key'; return; }
+      adminPost('/admin/set_coins', { key: key, coins: { bronze: b, silver: s, gold: g } }, function (data) {
+        if (data.ok) { st.style.color = 'var(--ok)'; st.textContent = '\u2713 Coins set: B' + data.coins.bronze + ' S' + data.coins.silver + ' G' + data.coins.gold; }
+        else { st.style.color = 'var(--err)'; st.textContent = data.error || 'Error'; }
       });
     });
 
-    document.getElementById('admin-add-coins-btn').addEventListener('click', function() {
+    document.getElementById('admin-add-coins-btn').addEventListener('click', function () {
       var key = document.getElementById('admin-coins-key').value.trim();
-      var b   = parseInt(document.getElementById('admin-coins-bronze').value) || 0;
-      var s   = parseInt(document.getElementById('admin-coins-silver').value) || 0;
-      var g   = parseInt(document.getElementById('admin-coins-gold').value)   || 0;
-      var st  = document.getElementById('admin-coins-status');
-      if (!key) { st.style.color='var(--err)'; st.textContent='Enter user key'; return; }
-      adminPost('/admin/add_coins', { key:key, coins:{bronze:b,silver:s,gold:g} }, function(data) {
-        if (data.ok) { st.style.color='var(--ok)'; st.textContent='\u2713 Added! New: B'+data.coins.bronze+' S'+data.coins.silver+' G'+data.coins.gold; }
-        else { st.style.color='var(--err)'; st.textContent=data.error||'Error'; }
+      var b = parseInt(document.getElementById('admin-coins-bronze').value) || 0;
+      var s = parseInt(document.getElementById('admin-coins-silver').value) || 0;
+      var g = parseInt(document.getElementById('admin-coins-gold').value) || 0;
+      var st = document.getElementById('admin-coins-status');
+      if (!key) { st.style.color = 'var(--err)'; st.textContent = 'Enter user key'; return; }
+      adminPost('/admin/add_coins', { key: key, coins: { bronze: b, silver: s, gold: g } }, function (data) {
+        if (data.ok) { st.style.color = 'var(--ok)'; st.textContent = '\u2713 Added! New: B' + data.coins.bronze + ' S' + data.coins.silver + ' G' + data.coins.gold; }
+        else { st.style.color = 'var(--err)'; st.textContent = data.error || 'Error'; }
       });
     });
 
     function adminLoadDailyConfig() {
-      adminPost('/admin/get_daily_config', {}, function(data) {
+      adminPost('/admin/get_daily_config', {}, function (data) {
         if (!data.ok) return;
         var dc = data.daily_coins || {};
         document.getElementById('admin-daily-bronze').value = dc.bronze || 0;
         document.getElementById('admin-daily-silver').value = dc.silver || 0;
-        document.getElementById('admin-daily-gold').value   = dc.gold   !== undefined ? dc.gold : 1;
+        document.getElementById('admin-daily-gold').value = dc.gold !== undefined ? dc.gold : 1;
       });
     }
 
-    document.getElementById('admin-save-daily-btn').addEventListener('click', function() {
-      var b  = parseInt(document.getElementById('admin-daily-bronze').value) || 0;
-      var s  = parseInt(document.getElementById('admin-daily-silver').value) || 0;
-      var g  = parseInt(document.getElementById('admin-daily-gold').value)   || 0;
+    document.getElementById('admin-save-daily-btn').addEventListener('click', function () {
+      var b = parseInt(document.getElementById('admin-daily-bronze').value) || 0;
+      var s = parseInt(document.getElementById('admin-daily-silver').value) || 0;
+      var g = parseInt(document.getElementById('admin-daily-gold').value) || 0;
       var st = document.getElementById('admin-daily-status');
-      adminPost('/admin/set_daily_config', { bronze:b, silver:s, gold:g }, function(data) {
-        if (data.ok) { st.style.color='var(--ok)'; st.textContent='\u2713 Daily config saved: B'+b+' S'+s+' G'+g+' per day'; }
-        else { st.style.color='var(--err)'; st.textContent=data.error||'Error'; }
+      adminPost('/admin/set_daily_config', { bronze: b, silver: s, gold: g }, function (data) {
+        if (data.ok) { st.style.color = 'var(--ok)'; st.textContent = '\u2713 Daily config saved: B' + b + ' S' + s + ' G' + g + ' per day'; }
+        else { st.style.color = 'var(--err)'; st.textContent = data.error || 'Error'; }
       });
     });
 
     // ================================================================
     // BRUTE-FORCE PANEL
     // ================================================================
-    document.querySelectorAll('.btn-thread').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.btn-thread').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-thread').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         _bfThreads = parseInt(this.getAttribute('data-t'));
-        toast('i','Threads: ' + _bfThreads);
+        toast('i', 'Threads: ' + _bfThreads);
       });
     });
 
-    document.querySelectorAll('.btn-country').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        document.querySelectorAll('.btn-country').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.btn-country').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-country').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         _bfCountry = this.getAttribute('data-c');
-        toast('i','Claim country: ' + _bfCountry);
+        toast('i', 'Claim country: ' + _bfCountry);
       });
     });
 
-    document.getElementById('bfapplybtn').addEventListener('click', function(){
-      var start    = document.getElementById('bf-start').value.trim();
-      var end      = document.getElementById('bf-end').value.trim();
+    document.getElementById('bfapplybtn').addEventListener('click', function () {
+      var start = document.getElementById('bf-start').value.trim();
+      var end = document.getElementById('bf-end').value.trim();
       var maxClaim = document.getElementById('bf-maxclaim').value.trim() || '1';
 
       if (!start || !end || isNaN(+start) || isNaN(+end)) {
-        toast('e','Enter valid Start and End Package IDs'); return;
+        toast('e', 'Enter valid Start and End Package IDs'); return;
       }
       if (+start > +end) {
-        toast('e','Start must be \u2264 End'); return;
+        toast('e', 'Start must be \u2264 End'); return;
       }
 
       var src = document.getElementById('scriptout').value;
@@ -3441,17 +5251,17 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
       function repBf(name, val) {
         // Match:  NAME = <anything until end-of-line>
-        var re  = new RegExp('(^' + name + '\\s*=\\s*).*$', 'm');
+        var re = new RegExp('(^' + name + '\\s*=\\s*).*$', 'm');
         var nxt = src.replace(re, '$1' + val);
         if (nxt !== src) { src = nxt; changed.push(name); }
       }
 
-      repBf('BRUTE_MODE',       'True          # Set True to enable brute-force scan');
-      repBf('BRUTE_START',      start + '    # Starting packageId');
-      repBf('BRUTE_END',        end   + '    # Ending packageId (inclusive)');
-      repBf('BRUTE_THREADS',    _bfThreads + '          # Threads: 10 | 20 | 30');
-      repBf('BRUTE_MAX_CLAIMS', maxClaim   + '           # Stop after this many successful claims (0 = unlimited)');
-      repBf('CLAIM_COUNTRY',    '"' + _bfCountry + '"   # <\u2500 change to MY or TH if needed');
+      repBf('BRUTE_MODE', 'True          # Set True to enable brute-force scan');
+      repBf('BRUTE_START', start + '    # Starting packageId');
+      repBf('BRUTE_END', end + '    # Ending packageId (inclusive)');
+      repBf('BRUTE_THREADS', _bfThreads + '          # Threads: 10 | 20 | 30');
+      repBf('BRUTE_MAX_CLAIMS', maxClaim + '           # Stop after this many successful claims (0 = unlimited)');
+      repBf('CLAIM_COUNTRY', '"' + _bfCountry + '"   # <\u2500 change to MY or TH if needed');
 
       document.getElementById('scriptout').value = src;
 
@@ -3480,10 +5290,10 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
 
       // Deduct coin (coins are the access gate)
       fetch(url + '/user/use_coin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ access_key: key, batch: batch })
-      }).then(function(r){ return r.json(); }).then(function(coinData) {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key: key, batch: batch })
+      }).then(function (r) { return r.json(); }).then(function (coinData) {
         if (!coinData.ok) {
           toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
           return;
@@ -3493,9 +5303,9 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
           _sessionCoins = coinData.coins;
           updateWallet();
         }
-        toast('s', '\u2713 1 ' + (coinData.used_coin||'') + ' coin used \u2014 starting run\u2026');
+        toast('s', '\u2713 1 ' + (coinData.used_coin || '') + ' coin used \u2014 starting run\u2026');
         _doActualRun(url, key, cfg);
-      }).catch(function(err){
+      }).catch(function (err) {
         toast('e', 'Coin error: ' + err.message);
       });
     }
@@ -3566,4 +5376,5 @@ if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
     })();
   </script>
 </body>
+
 </html>
