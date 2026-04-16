@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHEIN Script Updater</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap');
+
+    :root {
+      --bg: #0a0c10;
+      --panel: #0f1218;
+      --border: #1e2530;
+      --accent: #00e5ff;
+      --accent2: #ff6b35;
+      --success: #00ff88;
+      --warn: #ffcc00;
+      --text: #c8d4e0;
+      --dim: #4a5568;
+      --code: #080b0e;
+      --red: #ff4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0, 229, 255, .03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 229, 255, .03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 60px
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #000;
+      flex-shrink: 0
+    }
+
+    header h1 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px
+    }
+
+    header p {
+      font-size: 11px;
+      color: var(--dim);
+      margin-top: 2px
+    }
+
+    .hright {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--dim)
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+      flex-shrink: 0
+    }
+
+    .dot.on {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: blink 2s infinite
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    #sum {
+      display: none;
+      margin-bottom: 14px;
+      padding: 11px 15px;
+      background: rgba(0, 255, 136, .06);
+      border: 1px solid rgba(0, 255, 136, .22);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--success);
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    #sum.on {
+      display: flex
+    }
+
+    .chip {
+      background: rgba(0, 255, 136, .1);
+      border: 1px solid rgba(0, 255, 136, .25);
+      border-radius: 4px;
+      padding: 2px 9px;
+      font-size: 10px
+    }
+
+    .g2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px
+    }
+
+    @media(max-width:820px) {
+      .g2 {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden
+    }
+
+    .ph {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 15px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .pt {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent)
+    }
+
+    .b {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 500;
+      letter-spacing: .5px
+    }
+
+    .b-blue {
+      background: rgba(0, 229, 255, .12);
+      color: var(--accent);
+      border: 1px solid rgba(0, 229, 255, .25)
+    }
+
+    .b-orange {
+      background: rgba(255, 107, 53, .12);
+      color: var(--accent2);
+      border: 1px solid rgba(255, 107, 53, .25)
+    }
+
+    .b-green {
+      background: rgba(0, 255, 136, .12);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .25)
+    }
+
+    .b-yellow {
+      background: rgba(255, 204, 0, .12);
+      color: var(--warn);
+      border: 1px solid rgba(255, 204, 0, .3);
+      border-radius: 12px;
+      padding: 2px 10px
+    }
+
+    #nchanged {
+      display: none
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--code);
+      color: #8be9fd;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      border: none;
+      outline: none;
+      padding: 13px;
+      resize: vertical;
+      min-height: 290px;
+      tab-size: 2
+    }
+
+    textarea::placeholder {
+      color: #2d3748
+    }
+
+    textarea:focus {
+      background: #060a0d;
+      box-shadow: inset 0 0 0 1px rgba(0, 229, 255, .18)
+    }
+
+    .script-ta {
+      color: #a8d4f0;
+      font-size: 10.5px;
+      min-height: 400px;
+      white-space: pre;
+      tab-size: 4
+    }
+
+    .br {
+      padding: 11px 13px;
+      display: flex;
+      gap: 7px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap
+    }
+
+    button {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: .4px;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .btn-p {
+      background: var(--accent);
+      color: #000;
+      flex: 1;
+      justify-content: center
+    }
+
+    .btn-p:hover {
+      background: #33ecff;
+      transform: translateY(-1px)
+    }
+
+    .btn-s {
+      background: rgba(255, 255, 255, .06);
+      color: var(--text);
+      border: 1px solid var(--border)
+    }
+
+    .btn-s:hover {
+      background: rgba(255, 255, 255, .1)
+    }
+
+    .btn-g {
+      background: rgba(0, 255, 136, .1);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .22)
+    }
+
+    .btn-g:hover {
+      background: rgba(0, 255, 136, .18)
+    }
+
+    .btn-o {
+      background: rgba(255, 107, 53, .1);
+      color: var(--accent2);
+      border: 1px solid rgba(255, 107, 53, .22)
+    }
+
+    .btn-o:hover {
+      background: rgba(255, 107, 53, .18)
+    }
+
+    .btn-add {
+      background: rgba(0, 255, 136, .1);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .25);
+      padding: 6px 12px
+    }
+
+    .btn-add:hover {
+      background: rgba(0, 255, 136, .2)
+    }
+
+    .btn-rm {
+      background: rgba(255, 68, 68, .08);
+      color: var(--red);
+      border: 1px solid rgba(255, 68, 68, .22);
+      padding: 3px 8px;
+      font-size: 10px
+    }
+
+    .btn-rm:hover {
+      background: rgba(255, 68, 68, .18)
+    }
+
+    .tg {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--border)
+    }
+
+    .tr {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      background: var(--code)
+    }
+
+    .tk {
+      padding: 6px 11px;
+      font-size: 10px;
+      color: var(--accent);
+      border-right: 1px solid var(--border);
+      letter-spacing: .4px;
+      display: flex;
+      align-items: center
+    }
+
+    .tv {
+      padding: 6px 11px;
+      font-size: 10px;
+      color: #a0b4c8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .tv.ok {
+      color: var(--success);
+      background: rgba(0, 255, 136, .04)
+    }
+
+    .tv.dim {
+      color: var(--dim)
+    }
+
+    .vbody {
+      padding: 13px
+    }
+
+    .vadd {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 11px
+    }
+
+    #vinput {
+      flex: 1;
+      background: var(--code);
+      color: #8be9fd;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 11px;
+      outline: none
+    }
+
+    #vinput:focus {
+      border-color: rgba(0, 255, 136, .4);
+      box-shadow: 0 0 0 2px rgba(0, 255, 136, .07)
+    }
+
+    #vinput::placeholder {
+      color: #2d3748
+    }
+
+    .vlist {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 260px;
+      overflow-y: auto
+    }
+
+    .vi {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 10px
+    }
+
+    .vi:hover {
+      border-color: rgba(0, 229, 255, .18)
+    }
+
+    .vc {
+      font-size: 12px;
+      color: #8be9fd;
+      letter-spacing: .4px
+    }
+
+    .vempty {
+      text-align: center;
+      padding: 22px;
+      color: var(--dim);
+      font-size: 11px
+    }
+
+    /* batch selector */
+    .batch-row {
+      display: flex;
+      gap: 7px;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .batch-label {
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: .5px;
+      margin-right: 4px
+    }
+
+    .btn-batch {
+      background: rgba(255, 255, 255, .05);
+      color: var(--dim);
+      border: 1px solid var(--border);
+      padding: 5px 13px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-batch:hover {
+      background: rgba(255, 255, 255, .09);
+      color: var(--text)
+    }
+
+    .btn-batch.active {
+      background: rgba(0, 229, 255, .12);
+      color: var(--accent);
+      border-color: rgba(0, 229, 255, .35)
+    }
+
+    .badge-status {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 5px;
+      vertical-align: middle
+    }
+
+    .badge-active {
+      background: rgba(0, 255, 136, .15);
+      color: var(--success);
+      border: 1px solid rgba(0, 255, 136, .3)
+    }
+
+    .badge-test {
+      background: rgba(255, 204, 0, .12);
+      color: var(--warn);
+      border: 1px solid rgba(255, 204, 0, .28)
+    }
+
+    /* brute-force panel */
+    .bf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 13px
+    }
+
+    @media(max-width:600px) {
+      .bf-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .bf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px
+    }
+
+    .bf-label {
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: .6px;
+      text-transform: uppercase
+    }
+
+    .bf-input {
+      background: var(--code);
+      color: #8be9fd;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 6px 11px;
+      outline: none;
+      width: 100%
+    }
+
+    .bf-input:focus {
+      border-color: rgba(255, 107, 53, .4);
+      box-shadow: 0 0 0 2px rgba(255, 107, 53, .07)
+    }
+
+    .btn-thread {
+      background: rgba(255, 107, 53, .08);
+      color: var(--accent2);
+      border: 1px solid rgba(255, 107, 53, .22);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-thread.active,
+    .btn-thread:hover {
+      background: rgba(255, 107, 53, .22);
+      border-color: var(--accent2)
+    }
+
+    .thread-row,
+    .country-row {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .btn-country {
+      background: rgba(0, 229, 255, .07);
+      color: var(--accent);
+      border: 1px solid rgba(0, 229, 255, .22);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .btn-country.active,
+    .btn-country:hover {
+      background: rgba(0, 229, 255, .22);
+      border-color: var(--accent)
+    }
+
+    .bf-note {
+      font-size: 10px;
+      color: var(--dim);
+      padding: 0 13px 11px;
+      line-height: 1.7;
+      border-top: 1px solid var(--border);
+      padding-top: 10px
+    }
+
+    /* toast */
+    #toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transform: translateY(70px);
+      opacity: 0;
+      transition: all .28s cubic-bezier(.34, 1.56, .64, 1);
+      z-index: 999;
+      max-width: 300px;
+      pointer-events: none
+    }
+
+    #toast.on {
+      transform: translateY(0);
+      opacity: 1
+    }
+
+    #toast.s {
+      background: #0a2e1c;
+      border: 1px solid var(--success);
+      color: var(--success)
+    }
+
+    #toast.e {
+      background: #2e0a0a;
+      border: 1px solid #f44;
+      color: #f66
+    }
+
+    #toast.i {
+      background: #0a1e2e;
+      border: 1px solid var(--accent);
+      color: var(--accent)
+    }
+
+    #toast.w {
+      background: #2b2000;
+      border: 1px solid var(--warn);
+      color: var(--warn)
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg)
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2a3340;
+      border-radius: 3px
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Python script stored safely — no JS escaping issues -->
+  <script type="text/plain" id="py-template">
+#!/usr/bin/env -S python3 -u
+"""
+SHEIN App API Coupon Collector
+- Uses the native app API (api-service.shein.com)
+- No login needed — paste TOKEN from any captured app request
+- Supports multiple accounts via TOKENS list
+- Brute-force mode: scan packageId ranges with thread support
+- Country override for claim target (MY/TH/PH)
+
+  NOTE: Capture your RAW data while signed in to Malaysia (MY)
+        so random PH coupons won't auto-claim on capture.
+        The CLAIM_COUNTRY below controls where coupons are claimed.
+"""
+
+import sys
+import requests
+import uuid
+import time
+import threading
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Force unbuffered stdout — live terminal output on all platforms
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(line_buffering=True)
+
+# Suppress SSL warnings (Windows cert store issue)
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TOKENS  (one per account — paste from captured app request)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TOKENS = [
+    "MDEwMDE.eyJiIjo3LCJnIjoxNzc1MTE0MzY3LCJyIjoiMFVyN1NSIiwidCI6MiwibSI6NjI0MTE4MTAzMCwibCI6MTc3NTExNDM2N30.f5d4d134f3d27575.366934cc281c03f8cac3e0846f60d2fa7dc0b476bae7ab444177d972876314ed",
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SESSION HEADERS  (update from your latest captured request — sign in MY!)
+# ─────────────────────────────────────────────────────────────────────────────
+
+GW_AUTH     = "a=vhOvoNStVeIKfdWT0Gp55rGPHqjicT@8.6.4&b=1775114382944&d=92676482&e=ToTweMmZmMGZiODcyMjY5NGM3MGRlNmE5ZGRhNmFmYWJkNGNlMTE2YjgzMjc1Mzk4OTRjNjY3NGFkYjllYjdkNGMxNA%3D%3D"
+ARMOR_TOKEN = "S2_2.5.2_8DbHddW8OS39WU6gZ2ubsA1Nwr_tztotXAYOhFX2lPghY2Jf27rMcwryn2CggjF15xtK_SCiWMhezpOrHycsBexyi424T445zHhIo0HptsfB96tiMBGNxlS7wB_KEb8lyW-mKkCK5WaHSEGaNoEmiyBP7NsyyefyjmfwAbPR9SO30TkW8OQWCJ_GVSBkUI2Q_1775114261617"
+SMDEVICE_ID = "20260402151742620164a7e36f4ed8f69b9cc765a0266500e932141b32db6b"
+UGID        = "040oh08m59"
+SORTUID     = "6241181030"
+DEVICE_ID   = "shein_5c4c7e95-7734-3251-9e57-d12fd855ff8f"
+APPCOUNTRY  = "PH"
+USERCOUNTRY = "PH"
+LOCALCOUNTRY= "PH"
+CURRENCY    = "PHP"
+APPCURRENCY = "PHP"
+LANGUAGE    = "en"
+APP_VERSION = "11.3.4"
+DEVICE_INFO = "ELP-NX9 Android16"
+OS_VERSION  = "16"
+DEVICE_SYS  = "Android16"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLAIM COUNTRY OVERRIDE
+# Overrides usercountry/localcountry/currency in claim requests ONLY.
+# Your capture data (APPCOUNTRY, tokens) stays exactly as-is.
+# Options: "PH" | "MY" | "TH"
+# ─────────────────────────────────────────────────────────────────────────────
+
+CLAIM_COUNTRY = "PH"   # <── change to MY or TH if needed
+
+_CURRENCY_MAP = {"PH": "PHP", "MY": "MYR", "TH": "THB"}
+CLAIM_CURRENCY = _CURRENCY_MAP.get(CLAIM_COUNTRY, "PHP")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COUPON CODES TO COLLECT
+# ─────────────────────────────────────────────────────────────────────────────
+
+CODES = [
+    "ph0313n3",
+    "ph0313n4",
+    "ph0313n5",
+    "ph0313n6",
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+COUPON_URL    = "https://api-service.shein.com/promotion/coupon/bind_coupon"
+COUPON_PKG_ID = "17141415"
+ACCOUNT_DELAY = 3   # seconds between accounts
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BRUTE-FORCE CONFIG
+# Set BRUTE_MODE = True to scan a packageId range instead of COUPON_PKG_ID
+# ─────────────────────────────────────────────────────────────────────────────
+
+BRUTE_MODE       = False       # Set True to enable brute-force scan
+BRUTE_START      = 17130000    # Starting packageId
+BRUTE_END        = 17134000    # Ending packageId (inclusive)
+BRUTE_THREADS    = 10          # Threads: 10 | 20 | 30
+BRUTE_MAX_CLAIMS = 1           # Stop after this many successful claims (0 = unlimited)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ERROR CODE REFERENCE
+#   1000   → Invalid packageId (does not exist)
+#   501405 → Coupon already claimed by this account
+#   Other  → Already owned / expired / region-locked / unknown
+# ─────────────────────────────────────────────────────────────────────────────
+
+ERR_INVALID_PKG    = 1000
+ERR_ALREADY_CLAIMED = 501405
+
+def decode_error(code, msg=""):
+    try:
+        code = int(code)
+    except (TypeError, ValueError):
+        code = -1
+    if code == ERR_INVALID_PKG:
+        return "❌ INVALID PACKAGE ID — this packageId does not exist"
+    if code == ERR_ALREADY_CLAIMED:
+        return "⚠️  ALREADY CLAIMED — this coupon was already redeemed by this account"
+    if code in (0, 200):
+        return "✅ Success"
+    return f"❌ ERROR {code}: {msg or 'Unknown error'}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COLLECT
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_headers(token):
+    """Build claim headers. Country/currency are overridden by CLAIM_COUNTRY."""
+    return {
+        "app-from":            "shein",
+        "siteuid":             "android",
+        "appcountry":          APPCOUNTRY,
+        "devtype":             "Android",
+        "clientid":            "100",
+        "ugid":                UGID,
+        "accept":              "application/json",
+        "device":              DEVICE_INFO,
+        "armortoken":          ARMOR_TOKEN,
+        "applanguage":         LANGUAGE,
+        "usercountry":         CLAIM_COUNTRY,
+        "version":             APP_VERSION,
+        "devicelanguage":      LANGUAGE,
+        "dev-id":              DEVICE_ID,
+        "sortuid":             SORTUID,
+        "device_language":     LANGUAGE,
+        "apptype":             "shein",
+        "localcountry":        CLAIM_COUNTRY,
+        "smdeviceid":          SMDEVICE_ID,
+        "deviceid":            DEVICE_ID,
+        "platform":            "app-native",
+        "appname":             "shein app",
+        "appversion":          APP_VERSION,
+        "newuid":              SORTUID,
+        "language":            LANGUAGE,
+        "currency":            CLAIM_CURRENCY,
+        "network-type":        "WIFI",
+        "token":               token,
+        "os-version":          OS_VERSION,
+        "devicesystemversion": DEVICE_SYS,
+        "appcurrency":         CLAIM_CURRENCY,
+        "user-agent":          f"Shein {APP_VERSION} Android {OS_VERSION} {DEVICE_INFO} {APPCOUNTRY} {LANGUAGE} {SORTUID}",
+        "x-gw-auth":           GW_AUTH,
+        "content-type":        "application/json; charset=utf-8",
+    }
+
+
+def collect_coupons(token, codes, pkg_id=None):
+    """Claim voucher codes. Returns count of successful claims."""
+    pkg = pkg_id or COUPON_PKG_ID
+    headers = build_headers(token)
+
+    payload = {
+        "couponPackages": [
+            {
+                "couponPackageId": str(pkg),
+                "couponCodes":     ",".join(codes),
+            }
+        ],
+        "scene":          "home",
+        "idempotentCode": str(uuid.uuid4()),
+    }
+
+    print(f"\n  {'─'*54}")
+    print(f"  Package  : {pkg}")
+    print(f"  Country  : {CLAIM_COUNTRY} ({CLAIM_CURRENCY})")
+    print(f"  Claiming {len(codes)} voucher(s): {', '.join(codes)}")
+    print(f"  {'─'*54}")
+
+    claimed = 0
+    try:
+        minified_payload = json.dumps(payload, separators=(',', ':'))
+        r = requests.post(COUPON_URL, data=minified_payload, headers=headers, timeout=15, verify=False)
+
+        # ── RAW RESPONSE LOG
+        print(f"  HTTP {r.status_code}")
+        try:
+            import json as _json
+            _raw = r.json()
+            print(f"  RAW RESPONSE:")
+            print(_json.dumps(_raw, indent=4))
+        except Exception:
+            _raw = {}
+            print(f"  RAW RESPONSE (non-JSON): {r.text[:800]}")
+
+        data = _raw if isinstance(_raw, dict) else {}
+
+        # Top-level error check
+        top_code = str(data.get("code") or data.get("ret_msg_code") or "")
+        top_msg  = str(data.get("msg") or data.get("tips") or "")
+
+        _i   = data.get("info") or {}
+        info = _i if isinstance(_i, dict) else {}
+
+        # couponPackageCode: real status code for this package
+        # '1000' here = package limit/count — NOT invalid. Only trust ERR_ALREADY_CLAIMED.
+        pkg_code    = str(info.get("couponPackageCode") or "")
+        bind_result = info.get("bindResult")   # may be 'allSuccess', 'allFail', or a list
+        error_code  = str(info.get("errorCode") or "")
+
+        success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
+        fail_list    = [str(c).strip() for c in (info.get("failCodeList")    or []) if c]
+        result_list  = bind_result if isinstance(bind_result, list) else []
+
+        # ── Already claimed
+        if pkg_code == str(ERR_ALREADY_CLAIMED) or error_code == str(ERR_ALREADY_CLAIMED):
+            print(f"  ⚠️  [501405] ALREADY CLAIMED — these codes are already in your account")
+            return 0
+
+        # ── Per-code bindResult list (most reliable)
+        if result_list:
+            for item in result_list:
+                if not isinstance(item, dict):
+                    continue
+                code_val = str(item.get("couponCode") or "?")
+                err_code = str(item.get("errorCode") or item.get("code") or "")
+                err_msg  = str(item.get("errorMsg")  or item.get("msg")  or "")
+                if err_code in ("0", "200", ""):
+                    print(f"     ✓ {code_val} — Claimed!")
+                    claimed += 1
+                elif err_code == str(ERR_ALREADY_CLAIMED):
+                    print(f"     ⚠️  {code_val} — [501405] Already claimed")
+                else:
+                    print(f"     {decode_error(err_code, err_msg)} [{code_val}]")
+
+        # ── successCodeList is the only trustworthy claimed signal
+        elif success_list:
+            print(f"  ✅ {len(success_list)} claimed, {len(fail_list)} failed")
+            for c in success_list: print(f"     ✓ {c}")
+            for c in fail_list:    print(f"     ✗ {c}")
+            claimed = len(success_list)
+
+        elif fail_list:
+            print(f"  ❌ All {len(fail_list)} failed")
+            for c in fail_list: print(f"     ✗ {c}")
+
+        # ── Top-level error
+        elif top_code not in ("0", "200", ""):
+            print(f"  {decode_error(top_code, top_msg)}")
+
+        # ── allSuccess + empty successCodeList = ambiguous (wrong pkg, already owned, or region mismatch)
+        elif bind_result == "allSuccess":
+            print(f"  ⚠️  [allSuccess / no codes returned] — wrong packageId, already owned, or region mismatch")
+            claimed = 0
+        elif bind_result == "allFail":
+            print(f"  ❌ All codes failed — pkg_code={pkg_code}")
+        else:
+            print(f"  ❓ No result — pkg_code={pkg_code} bindResult={bind_result}")
+
+    except requests.exceptions.Timeout:
+        print(f"  ❌ Request timed out")
+    except requests.exceptions.ConnectionError as e:
+        print(f"  ❌ Connection error: {e}")
+    except Exception as e:
+        print(f"  ❌ Error: {e}")
+
+    print(f"  {'─'*54}")
+    return claimed
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BRUTE-FORCE ENGINE  (live real-time output per thread)
+# ─────────────────────────────────────────────────────────────────────────────
+
+import queue as _queue
+
+_print_lock         = threading.Lock()
+_claims_total       = 0
+_claims_lock        = threading.Lock()
+_stop_event         = threading.Event()
+_done_count         = 0
+_done_lock          = threading.Lock()
+_already_claimed_pkgs = []
+
+
+def _lprint(msg):
+    """Thread-safe live print — flushes immediately so terminal updates in real time."""
+    with _print_lock:
+        print(msg, flush=True)
+
+
+def _brute_probe(pkg_id, token, total):
+    """Probe one packageId and print result immediately — no buffering."""
+    global _claims_total, _done_count
+
+    if _stop_event.is_set():
+        return
+
+    headers = build_headers(token)
+    payload = {
+        "couponPackages": [
+            {
+                "couponPackageId": str(pkg_id),
+                "couponCodes":     ",".join(CODES),
+            }
+        ],
+        "scene":          "home",
+        "idempotentCode": str(uuid.uuid4()),
+    }
+
+    # Increment counter exactly once per probe call, regardless of outcome
+    with _done_lock:
+        _done_count += 1
+        done = _done_count
+    pct = min(done * 100 // total, 100)
+
+    try:
+        minified_payload = json.dumps(payload, separators=(',', ':'))
+        r = requests.post(COUPON_URL, data=minified_payload, headers=headers, timeout=12, verify=False)
+
+        # Parse response — guard every level against non-dict/non-list
+        try:
+            raw = r.json()
+        except Exception:
+            raw = {}
+        data = raw if isinstance(raw, dict) else {}
+
+        top_code = str(data.get("code") or data.get("ret_msg_code") or "")
+        top_msg  = str(data.get("msg")  or data.get("tips") or "")
+        _info    = data.get("info") or {}
+        info     = _info if isinstance(_info, dict) else {}
+
+        _sl = info.get("successCodeList") or []
+        _fl = info.get("failCodeList")    or []
+        _rl = info.get("bindResult")      or []
+        success_list = [str(c).strip() for c in (_sl if isinstance(_sl, list) else []) if c]
+        fail_list    = [str(c).strip() for c in (_fl if isinstance(_fl, list) else []) if c]
+        result_list  = _rl if isinstance(_rl, list) else []
+
+        pkg_code    = str(info.get("couponPackageCode") or "")
+        bind_result = info.get("bindResult")
+        error_code  = str(info.get("errorCode") or "")
+
+        # ── 1. Hard invalid package
+        #    top_code 1000 = truly invalid pkg. pkg_code 1000 = package capacity, NOT invalid.
+        if top_code == str(ERR_INVALID_PKG):
+            return
+
+        # ── 2. Top-level 501405
+        if top_code == str(ERR_ALREADY_CLAIMED):
+            _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ⚠  ALREADY CLAIMED [501405]")
+            with _claims_lock:
+                _already_claimed_pkgs.append(pkg_id)
+            return
+
+        # ── 3. info.couponPackageCode / errorCode 501405
+        if pkg_code == str(ERR_ALREADY_CLAIMED) or error_code == str(ERR_ALREADY_CLAIMED):
+            _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ⚠  ALREADY CLAIMED [501405]")
+            with _claims_lock:
+                _already_claimed_pkgs.append(pkg_id)
+            return
+
+        # ── 4. Successful claim — only trust successCodeList (allSuccess string is unreliable)
+        claimed = len(success_list)
+        if claimed > 0:
+            with _claims_lock:
+                _claims_total += claimed
+                total_so_far = _claims_total
+                if BRUTE_MAX_CLAIMS > 0 and _claims_total >= BRUTE_MAX_CLAIMS:
+                    _stop_event.set()
+            codes_str = ", ".join(success_list)
+            _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ★ CLAIMED! codes=[{codes_str}] total={total_so_far}")
+            return
+
+        # ── 5. Per-code bindResult list
+        if result_list:
+            claimed_codes  = []
+            conflict_codes = []
+            other_fails    = []
+            for item in result_list:
+                if not isinstance(item, dict):
+                    continue
+                code_val = str(item.get("couponCode") or "?")
+                err_code = str(item.get("errorCode") or item.get("code") or item.get("ret_msg_code") or "")
+                err_msg  = str(item.get("errorMsg")  or item.get("msg")  or "")
+                if err_code in ("0", "200", ""):
+                    claimed_codes.append(code_val)
+                elif err_code == str(ERR_ALREADY_CLAIMED):
+                    conflict_codes.append(code_val)
+                else:
+                    other_fails.append(f"{code_val}[{err_code}]")
+
+            if claimed_codes:
+                with _claims_lock:
+                    _claims_total += len(claimed_codes)
+                    total_so_far = _claims_total
+                    if BRUTE_MAX_CLAIMS > 0 and _claims_total >= BRUTE_MAX_CLAIMS:
+                        _stop_event.set()
+                _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ★ CLAIMED! {claimed_codes}")
+            if conflict_codes:
+                _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ⚠  [501405] ALREADY CLAIMED → {conflict_codes}")
+            if other_fails:
+                _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ✗ FAIL → {other_fails}")
+            return
+
+        # ── 6. fail_list only
+        if fail_list:
+            _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ✗ FAILED {fail_list}")
+            return
+
+        # ── 7. allSuccess + empty successCodeList = silent skip (ambiguous, not a real claim)
+        bind_result_str = info.get("bindResult")
+        if bind_result_str == "allSuccess" and not success_list:
+            return
+
+        if not success_list:
+            return
+
+        # ── 8. Any hard error
+        if top_code not in ("0", "200", ""):
+            _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ✗ ERR {top_code}: {top_msg[:50]}")
+
+    except requests.exceptions.Timeout:
+        _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ✗ TIMEOUT")
+    except Exception as e:
+        _lprint(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} ✗ EXC: {str(e)[:80]}")
+
+
+def run_brute_force():
+    global _claims_total, _done_count
+    _claims_total = 0
+    _done_count   = 0
+    _already_claimed_pkgs.clear()
+    _stop_event.clear()
+
+    pkg_range = list(range(BRUTE_START, BRUTE_END + 1))
+    total     = len(pkg_range)
+    threads   = min(BRUTE_THREADS, 30)
+    token     = TOKENS[0]
+
+    print(f"\n{'='*64}", flush=True)
+    print(f"  BRUTE-FORCE MODE  —  live output", flush=True)
+    print(f"  Range   : {BRUTE_START} → {BRUTE_END}  ({total} IDs)", flush=True)
+    print(f"  Threads : {threads}", flush=True)
+    print(f"  Stop at : {BRUTE_MAX_CLAIMS} claim(s)  (0 = unlimited)", flush=True)
+    print(f"  Country : {CLAIM_COUNTRY} ({CLAIM_CURRENCY})", flush=True)
+    print(f"  Codes   : {', '.join(CODES)}", flush=True)
+    print(f"{'='*64}\n", flush=True)
+
+    claimed_pkgs = []
+
+    with ThreadPoolExecutor(max_workers=threads) as exe:
+        # Submit all, each thread prints its own result immediately
+        futs = [exe.submit(_brute_probe, pkg, token, total) for pkg in pkg_range]
+        try:
+            for fut in as_completed(futs):
+                if _stop_event.is_set():
+                    # Signal remaining threads and stop collecting results
+                    exe.shutdown(wait=False, cancel_futures=True)
+                    break
+                # Result already printed inside _brute_probe — nothing to do here
+        except KeyboardInterrupt:
+            _stop_event.set()
+            print("\n  [!] Interrupted by user", flush=True)
+
+    print(f"\n{'='*64}", flush=True)
+    print(f"  Done. Scanned {_done_count}/{total} IDs.", flush=True)
+    print(f"  Total claimed      : {_claims_total} coupon(s)", flush=True)
+    print(f"  Already claimed    : {len(_already_claimed_pkgs)} package(s)", flush=True)
+    if _already_claimed_pkgs:
+        print(f"  Already claimed pkg IDs:", flush=True)
+        for p in _already_claimed_pkgs:
+            print(f"    → {p}", flush=True)
+    print(f"{'='*64}\n", flush=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────────────────────────────────────
+
+def main():
+    if BRUTE_MODE:
+        run_brute_force()
+        return
+
+    print("\n" + "=" * 60)
+    print("   SHEIN COUPON COLLECTOR  —  App API Mode")
+    print("=" * 60)
+    print(f"  Accounts : {len(TOKENS)}")
+    print(f"  Codes    : {len(CODES)}")
+    print(f"  Package  : {COUPON_PKG_ID}")
+    print(f"  Country  : {CLAIM_COUNTRY} ({CLAIM_CURRENCY})")
+    print("=" * 60)
+
+    for i, token in enumerate(TOKENS, 1):
+        print(f"\n{'#'*60}")
+        print(f"  Account {i}/{len(TOKENS)}  [...{token[-20:]}]")
+        print(f"{'#'*60}")
+        collect_coupons(token, CODES)
+        if i < len(TOKENS):
+            print(f"\n  Waiting {ACCOUNT_DELAY}s before next account...")
+            time.sleep(ACCOUNT_DELAY)
+
+    print("\n" + "=" * 60)
+    print("  All done!")
+    print("=" * 60 + "\n")
+
+
+if __name__ == "__main__":
+    main()
+</script>
+
+  <div class="wrap">
+    <header>
+      <div class="logo">SH</div>
+      <div>
+        <h1>SHEIN SCRIPT UPDATER</h1>
+        <p>Paste RAW data to refresh tokens &bull; Manage vouchers &bull; Download updated script</p>
+      </div>
+      <div class="hright">
+        <div class="dot" id="dot"></div>
+        <span id="stext">IDLE</span>
+      </div>
+    </header>
+
+    <div id="sum"><span>&#10003; Updated &mdash;</span><span id="schips"></span></div>
+
+    <!-- ROW 1 -->
+    <div class="g2">
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">&#8595; APP RAW REQUEST INPUT</div>
+          <span class="b b-blue">PASTE HERE</span>
+        </div>
+        <textarea id="rawin" placeholder="Paste your RAW app request here...
+
+POST /promotion/coupon/bind_coupon HTTP/2
+host: api-service.shein.com
+armortoken: T2_2.7.5_...
+ugid: 040npe62jx
+sortuid: 6214106215
+smdeviceid: 202603...
+token: MDEwMDE...
+x-gw-auth: a=vhOvo...
+dev-id: shein_8a47..."></textarea>
+        <div class="br">
+          <button class="btn-p" id="parsebtn">&#9889; PARSE &amp; UPDATE SCRIPT</button>
+          <button class="btn-s" id="clearbtn">&#10005; CLEAR</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <div class="pt">&#9672; EXTRACTED TOKENS</div>
+          <span class="b b-blue" id="nchanged"></span>
+        </div>
+        <div id="tpreview" class="tg">
+          <div class="tr">
+            <div class="tk">TOKEN</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">GW_AUTH</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">ARMOR_TOKEN</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">SMDEVICE_ID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">UGID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">SORTUID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+          <div class="tr">
+            <div class="tk">DEVICE_ID</div>
+            <div class="tv dim">&#8212; not parsed yet &#8212;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Voucher manager -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">
+        <div class="pt">&#127914; VOUCHER CODE MANAGER</div>
+        <span class="b-yellow" id="vcnt">0 codes</span>
+      </div>
+      <!-- Batch Selector -->
+      <div class="batch-row">
+        <span class="batch-label">&#9656; BATCH:</span>
+        <button class="btn-batch active" data-batch="ph0313">ph0313 <span
+            class="badge-status badge-active">ACTIVE</span></button>
+        <button class="btn-batch" data-batch="ph0313 4vc">ph0313 4vc <span
+            class="badge-status badge-active">ACTIVE</span></button>
+        <button class="btn-batch" data-batch="phsf0212">phsf0212 <span
+            class="badge-status badge-test">TESTING</span></button>
+      </div>
+      <div class="vbody">
+        <div class="vadd">
+          <input id="vinput" type="text"
+            placeholder="Enter code (e.g. phsf021215) or paste multiple comma-separated — press Enter to add"
+            maxlength="200">
+          <button class="btn-add" id="addbtn">&#43; ADD</button>
+        </div>
+        <div id="vlist" class="vlist">
+          <div class="vempty" id="vempty">No voucher codes. Add some above.</div>
+        </div>
+      </div>
+      <div class="br">
+        <button class="btn-p" id="applybtn">&#9889; APPLY CODES TO SCRIPT</button>
+        <button class="btn-s" id="reloadbtn">&#8635; RELOAD FROM SCRIPT</button>
+        <button class="btn-s" id="clearvbtn">&#10005; CLEAR ALL</button>
+      </div>
+    </div>
+
+    <!-- ROW 3: Brute-Force -->
+    <div class="panel" style="margin-bottom:14px">
+      <div class="ph">
+        <div class="pt">&#9889; BRUTE-FORCE CLAIM</div>
+        <span class="b b-orange" id="bfbadge">DISABLED</span>
+      </div>
+      <div class="bf-grid">
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Start Package ID</span>
+          <input class="bf-input" id="bf-start" type="number" value="17130000" placeholder="e.g. 17130000">
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; End Package ID</span>
+          <input class="bf-input" id="bf-end" type="number" value="17134000" placeholder="e.g. 17134000">
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Threads</span>
+          <div class="thread-row">
+            <button class="btn-thread active" data-t="10">10</button>
+            <button class="btn-thread" data-t="20">20</button>
+            <button class="btn-thread" data-t="30">30</button>
+          </div>
+        </div>
+        <div class="bf-field">
+          <span class="bf-label">&#9656; Max Claims Before Stop</span>
+          <input class="bf-input" id="bf-maxclaim" type="number" value="1" min="0" placeholder="0 = unlimited">
+        </div>
+        <div class="bf-field" style="grid-column:1/-1">
+          <span class="bf-label">&#9656; Claim Country Override</span>
+          <div class="country-row">
+            <button class="btn-country active" data-c="PH">&#127477;&#127469; PH</button>
+            <button class="btn-country" data-c="MY">&#127474;&#127486; MY</button>
+            <button class="btn-country" data-c="TH">&#127481;&#127469; TH</button>
+          </div>
+        </div>
+      </div>
+      <div class="bf-note">
+        &#9432; <b>Sign in to Malaysia (MY)</b> when capturing RAW data — prevents random PH coupons from auto-claiming
+        during capture.<br>
+        The <b>Claim Country</b> above overrides only <code>usercountry</code> / <code>localcountry</code> /
+        <code>currency</code> in the claim headers. Your capture tokens are untouched.<br>
+        &#9432; <b>Max Claims</b>: script stops after this many successful claims. Set 0 for unlimited.
+      </div>
+      <div class="br">
+        <button class="btn-o" id="bfapplybtn">&#8627; APPLY BRUTE-FORCE TO SCRIPT</button>
+        <span style="font-size:10px;color:var(--dim);margin:auto 0;padding-left:6px" id="bfstatus"></span>
+      </div>
+    </div>
+
+    <!-- ROW 4: Output -->
+    <div class="panel">
+      <div class="ph">
+        <div class="pt">&#8593; OUTPUT SCRIPT</div>
+        <span class="b b-orange" id="obadge">ORIGINAL</span>
+      </div>
+      <textarea id="scriptout" class="script-ta" readonly></textarea>
+      <div class="br">
+        <button class="btn-g" id="copybtn">&#8680; COPY</button>
+        <button class="btn-o" id="dlbtn">&#8595; DOWNLOAD .py</button>
+        <button class="btn-s" id="resetbtn">&#8635; RESET</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+  <script>
+    // ================================================================
+    // HELPERS
+    // ================================================================
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    var _tt;
+    function toast(type, msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'on ' + type;
+      clearTimeout(_tt);
+      _tt = setTimeout(function () { t.className = ''; }, 3200);
+    }
+
+    function markUpdated(label) {
+      document.getElementById('obadge').textContent = 'UPDATED: ' + label;
+      document.getElementById('obadge').className = 'b b-green';
+      document.getElementById('dot').className = 'dot on';
+      document.getElementById('stext').textContent = 'READY';
+    }
+
+    // ================================================================
+    // LOAD ORIG FROM TEMPLATE TAG (no escaping issues!)
+    // ================================================================
+    var ORIG = document.getElementById('py-template').textContent;
+    // Trim leading newline from the template
+    if (ORIG.charAt(0) === '\n') ORIG = ORIG.slice(1);
+
+    // ================================================================
+    // STATE
+    // ================================================================
+    var vouchers = [];
+    var _bfThreads = 10;
+    var _bfCountry = 'PH';
+
+    // ================================================================
+    // VOUCHER MANAGER
+    // ================================================================
+    function loadCodesFromText(src) {
+      var m = src.match(/CODES\s*=\s*\[([\s\S]*?)\]/);
+      if (!m) return;
+      var found = m[1].match(/"([^"]+)"/g);
+      vouchers = found ? found.map(function (c) { return c.replace(/"/g, ''); }) : [];
+      renderVouchers();
+    }
+
+    function renderVouchers() {
+      var list = document.getElementById('vlist');
+      var empty = document.getElementById('vempty');
+      document.getElementById('vcnt').textContent = vouchers.length + ' code' + (vouchers.length !== 1 ? 's' : '');
+      if (vouchers.length === 0) {
+        list.innerHTML = '';
+        list.appendChild(empty);
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < vouchers.length; i++) {
+        html += '<div class="vi">'
+          + '<span class="vc">' + (i + 1) + '. ' + esc(vouchers[i]) + '</span>'
+          + '<button class="btn-rm" data-i="' + i + '">&#10005; REMOVE</button>'
+          + '</div>';
+      }
+      list.innerHTML = html;
+      list.querySelectorAll('.btn-rm').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-i'));
+          var code = vouchers[idx];
+          vouchers.splice(idx, 1);
+          renderVouchers();
+          toast('i', 'Removed: ' + code);
+        });
+      });
+    }
+
+    function doAdd() {
+      var raw = document.getElementById('vinput').value.trim();
+      if (!raw) { toast('w', 'Enter a voucher code first'); return; }
+      var parts = raw.split(',');
+      var added = [], dupes = [];
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].trim();
+        if (!c) continue;
+        if (vouchers.indexOf(c) >= 0) { dupes.push(c); }
+        else { vouchers.push(c); added.push(c); }
+      }
+      document.getElementById('vinput').value = '';
+      renderVouchers();
+      if (added.length && !dupes.length) toast('s', '\u2713 Added: ' + added.join(', '));
+      else if (added.length) toast('w', '\u2713 Added ' + added.length + ', skipped ' + dupes.length + ' dupe(s)');
+      else toast('w', '\u26a0 Already in list: ' + dupes.join(', '));
+    }
+
+    function doApply() {
+      if (vouchers.length === 0) { toast('e', 'No voucher codes to apply'); return; }
+      var lines = '';
+      for (var i = 0; i < vouchers.length; i++) lines += '    "' + vouchers[i] + '",\n';
+      var block = 'CODES = [\n' + lines + ']';
+      var src = document.getElementById('scriptout').value;
+      var updated = src.replace(/CODES\s*=\s*\[[\s\S]*?\]/, block);
+      if (updated === src) { toast('e', 'Could not find CODES block in script'); return; }
+      document.getElementById('scriptout').value = updated;
+      markUpdated('CODES (' + vouchers.length + ')');
+      toast('s', '\u2713 ' + vouchers.length + ' code(s) applied to script');
+    }
+
+    // ================================================================
+    // RAW PARSER
+    // ================================================================
+    function getHdr(raw, name) {
+      var re = new RegExp('^' + name + '\\s*:\\s*(.+)', 'im');
+      var m = raw.match(re);
+      return m ? m[1].trim() : null;
+    }
+
+    function doParse() {
+      var raw = document.getElementById('rawin').value.trim();
+      if (!raw) { toast('e', '\u2715 No RAW data pasted!'); return; }
+
+      var parsed = {
+        TOKEN: getHdr(raw, 'token'),
+        GW_AUTH: getHdr(raw, 'x-gw-auth'),
+        ARMOR_TOKEN: getHdr(raw, 'armortoken'),
+        SMDEVICE_ID: getHdr(raw, 'smdeviceid'),
+        UGID: getHdr(raw, 'ugid'),
+        SORTUID: getHdr(raw, 'sortuid') || getHdr(raw, 'newuid'),
+        DEVICE_ID: getHdr(raw, 'dev-id') || getHdr(raw, 'deviceid'),
+        APPCOUNTRY: getHdr(raw, 'appcountry'),
+        USERCOUNTRY: getHdr(raw, 'usercountry'),
+        LOCALCOUNTRY: getHdr(raw, 'localcountry'),
+        CURRENCY: getHdr(raw, 'currency'),
+        APPCURRENCY: getHdr(raw, 'appcurrency'),
+        APP_VERSION: getHdr(raw, 'version') || getHdr(raw, 'appversion'),
+        DEVICE_INFO: getHdr(raw, 'device'),
+        OS_VERSION: getHdr(raw, 'os-version'),
+        DEVICE_SYS: getHdr(raw, 'devicesystemversion'),
+      };
+
+      var pkgm = raw.match(/"couponPackageId"\s*:\s*"([^"]+)"/);
+      if (pkgm) parsed.COUPON_PKG_ID = pkgm[1].trim();
+
+      var anyFound = parsed.TOKEN || parsed.GW_AUTH || parsed.ARMOR_TOKEN;
+      if (!anyFound) { toast('e', '\u2715 No tokens found. Check your RAW format.'); return; }
+
+      var script = ORIG;
+      var changed = [];
+
+      function repVar(name, val) {
+        if (!val) return;
+        var re = new RegExp('(' + name + '\\s*=\\s*)(?:"[^"]*"|\\([\\s\\S]*?\\n\\))', 'g');
+        var next = script.replace(re, '$1"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"');
+        if (next !== script) { script = next; changed.push(name); }
+      }
+
+      repVar('GW_AUTH', parsed.GW_AUTH);
+      repVar('ARMOR_TOKEN', parsed.ARMOR_TOKEN);
+      repVar('SMDEVICE_ID', parsed.SMDEVICE_ID);
+      repVar('UGID', parsed.UGID);
+      repVar('SORTUID', parsed.SORTUID);
+      repVar('DEVICE_ID', parsed.DEVICE_ID);
+      repVar('APPCOUNTRY', parsed.APPCOUNTRY);
+      repVar('USERCOUNTRY', parsed.USERCOUNTRY);
+      repVar('LOCALCOUNTRY', parsed.LOCALCOUNTRY);
+      repVar('CURRENCY', parsed.CURRENCY);
+      repVar('APPCURRENCY', parsed.APPCURRENCY);
+      repVar('APP_VERSION', parsed.APP_VERSION);
+      repVar('DEVICE_INFO', parsed.DEVICE_INFO);
+      repVar('OS_VERSION', parsed.OS_VERSION);
+      repVar('DEVICE_SYS', parsed.DEVICE_SYS);
+
+      if (parsed.TOKEN) {
+        var tokRe = /TOKENS\s*=\s*\[[\s\S]*?\]/;
+        var tokBlock = 'TOKENS = [\n    "' + parsed.TOKEN.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '",\n]';
+        var nt = script.replace(tokRe, tokBlock);
+        if (nt !== script) { script = nt; changed.push('TOKEN'); }
+      }
+
+      if (parsed.COUPON_PKG_ID) {
+        var pkgRe = new RegExp('(COUPON_PKG_ID\\s*=\\s*)"[^"]*"', 'g');
+        var np = script.replace(pkgRe, '$1"' + parsed.COUPON_PKG_ID + '"');
+        if (np !== script) { script = np; changed.push('COUPON_PKG_ID'); }
+      }
+
+      // Re-apply current voucher list
+      if (vouchers.length > 0) {
+        var vlines = '';
+        for (var vi = 0; vi < vouchers.length; vi++) vlines += '    "' + vouchers[vi] + '",\n';
+        var vblock = 'CODES = [\n' + vlines + ']';
+        script = script.replace(/CODES\s*=\s*\[[\s\S]*?\]/, vblock);
+      }
+
+      document.getElementById('scriptout').value = script;
+      updateTokenPreview(parsed, changed);
+
+      var cc = document.getElementById('nchanged');
+      cc.style.display = 'inline';
+      cc.textContent = changed.length + ' CHANGED';
+
+      document.getElementById('sum').className = 'on';
+      var chips = '';
+      for (var chi = 0; chi < changed.length; chi++) chips += '<span class="chip">' + changed[chi] + '</span> ';
+      document.getElementById('schips').innerHTML = chips;
+
+      markUpdated(changed.length + ' tokens');
+      toast('s', '\u2713 ' + changed.length + ' field' + (changed.length !== 1 ? 's' : '') + ' updated');
+    }
+
+    function updateTokenPreview(parsed, changed) {
+      var fields = [
+        ['TOKEN', parsed.TOKEN],
+        ['GW_AUTH', parsed.GW_AUTH],
+        ['ARMOR_TOKEN', parsed.ARMOR_TOKEN],
+        ['SMDEVICE_ID', parsed.SMDEVICE_ID],
+        ['UGID', parsed.UGID],
+        ['SORTUID', parsed.SORTUID],
+        ['DEVICE_ID', parsed.DEVICE_ID],
+      ];
+      var html = '';
+      for (var i = 0; i < fields.length; i++) {
+        var fname = fields[i][0], fval = fields[i][1];
+        var isChanged = changed.indexOf(fname) >= 0;
+        if (!fval) {
+          html += '<div class="tr"><div class="tk">' + fname + '</div><div class="tv dim">&#8212; not found &#8212;</div></div>';
+        } else {
+          var display = fval.length > 58 ? fval.slice(0, 55) + '\u2026' : fval;
+          html += '<div class="tr"><div class="tk">' + fname + '</div>'
+            + '<div class="tv' + (isChanged ? ' ok' : '') + '">' + (isChanged ? '\u2713 ' : '') + esc(display) + '</div></div>';
+        }
+      }
+      document.getElementById('tpreview').innerHTML = html;
+    }
+
+    // ================================================================
+    // OUTPUT / COPY / DOWNLOAD / RESET
+    // ================================================================
+    function doCopy() {
+      var txt = document.getElementById('scriptout').value;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { toast('s', '\u2698 Copied!'); }).catch(function () { fallbackCopy(txt); });
+      } else { fallbackCopy(txt); }
+    }
+    function fallbackCopy(txt) {
+      document.getElementById('scriptout').select();
+      document.execCommand('copy');
+      toast('i', '\u2698 Copied (fallback)');
+    }
+    function doDownload() {
+      var blob = new Blob([document.getElementById('scriptout').value], { type: 'text/x-python' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'shein_coupon_collector.py';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(a.href);
+      toast('s', '\u2193 Downloaded!');
+    }
+    function doReset() {
+      document.getElementById('scriptout').value = ORIG;
+      document.getElementById('obadge').textContent = 'ORIGINAL';
+      document.getElementById('obadge').className = 'b b-orange';
+      document.getElementById('nchanged').style.display = 'none';
+      document.getElementById('dot').className = 'dot';
+      document.getElementById('stext').textContent = 'IDLE';
+      document.getElementById('sum').className = '';
+      document.getElementById('bfbadge').textContent = 'DISABLED';
+      document.getElementById('bfbadge').className = 'b b-orange';
+      document.getElementById('bfstatus').textContent = '';
+      document.getElementById('tpreview').innerHTML = [
+        'TOKEN', 'GW_AUTH', 'ARMOR_TOKEN', 'SMDEVICE_ID', 'UGID', 'SORTUID', 'DEVICE_ID'
+      ].map(function (k) {
+        return '<div class="tr"><div class="tk">' + k + '</div><div class="tv dim">&#8212; not parsed yet &#8212;</div></div>';
+      }).join('');
+      loadCodesFromText(ORIG);
+      toast('i', 'Reset to original');
+    }
+
+    // ================================================================
+    // CODE BATCHES
+    // ================================================================
+    var CODE_BATCHES = {
+      'ph0313': {
+        codes: ['ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
+        pkgId: '17141415'
+      },
+      'ph0313 4vc': {
+        codes: ['ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
+        pkgId: '17141415'
+      },
+      'phsf0212': {
+        codes: ['phsf021210', 'phsf021209', 'phsf021208', 'phsf021207'],
+        pkgId: '17139475'
+      }
+    };
+    var _activeBatch = 'ph0313';
+
+    document.querySelectorAll('.btn-batch').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var bname = this.getAttribute('data-batch');
+        var batch = CODE_BATCHES[bname];
+        _activeBatch = bname;
+        // Load batch codes into vouchers list
+        vouchers = batch.codes.slice();
+        renderVouchers();
+        // Patch COUPON_PKG_ID in output script
+        var src = document.getElementById('scriptout').value;
+        var updated = src.replace(/(COUPON_PKG_ID\s*=\s*)"[^"]*"/, '$1"' + batch.pkgId + '"');
+        document.getElementById('scriptout').value = updated;
+        // Highlight active batch button
+        document.querySelectorAll('.btn-batch').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        toast('s', '\u2713 Batch: ' + bname + ' | ' + batch.codes.length + ' codes | pkg=' + batch.pkgId);
+      });
+    });
+
+    // ================================================================
+    // BRUTE-FORCE PANEL
+    // ================================================================
+    document.querySelectorAll('.btn-thread').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-thread').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        _bfThreads = parseInt(this.getAttribute('data-t'));
+        toast('i', 'Threads: ' + _bfThreads);
+      });
+    });
+
+    document.querySelectorAll('.btn-country').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-country').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        _bfCountry = this.getAttribute('data-c');
+        toast('i', 'Claim country: ' + _bfCountry);
+      });
+    });
+
+    document.getElementById('bfapplybtn').addEventListener('click', function () {
+      var start = document.getElementById('bf-start').value.trim();
+      var end = document.getElementById('bf-end').value.trim();
+      var maxClaim = document.getElementById('bf-maxclaim').value.trim() || '1';
+
+      if (!start || !end || isNaN(+start) || isNaN(+end)) {
+        toast('e', 'Enter valid Start and End Package IDs'); return;
+      }
+      if (+start > +end) {
+        toast('e', 'Start must be \u2264 End'); return;
+      }
+
+      var src = document.getElementById('scriptout').value;
+      var changed = [];
+
+      function repBf(name, val) {
+        // Match:  NAME = <anything until end-of-line>
+        var re = new RegExp('(^' + name + '\\s*=\\s*).*$', 'm');
+        var nxt = src.replace(re, '$1' + val);
+        if (nxt !== src) { src = nxt; changed.push(name); }
+      }
+
+      repBf('BRUTE_MODE', 'True          # Set True to enable brute-force scan');
+      repBf('BRUTE_START', start + '    # Starting packageId');
+      repBf('BRUTE_END', end + '    # Ending packageId (inclusive)');
+      repBf('BRUTE_THREADS', _bfThreads + '          # Threads: 10 | 20 | 30');
+      repBf('BRUTE_MAX_CLAIMS', maxClaim + '           # Stop after this many successful claims (0 = unlimited)');
+      repBf('CLAIM_COUNTRY', '"' + _bfCountry + '"   # <\u2500 change to MY or TH if needed');
+
+      document.getElementById('scriptout').value = src;
+
+      var badge = document.getElementById('bfbadge');
+      badge.textContent = 'ACTIVE \u00b7 ' + start + '\u2192' + end + ' \u00b7 ' + _bfThreads + 'T \u00b7 ' + _bfCountry;
+      badge.className = 'b b-green';
+      document.getElementById('bfstatus').textContent = '\u2713 ' + changed.length + ' field(s) injected';
+
+      markUpdated('BRUTE-FORCE');
+      toast('s', '\u26a1 Brute-force config applied \u00b7 ' + _bfCountry);
+    });
+
+    // ================================================================
+    // INIT (after all functions defined)
+    // ================================================================
+    document.getElementById('scriptout').value = ORIG;
+    loadCodesFromText(ORIG);
+
+    document.getElementById('parsebtn').addEventListener('click', doParse);
+    document.getElementById('clearbtn').addEventListener('click', function () { document.getElementById('rawin').value = ''; });
+    document.getElementById('addbtn').addEventListener('click', doAdd);
+    document.getElementById('applybtn').addEventListener('click', doApply);
+    document.getElementById('reloadbtn').addEventListener('click', function () { loadCodesFromText(document.getElementById('scriptout').value); toast('i', 'Reloaded from script'); });
+    document.getElementById('clearvbtn').addEventListener('click', function () { vouchers = []; renderVouchers(); toast('i', 'Cleared'); });
+    document.getElementById('copybtn').addEventListener('click', doCopy);
+    document.getElementById('dlbtn').addEventListener('click', doDownload);
+    document.getElementById('resetbtn').addEventListener('click', doReset);
+    document.getElementById('vinput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doAdd(); } });
+    document.getElementById('rawin').addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doParse(); } });
+  </script>
+</body>
+
+</html>
