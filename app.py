@@ -42,7 +42,7 @@ VOUCHER_COIN_COST = {
 # Non-admin users may ONLY submit codes from this list for their active batch.
 VALID_BATCH_CODES = {
     "ph0313":   ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
-    "ph0313 4vc": ["ph0313n3", "ph0313n4", "ph0313n5", "ph0313n6"],
+    "ph0313 4vc": ["ph0313n3", "ph0313n4", "ph0313n5", "ph0313n6", "ph0313n1", "ph0313n2", "ph0313n9", "ph0313n10"],
     "ph031381": ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
     "gm0pha":   ["gm0pha11", "gm0pha12", "gm0pha13", "gm0pha14"],
 }
