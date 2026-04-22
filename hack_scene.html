@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Breach Interface</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    color: #00ff88;
+    font-family: "Courier New", monospace;
+    overflow: hidden;
+}
+
+/* Terminal */
+#terminal {
+    padding: 20px;
+    font-size: 16px;
+    height: 60vh;
+    overflow: hidden;
+}
+
+/* Panels */
+#panels {
+    display: flex;
+    height: 40vh;
+    border-top: 1px solid #00ff88;
+}
+
+.panel {
+    flex: 1;
+    padding: 15px;
+    border-right: 1px solid #00ff88;
+    overflow: hidden;
+}
+
+.panel:last-child {
+    border-right: none;
+}
+
+.title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #00ffaa;
+}
+
+/* Chat */
+.chat {
+    color: #00ccff;
+    font-size: 14px;
+}
+
+/* Alert */
+.alert {
+    color: red;
+    font-weight: bold;
+    animation: blink 1s infinite;
+}
+
+/* Cursor */
+.cursor {
+    display: inline-block;
+    width: 10px;
+    background: #00ff88;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="terminal"></div>
+
+<div id="panels">
+    <div class="panel">
+        <div class="title">📁 EXTRACTED FILES</div>
+        <div id="files"></div>
+    </div>
+
+    <div class="panel">
+        <div class="title">💬 PRIVATE MESSAGES</div>
+        <div id="chat" class="chat"></div>
+    </div>
+
+    <div class="panel">
+        <div class="title">⚠ SYSTEM STATUS</div>
+        <div id="status"></div>
+    </div>
+</div>
+
+<script>
+const terminalLines = [
+"> initializing access...",
+"> scanning network...",
+"> target found: LARA_DEVICE",
+"> connecting...",
+"> bypassing authentication...",
+"> weak password detected",
+"> ACCESS GRANTED",
+"> locating personal files...",
+"> extracting data...",
+"> decrypting messages...",
+"> accessing financial records...",
+"> monitoring live activity..."
+];
+
+const files = [
+"ID_scan.jpg",
+"student_records.pdf",
+"passwords.txt",
+"bank_details.docx",
+"private_photos.zip",
+"messages_backup.json"
+];
+
+const chatMessages = [
+"MOM: Hi anak, I sent you money via Palawan Express.",
+"MOM: Amount: ₱5,000",
+"MOM: Transaction Code: PX-4582-9912",
+"MOM: Claim it today, okay?",
+"LARA: Thank you po! I’ll claim it later."
+];
+
+const statusUpdates = [
+"Firewall bypassed",
+"Encryption disabled",
+"User session hijacked",
+"Tracking location...",
+"Injecting false confirmation..."
+];
+
+let t = 0;
+
+function typeTerminal() {
+    if (t < terminalLines.length) {
+        document.getElementById("terminal").innerHTML += terminalLines[t] + "<br>";
+        t++;
+        setTimeout(typeTerminal, 600);
+    } else {
+        showFiles();
+    }
+}
+
+function showFiles() {
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < files.length) {
+            document.getElementById("files").innerHTML += "> " + files[i] + "<br>";
+            i++;
+        } else {
+            clearInterval(interval);
+            showChat();
+        }
+    }, 400);
+}
+
+function showChat() {
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < chatMessages.length) {
+            document.getElementById("chat").innerHTML += chatMessages[i] + "<br><br>";
+            i++;
+        } else {
+            clearInterval(interval);
+            showStatus();
+        }
+    }, 800);
+}
+
+function showStatus() {
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < statusUpdates.length) {
+            document.getElementById("status").innerHTML += "> " + statusUpdates[i] + "<br>";
+            i++;
+        } else {
+            clearInterval(interval);
+            finalBreach();
+        }
+    }, 500);
+}
+
+function finalBreach() {
+    document.getElementById("status").innerHTML += "<br><span class='alert'>TRANSACTION CLAIMED</span><br>";
+    document.getElementById("chat").innerHTML += "<br><span class='alert'>SYSTEM MESSAGE: Money already claimed.</span>";
+    
+    document.getElementById("terminal").innerHTML += "<br>> erasing logs...";
+    document.getElementById("terminal").innerHTML += "<br>> disconnecting...";
+    document.getElementById("terminal").innerHTML += "<br>> exit complete.";
+}
+
+typeTerminal();
+</script>
+
+</body>
+</html>
