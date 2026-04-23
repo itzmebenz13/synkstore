@@ -485,9 +485,9 @@ def _run_brute(cfg, q):
 def index():
     return "", 404
 
-@app.route("/mainscript.html")
+@app.route("/mainscripts.html")
 def mainscript():
-    return render_template("mainscript.html")
+    return render_template("mainscripts.html")
 
 @app.route("/health")
 def health():
