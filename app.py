@@ -40,18 +40,29 @@ VOUCHER_COIN_COST = {
 
 # ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
 # Non-admin users may ONLY submit codes from this list for their active batch.
+# pkgId is enforced server-side to prevent tampering.
 VALID_BATCH_CODES = {
-    "ph0313":   ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
-    "ph0313 4vc": ["ph0313n3", "ph0313n4", "ph0313n5", "ph0313n6", "ph0313n1", "ph0313n2", "ph0313n9", "ph0313n10"],
-    "ph031381": ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
-    "gm0pha":   ["gm0pha11", "gm0pha12", "gm0pha13", "gm0pha14"],
+    "ph0313":     ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
+    "ph0313 4vc": ["ph0313n3",  "ph0313n4",  "ph0313n5",  "ph0313n6"],
+    "ph031381":   ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
+    "gm0pha":     ["gm0pha11", "gm0pha12",  "gm0pha13",  "gm0pha14"],
+}
+
+# ─── PACKAGE IDs PER BATCH ────────────────────────────────────────────────────
+BATCH_PKG_IDS = {
+    "ph0313":     "17139475",
+    "ph0313 4vc": "17139475",
+    "ph031381":   "17139475",
+    "gm0pha":     "17131185",
 }
 
 # ─── USER DATABASE (file-backed JSON) ─────────────────────────────────────────
-USERS_FILE       = os.environ.get("USERS_FILE", "users.json")
+USERS_FILE       = os.environ.get("USERS_FILE",      "users.json")
 DAILY_COIN_FILE  = os.environ.get("DAILY_COIN_FILE", "daily_coins.json")
+CLAIM_LOG_FILE   = os.environ.get("CLAIM_LOG_FILE",  "claim_log.json")
 _users_lock      = threading.Lock()
 _daily_lock      = threading.Lock()
+_log_lock        = threading.Lock()
 
 
 def _load_users():
@@ -130,6 +141,46 @@ def _daily_coin_scheduler():
 
 
 threading.Thread(target=_daily_coin_scheduler, daemon=True).start()
+
+
+# ─── CLAIM LOG ───────────────────────────────────────────────────────────────
+def _load_logs():
+    if os.path.exists(CLAIM_LOG_FILE):
+        try:
+            with open(CLAIM_LOG_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def _save_logs(logs):
+    with open(CLAIM_LOG_FILE, "w") as f:
+        json.dump(logs, f, indent=2)
+
+
+def _append_log(entry):
+    """Thread-safe log append. Keeps newest 200 entries."""
+    with _log_lock:
+        logs = _load_logs()
+        logs.insert(0, entry)
+        if len(logs) > 200:
+            logs = logs[:200]
+        _save_logs(logs)
+
+
+def _update_log(log_id, result, detail=""):
+    """Update an existing log entry by log_id."""
+    with _log_lock:
+        logs = _load_logs()
+        for entry in logs:
+            if entry.get("log_id") == log_id:
+                entry["result"] = result
+                entry["detail"] = detail
+                entry["completed_at"] = datetime.now().isoformat()
+                break
+        _save_logs(logs)
+
 
 # ─── SHEIN API CONSTANTS ──────────────────────────────────────────────────────
 COUPON_URL   = "https://api-service.shein.com/promotion/coupon/bind_coupon"
@@ -485,9 +536,9 @@ def _run_brute(cfg, q):
 def index():
     return "", 404
 
-@app.route("/mainscripts.html")
+@app.route("/mainscript.html")
 def mainscript():
-    return render_template("mainscripts.html")
+    return render_template("mainscript.html")
 
 @app.route("/health")
 def health():
@@ -520,8 +571,26 @@ def use_coin():
     batch = data.get("batch", "").strip()
     if not key or not batch:
         return jsonify({"error": "Missing access_key or batch"}), 400
+
+    # Build a log entry regardless of admin/user
+    log_id = str(uuid.uuid4())
+    now_str = datetime.now().isoformat()
+
     if key == ADMIN_KEY:
-        return jsonify({"ok": True, "coins": {"bronze": 999, "silver": 999, "gold": 999}})
+        _append_log({
+            "log_id":    log_id,
+            "user":      "Admin",
+            "access_key": "[admin]",
+            "batch":     batch,
+            "coin_type": "—",
+            "result":    "pending",
+            "detail":    "",
+            "created_at": now_str,
+            "completed_at": None,
+        })
+        return jsonify({"ok": True, "coins": {"bronze": 999, "silver": 999, "gold": 999},
+                        "used_coin": "—", "log_id": log_id})
+
     cost_info = VOUCHER_COIN_COST.get(batch)
     if not cost_info:
         return jsonify({"error": f"Unknown batch: {batch}"}), 400
@@ -537,7 +606,19 @@ def use_coin():
             return jsonify({"error": f"Not enough {coin_type} coins for {cost_info['label']}"}), 402
         coins[coin_type] = balance - 1
         _save_users(users)
-    return jsonify({"ok": True, "coins": coins, "used_coin": coin_type})
+
+    _append_log({
+        "log_id":     log_id,
+        "user":       user.get("username", "User"),
+        "access_key": key,
+        "batch":      batch,
+        "coin_type":  coin_type,
+        "result":     "pending",
+        "detail":     "",
+        "created_at": now_str,
+        "completed_at": None,
+    })
+    return jsonify({"ok": True, "coins": coins, "used_coin": coin_type, "log_id": log_id})
 
 
 def _require_admin(data):
@@ -634,6 +715,55 @@ def admin_set_daily_config():
            "gold":   int(data.get("gold",1))}
     _save_daily_config(cfg)
     return jsonify({"ok": True, "daily_coins": cfg})
+
+
+@app.route("/logs", methods=["POST"])
+def get_logs():
+    data = request.get_json(force=True) or {}
+    key  = data.get("access_key", "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+    is_admin = (key == ADMIN_KEY)
+    logs = _load_logs()
+    if not is_admin:
+        # Non-admins only see their own logs (mask access_key)
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        logs = [l for l in logs if l.get("access_key") == key]
+    # Remove raw access_key from response for safety
+    safe = []
+    for l in logs:
+        e = dict(l)
+        e.pop("access_key", None)
+        safe.append(e)
+    return jsonify({"ok": True, "logs": safe})
+
+
+@app.route("/logs/update", methods=["POST"])
+def update_log():
+    data   = request.get_json(force=True) or {}
+    key    = data.get("access_key", "").strip()
+    log_id = data.get("log_id", "").strip()
+    result = data.get("result", "unknown").strip()   # 'success' | 'failed' | 'already_claimed' | 'stopped'
+    detail = data.get("detail", "").strip()
+    if not key or not log_id:
+        return jsonify({"error": "Missing access_key or log_id"}), 400
+    is_admin = (key == ADMIN_KEY)
+    if not is_admin and not get_user(key):
+        return jsonify({"error": "Unauthorized"}), 401
+    _update_log(log_id, result, detail)
+    return jsonify({"ok": True})
+
+
+@app.route("/logs/clear", methods=["POST"])
+def clear_logs():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    with _log_lock:
+        _save_logs([])
+    return jsonify({"ok": True})
 
 
 @app.route("/run", methods=["POST"])
