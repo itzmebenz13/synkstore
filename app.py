@@ -40,11 +40,17 @@ VOUCHER_COIN_COST = {
 
 # ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
 # Non-admin users may ONLY submit codes from this list for their active batch.
+# ph0313 (default) accepts all 8 codes — merges ph0313 (4) + ph0313 4vc (4).
 # pkgId is enforced server-side to prevent tampering.
 VALID_BATCH_CODES = {
-    "ph0313":     ["ph0313n9", "ph0313n14", "ph0313n18", "ph0313n4"],
+    #           ── ph0313 default: 8 codes ──
+    "ph0313":     ["ph0313n1", "ph0313n2", "ph0313n3", "ph0313n4",
+                   "ph0313n5", "ph0313n6", "ph0313n9", "ph0313n10"],
+    #           ── ph0313 4vc: its own 4 codes ──
     "ph0313 4vc": ["ph0313n3",  "ph0313n4",  "ph0313n5",  "ph0313n6"],
+    #           ── ph031381 (81%): 4 codes ──
     "ph031381":   ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
+    #           ── gm0pha: 4 codes ──
     "gm0pha":     ["gm0pha11", "gm0pha12",  "gm0pha13",  "gm0pha14"],
 }
 
