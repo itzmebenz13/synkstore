@@ -29,13 +29,12 @@ VOUCHER_ACCESS_CODES = {
 }
 
 # ─── COIN COST PER VOUCHER ────────────────────────────────────────────────────
-# 1 bronze = 1 use in ph0313 (79%)
-# 1 silver = 1 use in ph031381 (81%) / gm0pha
+# All batches cost 1 Gold coin per use.
 VOUCHER_COIN_COST = {
-    "ph0313":   {"coin": "bronze", "label": "ph0313 (79%)"},
-    "ph0313 4vc": {"coin": "bronze", "label": "ph0313 4vc"},
-    "ph031381": {"coin": "silver", "label": "ph0313 (81%)"},
-    "gm0pha":   {"coin": "silver", "label": "gm0pha"},
+    "ph0313":     {"coin": "gold", "label": "ph0313 (79%)"},
+    "ph0313 4vc": {"coin": "gold", "label": "ph0313 4vc"},
+    "ph031381":   {"coin": "gold", "label": "ph0313 (81%)"},
+    "gm0pha":     {"coin": "gold", "label": "gm0pha"},
 }
 
 # ─── ALLOWED CODES PER BATCH (server-side enforcement) ────────────────────────
