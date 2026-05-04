@@ -2492,6 +2492,76 @@
       font-weight: 600;
       letter-spacing: .4px;
     }
+
+    /* ─── CLAIM LOGS PANEL ─── */
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 10px 12px;
+    }
+    .log-item {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      background: var(--inp);
+      border: 1px solid var(--b1);
+      border-radius: 8px;
+      padding: 7px 10px;
+      transition: border-color .15s;
+    }
+    .log-item:hover { border-color: var(--b2); }
+    .log-item.ok   { border-left: 3px solid var(--ok); }
+    .log-item.err  { border-left: 3px solid var(--err); }
+    .log-item.warn { border-left: 3px solid var(--warn); }
+    .log-item.pend { border-left: 3px solid var(--mut); }
+    .log-icon { font-size: .95rem; text-align:center; }
+    .log-body { min-width: 0; }
+    .log-title {
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--txt);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .log-meta {
+      font-size: .58rem;
+      color: var(--dim);
+      margin-top: 1px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .log-meta .lm-coin {
+      font-weight: 600;
+    }
+    .log-meta .lm-coin.bronze { color: #b46422; }
+    .log-meta .lm-coin.silver { color: #6b7a99; }
+    .log-meta .lm-coin.gold   { color: #b38b00; }
+    .log-time {
+      font-size: .58rem;
+      color: var(--mut);
+      white-space: nowrap;
+      font-family: var(--mono);
+      align-self: flex-start;
+    }
+    .log-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--mut);
+      font-size: .72rem;
+    }
+    .log-bar {
+      padding: 8px 12px;
+      border-top: 1px solid var(--b1);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
   </style>
 </head>
 
@@ -2574,10 +2644,6 @@ CODES = [
     "ph0313n4",
     "ph0313n5",
     "ph0313n6",
-    "ph0313n1",
-    "ph0313n2",
-    "ph0313n9",
-    "ph0313n10",
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2585,7 +2651,7 @@ CODES = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 COUPON_URL    = "https://api-service.shein.com/promotion/coupon/bind_coupon"
-COUPON_PKG_ID = "17143310"
+COUPON_PKG_ID = "17139475"
 ACCOUNT_DELAY = 3   # seconds between accounts
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -3458,6 +3524,27 @@ if __name__ == "__main__":
       </div>
     </div>
 
+    <!-- ═══ CLAIM LOGS PANEL ═══ -->
+    <div class="panel" id="panel-logs">
+      <div class="collapse-header" id="logs-toggle">
+        <div class="pt"><span class="pt-icon">&#128203;</span> Claim Logs</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="b b-blue" id="logs-cnt">0 entries</span>
+          <div class="collapse-arrow" id="logs-arrow">&#9660;</div>
+        </div>
+      </div>
+      <div class="collapse-body" id="logs-body">
+        <div id="logs-list" class="log-list">
+          <div class="log-empty" id="logs-empty">No claim history yet. Run a script to see logs here.</div>
+        </div>
+        <div class="log-bar">
+          <button class="btn-g" id="logs-refresh-btn">&#8635; Refresh</button>
+          <button class="btn-s" id="logs-clear-btn" style="display:none">&#10005; Clear All</button>
+          <span style="font-size:.6rem;color:var(--mut);margin-left:auto" id="logs-status"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- ROW 1: RAW Input + Extracted Tokens (collapsed) -->
     <div class="g2">
       <div class="panel">
@@ -3811,6 +3898,7 @@ if __name__ == "__main__":
     initCollapse('hist-toggle', 'hist-body', 'hist-arrow');
     initCollapse('voucher-toggle', 'voucher-body', 'voucher-arrow');
     initCollapse('bf-toggle', 'bf-body', 'bf-arrow');
+    initCollapse('logs-toggle', 'logs-body', 'logs-arrow');
   </script>
 
   <script>
@@ -4169,6 +4257,7 @@ if __name__ == "__main__":
     // ================================================================
     // CODE BATCHES
     // ================================================================
+    // CODE_BATCHES — must stay in sync with app.py VALID_BATCH_CODES + BATCH_PKG_IDS
     var CODE_BATCHES = {
       'ph0313': {
         codes: ['ph0313n9', 'ph0313n14', 'ph0313n18', 'ph0313n4'],
@@ -4178,7 +4267,6 @@ if __name__ == "__main__":
         label: 'ph0313 (79%)',
         adminOnly: false
       },
-
       'ph0313 4vc': {
         codes: ['ph0313n3', 'ph0313n4', 'ph0313n5', 'ph0313n6'],
         pkgId: '17139475',
@@ -4187,7 +4275,14 @@ if __name__ == "__main__":
         label: 'ph0313 4vc',
         adminOnly: false
       },
-
+      'ph031381': {
+        codes: ['ph0313n5', 'ph0313n10', 'ph0313n15', 'ph0313n19'],
+        pkgId: '17139475',
+        type: 'bind',
+        coin: 'silver',
+        label: 'ph0313 (81%)',
+        adminOnly: false
+      },
       'gm0pha': {
         codes: ['gm0pha11', 'gm0pha12', 'gm0pha13', 'gm0pha14'],
         pkgId: '17131185',
@@ -4197,16 +4292,6 @@ if __name__ == "__main__":
         label: 'gm0pha',
         adminOnly: true
       },
-
-      'ph031381': {
-        codes: ['ph0313n5', 'ph0313n10', 'ph0313n15', 'ph0313n19'],
-        pkgId: '17139475',
-        type: 'bind',
-        coin: 'silver',
-        label: 'ph0313 (81%)',
-        adminOnly: false
-      },
-
     };
     var _activeBatch = 'ph0313';
 
@@ -4666,6 +4751,24 @@ if __name__ == "__main__":
       var nFailed = _results.failed.length;
       var nWarned = _results.warned.length;
 
+      // ─ Determine log result
+      if (aborted) {
+        _postLogResult('stopped', 'Cancelled by user');
+      } else if (nClaimed > 0) {
+        _postLogResult('success', nClaimed + ' code(s) claimed');
+      } else if (nWarned > 0 && nFailed === 0) {
+        _postLogResult('already_claimed', 'All already owned [501405]');
+      } else if (nFailed > 0) {
+        _postLogResult('failed', nFailed + ' error(s)');
+      } else {
+        _postLogResult('failed', 'No actionable result');
+      }
+      // Auto-refresh logs if panel is open
+      var logsBody = document.getElementById('logs-body');
+      if (logsBody && logsBody.classList.contains('open')) {
+        setTimeout(fetchLogs, 500);
+      }
+
       // Populate results pane
       var icon = document.getElementById('rml-res-icon');
       var title = document.getElementById('rml-res-title');
@@ -4951,13 +5054,17 @@ if __name__ == "__main__":
         if (_sessionIsAdmin) {
           document.getElementById('wallet-admin-btn').style.display = '';
           document.getElementById('admin-panel').style.display = '';
+          document.getElementById('logs-clear-btn').style.display = '';
           adminLoadDailyConfig();
           adminRefreshUsers();
         } else {
           document.getElementById('wallet-admin-btn').style.display = 'none';
           document.getElementById('admin-panel').style.display = 'none';
+          document.getElementById('logs-clear-btn').style.display = 'none';
         }
         updateAdminPanels();
+        // Auto-load logs after login
+        setTimeout(fetchLogs, 200);
       }
 
       function doLogin() {
@@ -5281,6 +5388,8 @@ if __name__ == "__main__":
     // ================================================================
     // doRun: deduct coin then run
     // ================================================================
+    var _currentLogId = null;   // log entry id returned by /user/use_coin
+
     function doRun() {
       var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
       var key = document.getElementById('run-key').value.trim();
@@ -5302,6 +5411,7 @@ if __name__ == "__main__":
           toast('e', '\u274c ' + (coinData.error || 'Not enough coins'));
           return;
         }
+        _currentLogId = coinData.log_id || null;
         // Update wallet display
         if (coinData.coins) {
           _sessionCoins = coinData.coins;
@@ -5313,6 +5423,105 @@ if __name__ == "__main__":
         toast('e', 'Coin error: ' + err.message);
       });
     }
+
+    // Post run result to /logs/update so server records success/fail
+    function _postLogResult(result, detail) {
+      if (!_currentLogId) return;
+      var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
+      var key = document.getElementById('run-key').value.trim();
+      fetch(url + '/logs/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key: key, log_id: _currentLogId, result: result, detail: detail })
+      }).catch(function () { });
+      _currentLogId = null;
+    }
+
+    // ── CLAIM LOGS panel ──
+    function _fmtLogTime(iso) {
+      if (!iso) return '';
+      try {
+        var d = new Date(iso);
+        var pad = function (n) { return n < 10 ? '0' + n : n; };
+        return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' +
+          pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+      } catch (e) { return iso.slice(0, 16); }
+    }
+
+    function renderLogs(logs) {
+      var list = document.getElementById('logs-list');
+      var empty = document.getElementById('logs-empty');
+      var cnt = document.getElementById('logs-cnt');
+      cnt.textContent = logs.length + (logs.length === 1 ? ' entry' : ' entries');
+      if (!logs.length) { list.innerHTML = ''; list.appendChild(empty); return; }
+
+      var _SVG_COIN = {
+        bronze: '<svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#cd7f32" stroke="#8b4f1a" stroke-width="1.2"/></svg>',
+        silver: '<svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#b0b8c8" stroke="#6b7a8d" stroke-width="1.2"/></svg>',
+        gold:   '<svg width="11" height="11" viewBox="0 0 20 20" fill="none" style="vertical-align:-1px"><circle cx="10" cy="10" r="9" fill="#f5c518" stroke="#b8860b" stroke-width="1.2"/></svg>',
+      };
+      var html = '';
+      logs.forEach(function (l) {
+        var res = l.result || 'pending';
+        var cls = res === 'success' ? 'ok' : res === 'pending' ? 'pend' : res === 'already_claimed' ? 'warn' : 'err';
+        var icon = res === 'success' ? '\u2705' : res === 'pending' ? '\u23f3' : res === 'already_claimed' ? '\u26a0\uFE0F' : res === 'stopped' ? '\u23F9' : '\u274c';
+        var resLabel = res === 'success' ? 'Claimed' : res === 'pending' ? 'Pending…' : res === 'already_claimed' ? 'Already Owned' : res === 'stopped' ? 'Stopped' : 'Failed';
+        var coinType = l.coin_type || '';
+        var coinSvg = _SVG_COIN[coinType] || '';
+        var coinHtml = coinType && coinType !== '\u2014' ? '<span class="lm-coin ' + esc(coinType) + '">' + coinSvg + ' 1 ' + esc(coinType.charAt(0).toUpperCase() + coinType.slice(1)) + '</span>' : '';
+        html += '<div class="log-item ' + cls + '">'
+          + '<div class="log-icon">' + icon + '</div>'
+          + '<div class="log-body">'
+          + '<div class="log-title">' + esc(resLabel) + ' &mdash; ' + esc(l.batch || '') + '</div>'
+          + '<div class="log-meta">' + (l.user ? '<span>' + esc(l.user) + '</span>' : '') + coinHtml
+          + (l.detail ? '<span style="color:var(--err);font-size:.57rem">' + esc(l.detail.slice(0, 60)) + '</span>' : '') + '</div>'
+          + '</div>'
+          + '<div class="log-time">' + _fmtLogTime(l.created_at) + '</div>'
+          + '</div>';
+      });
+      list.innerHTML = html;
+    }
+
+    function fetchLogs() {
+      var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
+      var key = document.getElementById('run-key').value.trim() || _sessionKey;
+      if (!key) return;
+      var st = document.getElementById('logs-status');
+      st.textContent = 'Loading\u2026';
+      fetch(url + '/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_key: key })
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        st.textContent = '';
+        if (data.ok) renderLogs(data.logs || []);
+        else st.textContent = data.error || 'Error';
+      }).catch(function (e) { st.textContent = 'Connection error'; });
+    }
+
+    document.getElementById('logs-refresh-btn').addEventListener('click', fetchLogs);
+
+    document.getElementById('logs-clear-btn').addEventListener('click', function () {
+      if (!confirm('Clear all claim logs?')) return;
+      var url = document.getElementById('run-url').value.trim().replace(/\/+$/, '');
+      fetch(url + '/logs/clear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_key: _sessionKey })
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.ok) { renderLogs([]); toast('s', '\u2713 Logs cleared'); }
+        else toast('e', d.error || 'Error');
+      });
+    });
+
+    // Show clear button for admins
+    (function () {
+      var origApply = applySession;
+    })();
+    // Reveal clear button when admin session is active
+    document.addEventListener('DOMContentLoaded', function () {
+      if (_sessionIsAdmin) document.getElementById('logs-clear-btn').style.display = '';
+    });
 
     function _doActualRun(url, key, cfg) {
       setRunning(true);
