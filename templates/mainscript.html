@@ -5519,15 +5519,6 @@ if __name__ == "__main__":
       });
     });
 
-    // Show clear button for admins
-    (function () {
-      var origApply = applySession;
-    })();
-    // Reveal clear button when admin session is active
-    document.addEventListener('DOMContentLoaded', function () {
-      if (_sessionIsAdmin) document.getElementById('logs-clear-btn').style.display = '';
-    });
-
     function _doActualRun(url, key, cfg) {
       setRunning(true);
       var controller = new AbortController();
