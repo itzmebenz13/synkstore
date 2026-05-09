@@ -775,15 +775,21 @@ def admin_set_gemini_key():
 # ─── SPIN TO WIN (daily lottery) ─────────────────────────────────────────────
 # Prize index here MUST match the SPIN_PRIZES array in mainscript.html.
 # Server is authoritative for both the random pick and the GT credit.
+# Weights MUST stay in sync with SPIN_PRIZES in mainscript.html.
+# Probabilities (total weight 200):
+#   5 GT      → 0.5 %     0.5 GT   → 4.5 %
+#   3 GT      → 1.0 %     0.2 GT   → 10  %
+#   2 GT      → 1.5 %     0.1 GT   → 30  %
+#   1 GT      → 2.5 %     Try Again → 50 %
 SPIN_PRIZES = [
     {"index": 0, "label": "5 GT",       "value": 5.0,  "weight": 1},
-    {"index": 1, "label": "Try Again",  "value": 0.0,  "weight": 50},
-    {"index": 2, "label": "1 GT",       "value": 1.0,  "weight": 10},
-    {"index": 3, "label": "0.1 GT",     "value": 0.1,  "weight": 50},
-    {"index": 4, "label": "3 GT",       "value": 3.0,  "weight": 3},
-    {"index": 5, "label": "0.5 GT",     "value": 0.5,  "weight": 15},
+    {"index": 1, "label": "Try Again",  "value": 0.0,  "weight": 100},
+    {"index": 2, "label": "1 GT",       "value": 1.0,  "weight": 5},
+    {"index": 3, "label": "0.1 GT",     "value": 0.1,  "weight": 60},
+    {"index": 4, "label": "3 GT",       "value": 3.0,  "weight": 2},
+    {"index": 5, "label": "0.5 GT",     "value": 0.5,  "weight": 9},
     {"index": 6, "label": "0.2 GT",     "value": 0.2,  "weight": 20},
-    {"index": 7, "label": "2 GT",       "value": 2.0,  "weight": 5},
+    {"index": 7, "label": "2 GT",       "value": 2.0,  "weight": 3},
 ]
 
 
