@@ -55,9 +55,9 @@ VALID_BATCH_CODES = {
 
 # ─── PACKAGE IDs PER BATCH ────────────────────────────────────────────────────
 BATCH_PKG_IDS = {
-    "ph0313":     "17143310",
-    "ph0313 4vc": "17143310",
-    "ph031381":   "17143310",
+    "ph0313":     "17139475",
+    "ph0313 4vc": "17139475",
+    "ph031381":   "17139475",
     "gm0pha":     "17131185",
 }
 
@@ -185,6 +185,36 @@ def _update_log(log_id, result, detail=""):
                 entry["completed_at"] = datetime.now().isoformat()
                 break
         _save_logs(logs)
+
+
+# ─── GEMINI API KEY (file-backed; admin sets via /admin/set_gemini_key) ──────
+GEMINI_KEY_FILE = os.environ.get("GEMINI_KEY_FILE", "gemini_key.json")
+_gemini_lock = threading.Lock()
+
+
+def _load_gemini_key_unlocked():
+    if os.path.exists(GEMINI_KEY_FILE):
+        try:
+            with open(GEMINI_KEY_FILE, "r") as f:
+                return (json.load(f) or {}).get("key", "")
+        except Exception:
+            pass
+    return ""
+
+
+def _save_gemini_key_unlocked(key):
+    with open(GEMINI_KEY_FILE, "w") as f:
+        json.dump({"key": key or ""}, f)
+
+
+def get_gemini_key():
+    with _gemini_lock:
+        return _load_gemini_key_unlocked()
+
+
+def set_gemini_key(key):
+    with _gemini_lock:
+        _save_gemini_key_unlocked(key)
 
 
 # ─── SHEIN API CONSTANTS ──────────────────────────────────────────────────────
@@ -556,9 +586,11 @@ def user_login():
     key  = data.get("access_key", "").strip()
     if not key:
         return jsonify({"error": "No access key provided"}), 400
+    gemini_key = get_gemini_key()
     if key == ADMIN_KEY:
         return jsonify({"ok": True, "is_admin": True, "username": "Admin",
-                        "coins": {"bronze": 999, "silver": 999, "gold": 999}})
+                        "coins": {"bronze": 999, "silver": 999, "gold": 999},
+                        "gemini_key": gemini_key})
     user = get_user(key)
     if not user:
         return jsonify({"error": "Invalid access key"}), 401
@@ -566,7 +598,8 @@ def user_login():
     user = get_user(key)
     return jsonify({"ok": True, "is_admin": False,
                     "username": user.get("username", "User"),
-                    "coins": user.get("coins", {"bronze": 0, "silver": 0, "gold": 0})})
+                    "coins": user.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+                    "gemini_key": gemini_key})
 
 
 @app.route("/user/use_coin", methods=["POST"])
@@ -720,6 +753,20 @@ def admin_set_daily_config():
            "gold":   int(data.get("gold",1))}
     _save_daily_config(cfg)
     return jsonify({"ok": True, "daily_coins": cfg})
+
+
+@app.route("/admin/set_gemini_key", methods=["POST"])
+def admin_set_gemini_key():
+    """Admin-only — store the shared Gemini API key in gemini_key.json.
+    Pass {admin_key, gemini_key}. Empty gemini_key clears it."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    new_key = (data.get("gemini_key") or "").strip()
+    if new_key and not (new_key.startswith("AIza") or new_key.startswith("AQ.")):
+        return jsonify({"error": "Invalid key format (expected AIza... or AQ....)"}), 400
+    set_gemini_key(new_key)
+    return jsonify({"ok": True})
 
 
 @app.route("/logs", methods=["POST"])
