@@ -1,4 +1,5 @@
 import os
+import random
 import uuid
 import time
 import threading
@@ -590,7 +591,8 @@ def user_login():
     if key == ADMIN_KEY:
         return jsonify({"ok": True, "is_admin": True, "username": "Admin",
                         "coins": {"bronze": 999, "silver": 999, "gold": 999},
-                        "gemini_key": gemini_key})
+                        "gemini_key": gemini_key,
+                        "spin_next_in": 0})
     user = get_user(key)
     if not user:
         return jsonify({"error": "Invalid access key"}), 401
@@ -599,7 +601,8 @@ def user_login():
     return jsonify({"ok": True, "is_admin": False,
                     "username": user.get("username", "User"),
                     "coins": user.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
-                    "gemini_key": gemini_key})
+                    "gemini_key": gemini_key,
+                    "spin_next_in": _spin_remaining_seconds(user)})
 
 
 @app.route("/user/use_coin", methods=["POST"])
@@ -767,6 +770,109 @@ def admin_set_gemini_key():
         return jsonify({"error": "Invalid key format (expected AIza... or AQ....)"}), 400
     set_gemini_key(new_key)
     return jsonify({"ok": True})
+
+
+# ─── SPIN TO WIN (daily lottery) ─────────────────────────────────────────────
+# Prize index here MUST match the SPIN_PRIZES array in mainscript.html.
+# Server is authoritative for both the random pick and the GT credit.
+SPIN_PRIZES = [
+    {"index": 0, "label": "5 GT",       "value": 5.0,  "weight": 1},
+    {"index": 1, "label": "Try Again",  "value": 0.0,  "weight": 50},
+    {"index": 2, "label": "1 GT",       "value": 1.0,  "weight": 10},
+    {"index": 3, "label": "0.1 GT",     "value": 0.1,  "weight": 50},
+    {"index": 4, "label": "3 GT",       "value": 3.0,  "weight": 3},
+    {"index": 5, "label": "0.5 GT",     "value": 0.5,  "weight": 15},
+    {"index": 6, "label": "0.2 GT",     "value": 0.2,  "weight": 20},
+    {"index": 7, "label": "2 GT",       "value": 2.0,  "weight": 5},
+]
+
+
+def _pick_spin_prize():
+    weights = [p["weight"] for p in SPIN_PRIZES]
+    return random.choices(SPIN_PRIZES, weights=weights, k=1)[0]
+
+
+SPIN_COOLDOWN_SECONDS = 86400  # rolling 24h
+
+
+def _spin_remaining_seconds(user):
+    """Returns seconds remaining on a user's spin cooldown, or 0 if available."""
+    last_at_str = user.get("last_spin_at", "") if user else ""
+    if not last_at_str:
+        return 0
+    try:
+        last_dt = datetime.fromisoformat(last_at_str)
+        elapsed = (datetime.now() - last_dt).total_seconds()
+        if elapsed >= SPIN_COOLDOWN_SECONDS:
+            return 0
+        return int(SPIN_COOLDOWN_SECONDS - elapsed)
+    except Exception:
+        return 0
+
+
+@app.route("/user/spin", methods=["POST"])
+def user_spin():
+    """One free spin per rolling 24h window. Server picks the prize and credits GT.
+
+    Admins can spin freely (no cooldown, no GT credit since they have ∞).
+    Non-admins are gated by user.last_spin_at (ISO timestamp).
+    """
+    data = request.get_json(force=True) or {}
+    key = (data.get("access_key") or "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+
+    now = datetime.now()
+
+    # Admin path — always pick a prize but don't track or credit
+    if key == ADMIN_KEY:
+        prize = _pick_spin_prize()
+        return jsonify({
+            "ok": True,
+            "prize_index": prize["index"],
+            "prize_label": prize["label"],
+            "prize_value": prize["value"],
+            "gt": 999.0,
+            "is_admin": True,
+            "next_spin_in": 0,
+        })
+
+    # Non-admin: enforce 24h cooldown + credit GT atomically
+    with _users_lock:
+        users = _load_users()
+        user = users.get(key)
+        if not user:
+            return jsonify({"error": "Invalid access key"}), 401
+
+        remaining = _spin_remaining_seconds(user)
+        if remaining > 0:
+            return jsonify({
+                "error": "Spin on cooldown. Please wait.",
+                "next_spin_in": remaining,
+            }), 429
+
+        prize = _pick_spin_prize()
+
+        # GT is stored under coins.gold for legacy compat; mirror to coins.gt as float
+        coins = user.setdefault("coins", {"bronze": 0, "silver": 0, "gold": 0})
+        current_gt = float(coins.get("gt", coins.get("gold", 0) or 0))
+        new_gt = round(current_gt + float(prize["value"]), 2)
+        coins["gt"] = new_gt
+        coins["gold"] = new_gt        # keep legacy field in sync so /user/use_coin still works
+        user["last_spin_at"] = now.isoformat()
+        # Drop legacy field if present
+        user.pop("last_spin", None)
+        _save_users(users)
+
+    return jsonify({
+        "ok": True,
+        "prize_index": prize["index"],
+        "prize_label": prize["label"],
+        "prize_value": prize["value"],
+        "gt": new_gt,
+        "coins": coins,
+        "next_spin_in": SPIN_COOLDOWN_SECONDS,
+    })
 
 
 @app.route("/logs", methods=["POST"])
