@@ -218,6 +218,75 @@ def set_gemini_key(key):
         _save_gemini_key_unlocked(key)
 
 
+# ─── NAME WHITELIST (controls which first names can claim group seats) ──────
+NAME_WHITELIST_FILE = os.environ.get("NAME_WHITELIST_FILE", "name_whitelist.json")
+_whitelist_lock = threading.Lock()
+DEFAULT_WHITELIST = ["Caspe", "Cabardo", "Mondragon", "Dela Cerna", "Coyme"]
+
+
+def _norm_name(name):
+    """Lowercase + collapse whitespace so 'Dela Cerna', '  dela cerna ', and
+    'DELA  CERNA' all compare equal."""
+    return " ".join((name or "").strip().lower().split())
+
+
+def _load_whitelist_unlocked():
+    if os.path.exists(NAME_WHITELIST_FILE):
+        try:
+            with open(NAME_WHITELIST_FILE, "r") as f:
+                data = json.load(f) or {}
+                names = data.get("names", [])
+                if isinstance(names, list):
+                    return [str(n) for n in names if isinstance(n, (str,)) and n.strip()]
+        except Exception:
+            pass
+    return list(DEFAULT_WHITELIST)
+
+
+def _save_whitelist_unlocked(names):
+    clean = []
+    seen = set()
+    for n in names or []:
+        s = (n or "").strip()
+        k = _norm_name(s)
+        if not k or k in seen:
+            continue
+        seen.add(k)
+        clean.append(s)
+    with open(NAME_WHITELIST_FILE, "w") as f:
+        json.dump({"names": clean}, f, indent=2)
+    return clean
+
+
+def get_whitelist():
+    with _whitelist_lock:
+        return _load_whitelist_unlocked()
+
+
+def set_whitelist(names):
+    with _whitelist_lock:
+        return _save_whitelist_unlocked(names)
+
+
+def _is_name_allowed(name):
+    nk = _norm_name(name)
+    if not nk:
+        return False
+    for w in get_whitelist():
+        if _norm_name(w) == nk:
+            return True
+    return False
+
+
+def _canonical_name(name):
+    """Return the canonical capitalization of a whitelisted name."""
+    nk = _norm_name(name)
+    for w in get_whitelist():
+        if _norm_name(w) == nk:
+            return w
+    return (name or "").strip()
+
+
 # ─── GROUP KEY HELPERS ───────────────────────────────────────────────────────
 # A group key user record looks like:
 # {
@@ -237,36 +306,94 @@ def _is_group_key(user):
     return isinstance(user, dict) and user.get("type") == "group"
 
 
-def _norm_name(name):
-    return (name or "").strip().lower()
-
-
 def _get_seat(group_user, first_name):
     if not group_user:
         return None
     return (group_user.get("seats") or {}).get(_norm_name(first_name))
 
 
-def _add_or_get_seat(group_user, first_name):
-    """Returns (seat, error). Creates a new seat if there's capacity and the
-    name is free; returns the existing seat if the name already belongs to
-    someone in this group (re-login)."""
+def _find_seat_by_device(group_user, device_id):
+    """Return (seat, name_key) for the first seat in this group whose
+    device_id matches, or (None, None)."""
+    if not group_user or not device_id:
+        return None, None
+    for nk, s in (group_user.get("seats") or {}).items():
+        if (s or {}).get("device_id") == device_id:
+            return s, nk
+    return None, None
+
+
+# Error codes returned by _add_or_get_seat (clients react to these).
+SEAT_ERR_NAME_REQUIRED   = "name_required"
+SEAT_ERR_NAME_TOO_LONG   = "name_too_long"
+SEAT_ERR_NAME_INVALID    = "name_invalid"
+SEAT_ERR_NAME_NOT_ALLOWED= "name_not_allowed"
+SEAT_ERR_DEVICE_REQUIRED = "device_required"
+SEAT_ERR_DEVICE_SEATED   = "device_seated"
+SEAT_ERR_NAME_TAKEN      = "name_taken"
+SEAT_ERR_SEAT_FULL       = "seat_full"
+
+
+def _add_or_get_seat(group_user, first_name, device_id):
+    """Returns (seat, error_dict) where error_dict (if any) has `code` and `error`.
+
+    Enforces:
+      * whitelist (name must be on _is_name_allowed list)
+      * 1 device = 1 seat (this device cannot claim a different name if it's
+        already in this group; a different device cannot claim a name that
+        someone else's device already owns)
+      * seat capacity
+    """
     name_key = _norm_name(first_name)
-    name_disp = (first_name or "").strip()
+    name_disp = _canonical_name(first_name) if name_key else ""
     if not name_key:
-        return None, "First name required"
+        return None, {"code": SEAT_ERR_NAME_REQUIRED, "error": "First name required"}
     if len(name_disp) > 30:
-        return None, "First name too long (max 30 chars)"
+        return None, {"code": SEAT_ERR_NAME_TOO_LONG, "error": "First name too long (max 30 chars)"}
     if not all(c.isalpha() or c in " '-." for c in name_disp):
-        return None, "Letters and spaces only"
+        return None, {"code": SEAT_ERR_NAME_INVALID, "error": "Letters and spaces only"}
+    if not _is_name_allowed(first_name):
+        return None, {"code": SEAT_ERR_NAME_NOT_ALLOWED,
+                      "error": "This name is not on the allowed list."}
+    if not (device_id or "").strip():
+        return None, {"code": SEAT_ERR_DEVICE_REQUIRED,
+                      "error": "Device ID required"}
+
     seats = group_user.setdefault("seats", {})
+
+    # 1) Device already on a seat?
+    dev_seat, dev_seat_key = _find_seat_by_device(group_user, device_id)
+    if dev_seat:
+        if dev_seat_key == name_key:
+            return dev_seat, None  # re-login: same device, same name → resume
+        return None, {
+            "code": SEAT_ERR_DEVICE_SEATED,
+            "error": "This device already holds a seat in this group.",
+            "seated_as": dev_seat.get("first_name", ""),
+        }
+
+    # 2) Name already taken (by a different device)?
     if name_key in seats:
-        return seats[name_key], None
+        existing = seats[name_key]
+        existing_dev = (existing or {}).get("device_id", "")
+        if existing_dev and existing_dev != device_id:
+            return None, {
+                "code": SEAT_ERR_NAME_TAKEN,
+                "error": "Someone else already took this name in the group.",
+            }
+        # Legacy seat without device_id — claim it now
+        existing["device_id"] = device_id
+        return existing, None
+
+    # 3) Seat capacity
     if len(seats) >= int(group_user.get("max_seats", 0)):
-        return None, "Seat is full"
+        return None, {"code": SEAT_ERR_SEAT_FULL, "error": "Seat is full"}
+
+    # 4) Brand-new seat
     new_seat = {
         "first_name":      name_disp,
         "joined_at":       datetime.now().isoformat(),
+        "device_id":       device_id,
         "last_claim_date": "",
         "claims_today":    0,
     }
@@ -676,7 +803,23 @@ def user_login():
 
     # ── Group key path ──
     if _is_group_key(user):
-        # Step 1: no first_name yet — ask for it
+        device_id = (data.get("device_id") or "").strip()
+
+        # If this device already holds a seat, auto-resume it (no name prompt needed).
+        existing_seat, _existing_key = _find_seat_by_device(user, device_id)
+        if existing_seat and not first_name:
+            first_name = existing_seat.get("first_name", "")
+        elif existing_seat and _norm_name(first_name) != _norm_name(existing_seat.get("first_name", "")):
+            # Different name attempt from a device that's already seated.
+            return jsonify({
+                "ok": False,
+                "code": "device_seated",
+                "seated_as": existing_seat.get("first_name", ""),
+                "group_label": user.get("label", "Group"),
+                "error": "This device already holds the \"" + existing_seat.get("first_name", "") + "\" seat. Continue with that name.",
+            }), 403
+
+        # No first_name yet — ask for it (and ship the whitelist so the page can show options)
         if not first_name:
             return jsonify({
                 "ok": False,
@@ -684,15 +827,17 @@ def user_login():
                 "group_label": user.get("label", "Group"),
                 "seats_used": len((user.get("seats") or {})),
                 "max_seats": int(user.get("max_seats", 0)),
+                "allowed_names": get_whitelist(),
             })
-        # Step 2: try to seat the user
+
+        # Try to seat the user
         with _users_lock:
             users = _load_users()
             u = users.get(key)
             if not u or not _is_group_key(u):
                 return jsonify({"error": "Invalid access key"}), 401
-            seat, err = _add_or_get_seat(u, first_name)
-            if err and err == "Seat is full":
+            seat, err = _add_or_get_seat(u, first_name, device_id)
+            if err and err.get("code") == SEAT_ERR_SEAT_FULL:
                 return jsonify({
                     "ok": False,
                     "seat_full": True,
@@ -701,7 +846,11 @@ def user_login():
                     "max_seats": int(u.get("max_seats", 0)),
                 })
             if err:
-                return jsonify({"error": err}), 400
+                resp = {"ok": False, "code": err.get("code"), "error": err.get("error")}
+                if "seated_as" in err: resp["seated_as"] = err["seated_as"]
+                if err.get("code") == SEAT_ERR_NAME_NOT_ALLOWED:
+                    resp["allowed_names"] = get_whitelist()
+                return jsonify(resp), 403
             _save_users(users)
         _apply_daily_coins()
         with _users_lock:
@@ -909,6 +1058,28 @@ def admin_edit_group_key():
             u["max_claims_per_day"] = mc
         _save_users(users)
     return jsonify({"ok": True})
+
+
+@app.route("/admin/get_name_whitelist", methods=["POST"])
+def admin_get_name_whitelist():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({"ok": True, "names": get_whitelist()})
+
+
+@app.route("/admin/set_name_whitelist", methods=["POST"])
+def admin_set_name_whitelist():
+    """Replace the whitelist with the names list provided. Empty list resets
+    to the default seed list."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    names = data.get("names")
+    if not isinstance(names, list):
+        return jsonify({"error": "names must be a list"}), 400
+    if not names:
+        names = list(DEFAULT_WHITELIST)
+    clean = set_whitelist(names)
+    return jsonify({"ok": True, "names": clean})
 
 
 @app.route("/admin/kick_seat", methods=["POST"])
