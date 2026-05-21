@@ -55,10 +55,12 @@ VALID_BATCH_CODES = {
 }
 
 # ─── PACKAGE IDs PER BATCH ────────────────────────────────────────────────────
+# SHEIN rotates these — update when claims stop working. The Termux/offline
+# script's COUPON_PKG_ID is the source of truth for the current valid ID.
 BATCH_PKG_IDS = {
-    "ph0313":     "17139475",
-    "ph0313 4vc": "17139475",
-    "ph031381":   "17139475",
+    "ph0313":     "17145850",
+    "ph0313 4vc": "17145850",
+    "ph031381":   "17145850",
     "gm0pha":     "17131185",
 }
 
