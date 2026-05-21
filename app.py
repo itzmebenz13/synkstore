@@ -218,6 +218,80 @@ def set_gemini_key(key):
         _save_gemini_key_unlocked(key)
 
 
+# ─── GROUP KEY HELPERS ───────────────────────────────────────────────────────
+# A group key user record looks like:
+# {
+#   "type": "group",
+#   "label": "Team Alpha",
+#   "max_seats": 5,
+#   "max_claims_per_day": 10,
+#   "coins": {"bronze":0,"silver":0,"gold":0,"gt":0},
+#   "last_daily": "",
+#   "last_spin_at": "",
+#   "seats": { "john": { "first_name":"John", "joined_at":"...",
+#                         "last_claim_date":"YYYY-MM-DD", "claims_today":0 } },
+#   "created": "...",
+# }
+
+def _is_group_key(user):
+    return isinstance(user, dict) and user.get("type") == "group"
+
+
+def _norm_name(name):
+    return (name or "").strip().lower()
+
+
+def _get_seat(group_user, first_name):
+    if not group_user:
+        return None
+    return (group_user.get("seats") or {}).get(_norm_name(first_name))
+
+
+def _add_or_get_seat(group_user, first_name):
+    """Returns (seat, error). Creates a new seat if there's capacity and the
+    name is free; returns the existing seat if the name already belongs to
+    someone in this group (re-login)."""
+    name_key = _norm_name(first_name)
+    name_disp = (first_name or "").strip()
+    if not name_key:
+        return None, "First name required"
+    if len(name_disp) > 30:
+        return None, "First name too long (max 30 chars)"
+    if not all(c.isalpha() or c in " '-." for c in name_disp):
+        return None, "Letters and spaces only"
+    seats = group_user.setdefault("seats", {})
+    if name_key in seats:
+        return seats[name_key], None
+    if len(seats) >= int(group_user.get("max_seats", 0)):
+        return None, "Seat is full"
+    new_seat = {
+        "first_name":      name_disp,
+        "joined_at":       datetime.now().isoformat(),
+        "last_claim_date": "",
+        "claims_today":    0,
+    }
+    seats[name_key] = new_seat
+    return new_seat, None
+
+
+def _seat_claims_today(seat):
+    if not seat:
+        return 0
+    if seat.get("last_claim_date") != date.today().isoformat():
+        return 0
+    return int(seat.get("claims_today", 0))
+
+
+def _record_seat_claim(seat):
+    if not seat:
+        return
+    today = date.today().isoformat()
+    if seat.get("last_claim_date") != today:
+        seat["claims_today"] = 0
+    seat["claims_today"] = int(seat.get("claims_today", 0)) + 1
+    seat["last_claim_date"] = today
+
+
 # ─── SHEIN API CONSTANTS ──────────────────────────────────────────────────────
 COUPON_URL   = "https://api-service.shein.com/promotion/coupon/bind_coupon"
 DELIVERY_URL = "https://api-shein.shein.com/deliveryapi/delivery-material/material_list"
@@ -585,17 +659,71 @@ def health():
 def user_login():
     data = request.get_json(force=True) or {}
     key  = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
     if not key:
         return jsonify({"error": "No access key provided"}), 400
     gemini_key = get_gemini_key()
+
     if key == ADMIN_KEY:
         return jsonify({"ok": True, "is_admin": True, "username": "Admin",
                         "coins": {"bronze": 999, "silver": 999, "gold": 999},
                         "gemini_key": gemini_key,
                         "spin_next_in": 0})
+
     user = get_user(key)
     if not user:
         return jsonify({"error": "Invalid access key"}), 401
+
+    # ── Group key path ──
+    if _is_group_key(user):
+        # Step 1: no first_name yet — ask for it
+        if not first_name:
+            return jsonify({
+                "ok": False,
+                "requires_name": True,
+                "group_label": user.get("label", "Group"),
+                "seats_used": len((user.get("seats") or {})),
+                "max_seats": int(user.get("max_seats", 0)),
+            })
+        # Step 2: try to seat the user
+        with _users_lock:
+            users = _load_users()
+            u = users.get(key)
+            if not u or not _is_group_key(u):
+                return jsonify({"error": "Invalid access key"}), 401
+            seat, err = _add_or_get_seat(u, first_name)
+            if err and err == "Seat is full":
+                return jsonify({
+                    "ok": False,
+                    "seat_full": True,
+                    "group_label": u.get("label", "Group"),
+                    "seats_used": len(u.get("seats", {})),
+                    "max_seats": int(u.get("max_seats", 0)),
+                })
+            if err:
+                return jsonify({"error": err}), 400
+            _save_users(users)
+        _apply_daily_coins()
+        with _users_lock:
+            u = _load_users().get(key) or u
+            seat = _get_seat(u, first_name) or seat
+        return jsonify({
+            "ok": True,
+            "is_admin": False,
+            "is_group": True,
+            "username": seat["first_name"],
+            "first_name": seat["first_name"],
+            "group_label": u.get("label", "Group"),
+            "coins": u.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+            "gemini_key": gemini_key,
+            "spin_next_in": _spin_remaining_seconds(u),
+            "max_claims_per_day": int(u.get("max_claims_per_day", 0)),
+            "claims_today": _seat_claims_today(seat),
+            "seats_used": len(u.get("seats", {})),
+            "max_seats": int(u.get("max_seats", 0)),
+        })
+
+    # ── Regular user path ──
     _apply_daily_coins()
     user = get_user(key)
     return jsonify({"ok": True, "is_admin": False,
@@ -609,11 +737,11 @@ def user_login():
 def use_coin():
     data  = request.get_json(force=True) or {}
     key   = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
     batch = data.get("batch", "").strip()
     if not key or not batch:
         return jsonify({"error": "Missing access_key or batch"}), 400
 
-    # Build a log entry regardless of admin/user
     log_id = str(uuid.uuid4())
     now_str = datetime.now().isoformat()
 
@@ -636,11 +764,31 @@ def use_coin():
     if not cost_info:
         return jsonify({"error": f"Unknown batch: {batch}"}), 400
     coin_type = cost_info["coin"]
+
     with _users_lock:
         users = _load_users()
         user  = users.get(key)
         if not user:
             return jsonify({"error": "Invalid access key"}), 401
+
+        # ── Group key: enforce per-seat daily claim limit ──
+        is_group = _is_group_key(user)
+        log_user = user.get("username", "User")
+        if is_group:
+            seat = _get_seat(user, first_name)
+            if not seat:
+                return jsonify({"error": "No active seat — please re-enter your first name"}), 401
+            limit = int(user.get("max_claims_per_day", 0))
+            claims = _seat_claims_today(seat)
+            if limit > 0 and claims >= limit:
+                return jsonify({
+                    "error": f"Daily limit reached ({claims}/{limit}). Try again tomorrow.",
+                    "claims_today": claims,
+                    "max_claims_per_day": limit,
+                }), 429
+            log_user = seat.get("first_name") or first_name
+
+        # GT deduction (group-shared if group)
         coins   = user.setdefault("coins", {"bronze": 0, "silver": 0, "gold": 0})
         balance = coins.get(coin_type, 0)
         if balance <= 0:
@@ -650,8 +798,10 @@ def use_coin():
 
     _append_log({
         "log_id":     log_id,
-        "user":       user.get("username", "User"),
+        "user":       log_user,
         "access_key": key,
+        "first_name": (first_name if is_group else ""),
+        "is_group":   is_group,
         "batch":      batch,
         "coin_type":  coin_type,
         "result":     "pending",
@@ -671,10 +821,114 @@ def admin_list_users():
     data = request.get_json(force=True) or {}
     if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
     users = all_users()
-    result = [{"key": k, "username": v.get("username",""),
-               "coins": v.get("coins", {"bronze":0,"silver":0,"gold":0}),
-               "last_daily": v.get("last_daily","")} for k, v in users.items()]
-    return jsonify({"ok": True, "users": result})
+    individuals = []
+    groups = []
+    today = date.today().isoformat()
+    for k, v in users.items():
+        if _is_group_key(v):
+            seats_out = []
+            for sk, s in (v.get("seats") or {}).items():
+                claims_today = int(s.get("claims_today", 0)) if s.get("last_claim_date") == today else 0
+                seats_out.append({
+                    "first_name": s.get("first_name", sk),
+                    "joined_at":  s.get("joined_at", ""),
+                    "claims_today": claims_today,
+                })
+            groups.append({
+                "key": k,
+                "label": v.get("label", "Group"),
+                "max_seats": int(v.get("max_seats", 0)),
+                "max_claims_per_day": int(v.get("max_claims_per_day", 0)),
+                "seats_used": len(seats_out),
+                "seats": seats_out,
+                "coins": v.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+            })
+        else:
+            individuals.append({
+                "key": k,
+                "username": v.get("username", ""),
+                "coins": v.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+                "last_daily": v.get("last_daily", ""),
+            })
+    return jsonify({"ok": True, "users": individuals, "groups": groups})
+
+
+@app.route("/admin/create_group_key", methods=["POST"])
+def admin_create_group_key():
+    """Create a new group access key with N seats and daily claim limit."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = (data.get("key") or "").strip()
+    label = (data.get("label") or "Group").strip() or "Group"
+    max_seats = int(data.get("max_seats", 1))
+    max_claims = int(data.get("max_claims_per_day", 0))
+    initial_gt = float(data.get("gt", 0))
+    if not key:
+        return jsonify({"error": "No key provided"}), 400
+    if get_user(key):
+        return jsonify({"error": "Key already exists"}), 409
+    if max_seats < 1 or max_seats > 100:
+        return jsonify({"error": "max_seats must be between 1 and 100"}), 400
+    if max_claims < 0:
+        return jsonify({"error": "max_claims_per_day must be >= 0"}), 400
+    save_user(key, {
+        "type": "group",
+        "label": label,
+        "max_seats": max_seats,
+        "max_claims_per_day": max_claims,
+        "coins": {"bronze": 0, "silver": 0, "gold": initial_gt, "gt": initial_gt},
+        "last_daily": "",
+        "created": datetime.now().isoformat(),
+        "seats": {},
+    })
+    return jsonify({"ok": True, "key": key})
+
+
+@app.route("/admin/edit_group_key", methods=["POST"])
+def admin_edit_group_key():
+    """Update label / max_seats / max_claims_per_day on an existing group."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = (data.get("key") or "").strip()
+    with _users_lock:
+        users = _load_users()
+        u = users.get(key)
+        if not u or not _is_group_key(u):
+            return jsonify({"error": "Group key not found"}), 404
+        if "label" in data:
+            u["label"] = (data["label"] or "").strip() or u.get("label", "Group")
+        if "max_seats" in data:
+            ms = int(data["max_seats"])
+            if ms < 1 or ms > 100:
+                return jsonify({"error": "max_seats must be 1-100"}), 400
+            u["max_seats"] = ms
+        if "max_claims_per_day" in data:
+            mc = int(data["max_claims_per_day"])
+            if mc < 0:
+                return jsonify({"error": "max_claims_per_day must be >= 0"}), 400
+            u["max_claims_per_day"] = mc
+        _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/kick_seat", methods=["POST"])
+def admin_kick_seat():
+    """Remove a single seat from a group, freeing the slot."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = (data.get("key") or "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    name_key = _norm_name(first_name)
+    with _users_lock:
+        users = _load_users()
+        u = users.get(key)
+        if not u or not _is_group_key(u):
+            return jsonify({"error": "Group key not found"}), 404
+        if name_key in (u.get("seats") or {}):
+            del u["seats"][name_key]
+            _save_users(users)
+            return jsonify({"ok": True})
+        return jsonify({"error": "Seat not found"}), 404
 
 
 @app.route("/admin/create_user", methods=["POST"])
@@ -889,13 +1143,14 @@ def get_logs():
         return jsonify({"error": "Missing access_key"}), 400
     is_admin = (key == ADMIN_KEY)
     logs = _load_logs()
+    # Only show SUCCESSFUL claims — never failures, already-claimed, or pending.
+    logs = [l for l in logs if l.get("result") == "success"]
     if not is_admin:
-        # Non-admins only see their own logs (mask access_key)
         user = get_user(key)
         if not user:
             return jsonify({"error": "Unauthorized"}), 401
+        # Both regular users and group users see every successful claim under their key.
         logs = [l for l in logs if l.get("access_key") == key]
-    # Remove raw access_key from response for safety
     safe = []
     for l in logs:
         e = dict(l)
@@ -908,15 +1163,30 @@ def get_logs():
 def update_log():
     data   = request.get_json(force=True) or {}
     key    = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
     log_id = data.get("log_id", "").strip()
     result = data.get("result", "unknown").strip()   # 'success' | 'failed' | 'already_claimed' | 'stopped'
     detail = data.get("detail", "").strip()
     if not key or not log_id:
         return jsonify({"error": "Missing access_key or log_id"}), 400
     is_admin = (key == ADMIN_KEY)
-    if not is_admin and not get_user(key):
-        return jsonify({"error": "Unauthorized"}), 401
+    user = None
+    if not is_admin:
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
     _update_log(log_id, result, detail)
+
+    # On a successful claim, bump the seat's daily count.
+    if result == "success" and user and _is_group_key(user) and first_name:
+        with _users_lock:
+            users = _load_users()
+            u = users.get(key)
+            if u and _is_group_key(u):
+                seat = _get_seat(u, first_name)
+                if seat:
+                    _record_seat_claim(seat)
+                    _save_users(users)
     return jsonify({"ok": True})
 
 
