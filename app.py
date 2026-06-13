@@ -582,6 +582,26 @@ def run_collect(cfg, q):
         _run_brute(cfg, q)
         return
 
+    if mode == "ark":
+        emit("=" * 60)
+        emit("  ARK VOUCHERS  —  mid=" + ARK_MID)
+        emit("=" * 60)
+        emit(f"  Accounts : {len(tokens)}")
+        emit("=" * 60)
+        delay = int(cfg.get("account_delay", 3))
+        for i, token in enumerate(tokens):
+            emit(f"\n{'#'*60}")
+            emit(f"  Account {i+1}/{len(tokens)}  [...{token[-20:]}]")
+            emit(f"{'#'*60}")
+            _collect_ark(cfg, token, emit)
+            if i < len(tokens) - 1:
+                emit(f"\n  Waiting {delay}s before next account...")
+                time.sleep(delay)
+        emit("\n" + "=" * 60)
+        emit("  All done!")
+        emit("=" * 60)
+        q.put(None)
+        return
 
     emit("=" * 60)
     emit("  SHEIN COUPON COLLECTOR  —  App API Mode")
@@ -601,8 +621,6 @@ def run_collect(cfg, q):
             _collect_delivery(cfg, token, emit)
         else:
             _collect_bind(cfg, token, codes, pkg_id, emit)
-        # ── ARK campaign auto-claim (runs after every main claim) ──
-        _collect_ark(cfg, token, emit)
         if i < len(tokens) - 1:
             emit(f"\n  Waiting {delay}s before next account...")
             time.sleep(delay)
