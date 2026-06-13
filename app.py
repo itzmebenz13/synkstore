@@ -64,6 +64,42 @@ BATCH_PKG_IDS = {
     "gm0pha":     "17131185",
 }
 
+# ─── PERSISTENT STATS (survives Railway volume across deploys) ───────────────
+# Mount a Railway Volume at /data and set STATS_FILE=/data/stats_total.json
+# to persist across redeployments. Falls back to local file otherwise.
+STATS_FILE  = os.environ.get("STATS_FILE",  "stats_total.json")
+_stats_lock = threading.Lock()
+
+
+def _load_stats_unlocked():
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"total_claims": 0, "last_updated": ""}
+
+
+def _save_stats_unlocked(s):
+    with open(STATS_FILE, "w") as f:
+        json.dump(s, f, indent=2)
+
+
+def _increment_stats(n=1):
+    """Increment claim counter atomically."""
+    with _stats_lock:
+        s = _load_stats_unlocked()
+        s["total_claims"] = int(s.get("total_claims", 0)) + n
+        s["last_updated"] = datetime.now().isoformat()
+        _save_stats_unlocked(s)
+
+
+def _get_stats():
+    with _stats_lock:
+        return _load_stats_unlocked()
+
+
 # ─── USER DATABASE (file-backed JSON) ─────────────────────────────────────────
 USERS_FILE       = os.environ.get("USERS_FILE",      "users.json")
 DAILY_COIN_FILE  = os.environ.get("DAILY_COIN_FILE", "daily_coins.json")
@@ -659,7 +695,7 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
             emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
             return
         if top_code == str(ERR_ALREADY_CLAIMED):
-            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+            emit(f"  \u26a0\ufe0f  ALREADY CLAIMED [501405] \u2014 {', '.join(codes)}")
         elif success_list:
             emit(f"  \u2705 CLAIMED! codes={', '.join(success_list)}")
         elif result_list:
@@ -672,14 +708,14 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
                 elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
                 else: other_c.append(f"{cv}[{ec}]")
             if claimed_c: emit(f"  \u2705 CLAIMED! {claimed_c}")
-            for code in conflict_c: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+            if conflict_c: emit(f"  \u26a0\ufe0f  ALREADY CLAIMED [501405] \u2014 {', '.join(conflict_c)}")
             if other_c: emit(f"  \u274c FAILED \u2192 {other_c}")
         elif fail_list:
             emit(f"  \u274c FAILED {fail_list}")
         elif top_code not in ("0","200",""):
             emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
         elif top_code in ("0","200"):
-            emit(f"  \u2753 Ambiguous \u2014 code={top_code}, no detail returned. Codes may already be owned.")
+            emit(f"  \u2753 Ambiguous \u2014 code={top_code}, no detail from SHEIN.")
         else:
             emit(f"  \u2753 Ambiguous response \u2014 code={top_code} msg={top_msg[:60]}")
     except requests.exceptions.Timeout:
@@ -830,9 +866,9 @@ def _collect_ark(cfg, token, emit):
 
         # ── Case 2: Already claimed (COUPON_EXCLUSIVE) ──────────────────────
         elif no_reason == "COUPON_EXCLUSIVE" or recv_coupon:
-            codes = [c.get("couponCode", "?") for c in recv_coupon] if recv_coupon else []
-            emit(f"  \u26a0\ufe0f  ARK: Already claimed"
-                 + (f" — {', '.join(codes)}" if codes else ""))
+            ark_codes = [c.get("couponCode", "?") for c in recv_coupon] if recv_coupon else []
+            emit(f"  \u26a0\ufe0f  ALREADY CLAIMED [COUPON_EXCLUSIVE]"
+                 + (f" — {', '.join(ark_codes)}" if ark_codes else " — ARK campaign"))
 
         # ── Case 3: Risk check blocked (1004) ────────────────────────────────
         elif risk_code and str(risk_code) not in ("0", "1002"):
@@ -979,6 +1015,20 @@ def mainscript():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+@app.route("/stats", methods=["GET"])
+def get_stats_endpoint():
+    """Public stats endpoint — returns cumulative claim count and income estimate."""
+    s = _get_stats()
+    total = int(s.get("total_claims", 0))
+    return jsonify({
+        "ok": True,
+        "total_claims": total,
+        "min_income": total * 700,
+        "max_income": total * 750,
+        "last_updated": s.get("last_updated", ""),
+    })
 
 
 @app.route("/user/login", methods=["POST"])
@@ -1546,6 +1596,10 @@ def update_log():
         if not user:
             return jsonify({"error": "Unauthorized"}), 401
     _update_log(log_id, result, detail)
+
+    # Persist the success to the long-running stats counter
+    if result == "success":
+        _increment_stats(1)
 
     # On a successful claim, bump the seat's daily count.
     if result == "success" and user and _is_group_key(user) and first_name:
