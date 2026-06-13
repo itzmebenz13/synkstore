@@ -50,8 +50,8 @@ VALID_BATCH_CODES = {
     "ph0313 4vc": ["ph0313n3",  "ph0313n4",  "ph0313n5",  "ph0313n6"],
     #           ── ph031381 (81%): 4 codes ──
     "ph031381":   ["ph0313n5", "ph0313n10", "ph0313n15", "ph0313n19"],
-    #           ── gm0pha: 4 codes ──
-    "gm0pha":     ["gm0pha11", "gm0pha12",  "gm0pha13",  "gm0pha14"],
+    #           ── gm0pha: one "11" code per group (all same PHP60 value) ──
+    "gm0pha":     ["gm0pha11", "gm0phi11", "gm365phi11", "gm365pha11"],
 }
 
 # ─── PACKAGE IDs PER BATCH ────────────────────────────────────────────────────
@@ -424,6 +424,15 @@ def _record_seat_claim(seat):
 # ─── SHEIN API CONSTANTS ──────────────────────────────────────────────────────
 COUPON_URL   = "https://api-service.shein.com/promotion/coupon/bind_coupon"
 DELIVERY_URL = "https://api-shein.shein.com/deliveryapi/delivery-material/material_list"
+ARK_URL      = "https://api-shein.shein.com/ark/11504"
+ARK_MID      = "4142402"   # material ID behind the ark/11504 QR-code campaign
+ARK_PKG_ID   = "17131185"  # coupon package ID for the ark/11504 campaign
+ARK_CODES    = [            # one "11" code per group (highest-value tier)
+    "gm0pha11",
+    "gm0phi11",
+    "gm365phi11",
+    "gm365pha11",
+]
 LANGUAGE     = "en"
 
 ERR_INVALID_PKG     = 1000
@@ -485,6 +494,72 @@ def build_delivery_headers(cfg, token):
     }
 
 
+def build_ark_get_headers(cfg, token):
+    """Headers that mimic the SHEIN app WebView opening the ark/11504 QR-code URL.
+    The server reads these headers to build the sessionID cookie it returns,
+    which is then required by the delivery POST that follows."""
+    claim_country  = cfg.get("claim_country", "PH")
+    currency_map   = {"PH": "PHP", "MY": "MYR", "TH": "THB"}
+    claim_currency = currency_map.get(claim_country, "PHP")
+    gm_site        = cfg.get("gm_site", "andshph")
+    gm_device      = cfg.get("gm_device_id", cfg.get("device_id", ""))
+    av             = cfg.get("app_version", "11.2.3")
+    di             = cfg.get("device_info", "")
+    sm             = cfg.get("smdevice_id", "")
+    newuid         = cfg.get("sortuid", "")
+    return {
+        "user-agent": (
+            f"Mozilla/5.0 (Linux; Android 14; {di} Build/UKQ1; wv) "
+            f"AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 "
+            f"Chrome/118.0.0.0 Mobile Safari/537.36 "
+            f"SheinApp(shein/{av}) TTID/shein Wing/1.0.1"
+        ),
+        "accept": (
+            "text/html,application/xhtml+xml,application/xml;"
+            "q=0.9,image/avif,image/webp,image/apng,*/*;"
+            "q=0.8,application/signed-exchange;v=b3;q=0.7"
+        ),
+        "upgrade-insecure-requests": "1",
+        "sec-ch-ua": '"Android WebView";v="118", "Chromium";v="118", "Not)A;Brand";v="24"',
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": '"Android"',
+        # ── App / auth headers (mirror of what the app sends) ──
+        "smdeviceid":          sm,
+        "siteuid":             "android",
+        "paltform-app-siteuid": gm_site,
+        "appcountry":          cfg.get("appcountry", claim_country),
+        "language":            LANGUAGE,
+        "usercountry":         claim_country,
+        "localcountry":        claim_country,
+        "newuid":              newuid,
+        "platform":            "app-h5",
+        "appname":             "shein app",
+        "apptype":             "shein",
+        "login-state":         "1",
+        "currency":            claim_currency,
+        "appcurrency":         claim_currency,
+        "ugid":                cfg.get("ugid", ""),
+        "deviceid":            gm_device,
+        "device":              f"{di} Android14",
+        "devtype":             "Android",
+        "applanguage":         LANGUAGE,
+        "appversion":          av,
+        "armortoken":          cfg.get("armor_token", ""),
+        "token":               token,
+        "servertime":          str(int(time.time())),
+        "timezonestring":      "Asia/Manila",
+        "iscdn":               "1",
+        "x-requested-with":    "com.zzkko",
+        # ── Fetch metadata ──
+        "sec-fetch-site":    "none",
+        "sec-fetch-mode":    "navigate",
+        "sec-fetch-user":    "?1",
+        "sec-fetch-dest":    "document",
+        "accept-encoding":   "gzip, deflate, br",
+        "accept-language":   "en-PH,en-US;q=0.9,en;q=0.8",
+    }
+
+
 def is_login_error(top_code, top_msg):
     if top_code in ERR_LOGIN_CODES:
         return True
@@ -505,6 +580,30 @@ def run_collect(cfg, q):
 
     if mode == "brute":
         _run_brute(cfg, q)
+        return
+
+    if mode == "ark":
+        emit("=" * 60)
+        emit("  ARK CLAIM  —  ark/11504  ({} codes)".format(len(ARK_CODES)))
+        emit("=" * 60)
+        emit(f"  Accounts : {len(tokens)}")
+        emit(f"  Codes    : {', '.join(ARK_CODES)}")
+        emit(f"  Package  : {ARK_PKG_ID}")
+        emit(f"  Country  : {cfg.get('claim_country','PH')}")
+        emit("=" * 60)
+        delay = int(cfg.get("account_delay", 3))
+        for i, token in enumerate(tokens):
+            emit(f"\n{'#'*60}")
+            emit(f"  Account {i+1}/{len(tokens)}  [...{token[-20:]}]")
+            emit(f"{'#'*60}")
+            _collect_ark(cfg, token, emit)
+            if i < len(tokens) - 1:
+                emit(f"\n  Waiting {delay}s before next account...")
+                time.sleep(delay)
+        emit("\n" + "=" * 60)
+        emit("  All done!")
+        emit("=" * 60)
+        q.put(None)
         return
 
     emit("=" * 60)
@@ -655,6 +754,102 @@ def _collect_delivery(cfg, token, emit):
         emit(f"  \u274c Error: {str(e)[:120]}")
     emit(f"  {'─'*54}")
 
+
+
+def _collect_ark(cfg, token, emit):
+    """Replicate the manual QR-code scan of ark/11504, then claim the four
+    specific '11' codes (one per group, all PHP 60) via bind_coupon.
+
+    Flow:
+      1) GET  https://api-shein.shein.com/ark/11504  — establishes session,
+         mirrors what the app WebView does when you scan the QR code.
+      2) POST promotion/coupon/bind_coupon  — explicitly binds all 4 ARK codes
+         (gm0pha11, gm0phi11, gm365phi11, gm365pha11) against pkg 17131185.
+    """
+    emit(f"\n  {chr(0x2550)*54}")
+    emit(f"  ARK QR   : Claiming ark/11504  (pkg={ARK_PKG_ID})")
+    emit(f"  ARK Codes: {', '.join(ARK_CODES)}")
+    emit(f"  {chr(0x2550)*54}")
+
+    # ── Step 1: GET the ark page (mirrors QR scan) ──
+    gm_site       = cfg.get("gm_site", "andshph")
+    claim_country = cfg.get("claim_country", "PH")
+    session = requests.Session()
+    try:
+        ark_params = {
+            "app": "shein", "device_type": "android",
+            "language": LANGUAGE, "site_uid": gm_site, "region": claim_country,
+        }
+        r_get = session.get(
+            ARK_URL,
+            headers=build_ark_get_headers(cfg, token),
+            params=ark_params,
+            timeout=15, verify=False, allow_redirects=True,
+        )
+        sid = session.cookies.get("sessionID", "")
+        if sid:
+            emit(f"  \u2713 ARK page loaded (HTTP {r_get.status_code}) \u2014 sessionID cookie set")
+        else:
+            emit(f"  \u26a0\ufe0f  ARK page loaded (HTTP {r_get.status_code}) \u2014 no sessionID; proceeding")
+    except Exception as e:
+        emit(f"  \u26a0\ufe0f  ARK page GET failed: {str(e)[:80]} \u2014 proceeding")
+
+    # ── Step 2: bind_coupon with all 4 ARK codes ──
+    headers = build_headers(cfg, token)
+    payload = {
+        "couponPackages": [{"couponPackageId": ARK_PKG_ID, "couponCodes": ",".join(ARK_CODES)}],
+        "scene": "home", "idempotentCode": str(uuid.uuid4()),
+    }
+    emit(f"  {chr(0x2500)*54}")
+    try:
+        r = requests.post(COUPON_URL, json=payload, headers=headers, timeout=15, verify=False)
+        try:    raw = r.json()
+        except: raw = {}
+        data         = raw if isinstance(raw, dict) else {}
+        top_code     = str(data.get("code") or data.get("ret_msg_code") or "")
+        top_msg      = str(data.get("msg")  or data.get("tips") or "")
+        info         = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
+        success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
+        fail_list    = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
+        result_list  = info.get("bindResult") or []
+        result_list  = result_list if isinstance(result_list, list) else []
+
+        if is_login_error(top_code, top_msg):
+            emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
+        elif top_code == str(ERR_ALREADY_CLAIMED):
+            for code in ARK_CODES:
+                emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+        elif success_list:
+            emit(f"  \u2705 CLAIMED! {' '.join(success_list)}")
+        elif result_list:
+            claimed_c, conflict_c, other_c = [], [], []
+            for item in result_list:
+                if not isinstance(item, dict): continue
+                cv = str(item.get("couponCode") or "?")
+                ec = str(item.get("errorCode") or item.get("code") or "")
+                if ec in ("0", "200", ""):   claimed_c.append(cv)
+                elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
+                else: other_c.append(f"{cv}[{ec}]")
+            if claimed_c:
+                emit(f"  \u2705 CLAIMED! [{', '.join(claimed_c)}]")
+            for code in conflict_c:
+                emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+            if other_c:
+                emit(f"  \u274c FAILED \u2192 {other_c}")
+        elif fail_list:
+            emit(f"  \u274c FAILED {fail_list}")
+        elif top_code not in ("0", "200", ""):
+            emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
+        elif top_code in ("0", "200"):
+            for code in ARK_CODES:
+                emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
+        else:
+            emit(f"  \u2753 Ambiguous \u2014 code={top_code} msg={top_msg[:60]}")
+    except requests.exceptions.Timeout:
+        emit("  \u274c ARK bind timed out")
+    except Exception as e:
+        emit(f"  \u274c ARK bind error: {str(e)[:120]}")
+    emit(f"  {chr(0x2500)*54}")
 
 def _run_brute(cfg, q):
     tokens = cfg.get("tokens", [])
