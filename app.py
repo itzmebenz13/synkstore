@@ -782,6 +782,16 @@ def _collect_ark(cfg, token, emit):
         code    = str(data.get("code", ""))
         top_msg = str(data.get("msg", "Unknown"))
 
+        # ── Emit key response fields for debugging ──────────────────
+        try:
+            ci = (data.get("info") or {}).get("coupon_info") or {}
+            emit(f"  [DEBUG] code={code} risk={ci.get('risk_result_code')} "
+                 f"no_reason={ci.get('no_coupon_reason')} "
+                 f"recv={len(ci.get('received_coupon') or [])} "
+                 f"bind_res={'yes' if ci.get('bind_result') else 'null'}")
+        except Exception as _de:
+            emit(f"  [DEBUG] parse err: {_de}")
+
         if code not in ("0", "200"):
             if is_login_error(code, top_msg):
                 emit(f"  \U0001f512 ARK: NOT LOGGED IN (code={code})")
