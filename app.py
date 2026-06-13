@@ -741,11 +741,11 @@ def _collect_ark(cfg, token, emit):
     ARK errors use ⚠ (warn) not ❌ (err) so they never cause
     "Claim Failed" in the modal when the main claim already succeeded.
     """
-    gm_site        = cfg.get("gm_site", "andshph")
-    claim_country  = cfg.get("claim_country", "PH")
+    gm_site        = cfg.get("gm_site") or "andshph"
+    claim_country  = cfg.get("claim_country") or "PH"
     claim_currency = {"PH": "PHP", "MY": "MYR", "TH": "THB"}.get(claim_country, "PHP")
-    av             = cfg.get("app_version", "11.2.3")
-    gm_device      = cfg.get("gm_device_id", cfg.get("device_id", ""))
+    av             = cfg.get("app_version") or "11.2.3"
+    gm_device      = cfg.get("gm_device_id") or cfg.get("device_id") or ""
 
     emit(f"\n  {chr(0x2550)*54}")
     emit(f"  ARK     : Claiming mid={ARK_MID} (gm0 campaign)")
@@ -782,15 +782,16 @@ def _collect_ark(cfg, token, emit):
         code    = str(data.get("code", ""))
         top_msg = str(data.get("msg", "Unknown"))
 
-        # ── Emit key response fields for debugging ──────────────────
+        # ── Emit key response fields — visible as warn item in modal ──
         try:
             ci = (data.get("info") or {}).get("coupon_info") or {}
-            emit(f"  [DEBUG] code={code} risk={ci.get('risk_result_code')} "
-                 f"no_reason={ci.get('no_coupon_reason')} "
+            emit(f"  \u26a0\ufe0f  ARK debug: code={code} "
+                 f"risk={ci.get('risk_result_code')} "
+                 f"reason={ci.get('no_coupon_reason')} "
                  f"recv={len(ci.get('received_coupon') or [])} "
-                 f"bind_res={'yes' if ci.get('bind_result') else 'null'}")
+                 f"bind={'YES' if ci.get('bind_result') else 'null'}")
         except Exception as _de:
-            emit(f"  [DEBUG] parse err: {_de}")
+            emit(f"  \u26a0\ufe0f  ARK debug err: {_de}")
 
         if code not in ("0", "200"):
             if is_login_error(code, top_msg):
