@@ -464,4 +464,1138 @@ def build_headers(cfg, token):
         "appcurrency": claim_currency,
         "user-agent": f"Shein {cfg.get('app_version','11.2.3')} Android 14 {cfg.get('device_info','')} {cfg.get('appcountry','GB')} {LANGUAGE} {cfg.get('sortuid','')}",
         "x-gw-auth": cfg.get("gw_auth", ""), "content-type": "application/json; charset=utf-8",
-   
+    }
+
+
+def build_delivery_headers(cfg, token):
+    claim_country  = cfg.get("claim_country", "PH")
+    currency_map   = {"PH": "PHP", "MY": "MYR", "TH": "THB"}
+    claim_currency = currency_map.get(claim_country, "PHP")
+    gm_device = cfg.get("gm_device_id", cfg.get("device_id", ""))
+    gm_site   = cfg.get("gm_site", "andshph")
+    av        = cfg.get("app_version", "11.2.3")
+    di        = cfg.get("device_info", "")
+    return {
+        "host": "api-shein.shein.com", "content-type": "application/json",
+        "accept": "application/json, text/plain, */*", "appname": "shein app",
+        "apptype": "shein", "brand": "shein", "channel": "h5",
+        "siteuid": gm_site, "localcountry": claim_country,
+        "currency": claim_currency, "appcurrency": claim_currency,
+        "applanguage": LANGUAGE, "language": LANGUAGE, "timezone": "GMT+8",
+        "appversion": av, "deviceid": gm_device,
+        "smdeviceid": cfg.get("smdevice_id", ""), "ugid": cfg.get("ugid", ""),
+        "armortoken": cfg.get("armor_token", ""), "x-gw-auth": cfg.get("gw_auth", ""),
+        "token": token, "x-request-by": "bridgeX", "route-bff": "TRUE",
+        "user-agent": f"Mozilla/5.0 (Linux; Android 14; {di} Build/UKQ1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/118.0.0.0 Mobile Safari/537.36 SheinApp(shein/{av}) TTID/shein Wing/1.0.1",
+        "referer": f"https://api-shein.shein.com/ark/11504?app=shein&device_type=android&language=en&site_uid={gm_site}&region=PH",
+        "origin": "https://api-shein.shein.com", "sec-fetch-site": "same-origin",
+        "sec-fetch-mode": "cors", "sec-fetch-dest": "empty",
+        "accept-encoding": "gzip, deflate, br", "accept-language": "en-PH,en-US;q=0.9,en;q=0.8",
+    }
+
+
+def build_ark_get_headers(cfg, token):
+    """Headers that mimic the SHEIN app WebView opening the ark/11504 QR-code URL.
+    The server reads these headers to build the sessionID cookie it returns,
+    which is then required by the delivery POST that follows."""
+    claim_country  = cfg.get("claim_country", "PH")
+    currency_map   = {"PH": "PHP", "MY": "MYR", "TH": "THB"}
+    claim_currency = currency_map.get(claim_country, "PHP")
+    gm_site        = cfg.get("gm_site", "andshph")
+    gm_device      = cfg.get("gm_device_id", cfg.get("device_id", ""))
+    av             = cfg.get("app_version", "11.2.3")
+    di             = cfg.get("device_info", "")
+    sm             = cfg.get("smdevice_id", "")
+    newuid         = cfg.get("sortuid", "")
+    return {
+        "user-agent": (
+            f"Mozilla/5.0 (Linux; Android 14; {di} Build/UKQ1; wv) "
+            f"AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 "
+            f"Chrome/118.0.0.0 Mobile Safari/537.36 "
+            f"SheinApp(shein/{av}) TTID/shein Wing/1.0.1"
+        ),
+        "accept": (
+            "text/html,application/xhtml+xml,application/xml;"
+            "q=0.9,image/avif,image/webp,image/apng,*/*;"
+            "q=0.8,application/signed-exchange;v=b3;q=0.7"
+        ),
+        "upgrade-insecure-requests": "1",
+        "sec-ch-ua": '"Android WebView";v="118", "Chromium";v="118", "Not)A;Brand";v="24"',
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": '"Android"',
+        # ── App / auth headers (mirror of what the app sends) ──
+        "smdeviceid":          sm,
+        "siteuid":             "android",
+        "paltform-app-siteuid": gm_site,
+        "appcountry":          cfg.get("appcountry", claim_country),
+        "language":            LANGUAGE,
+        "usercountry":         claim_country,
+        "localcountry":        claim_country,
+        "newuid":              newuid,
+        "platform":            "app-h5",
+        "appname":             "shein app",
+        "apptype":             "shein",
+        "login-state":         "1",
+        "currency":            claim_currency,
+        "appcurrency":         claim_currency,
+        "ugid":                cfg.get("ugid", ""),
+        "deviceid":            gm_device,
+        "device":              f"{di} Android14",
+        "devtype":             "Android",
+        "applanguage":         LANGUAGE,
+        "appversion":          av,
+        "armortoken":          cfg.get("armor_token", ""),
+        "token":               token,
+        "servertime":          str(int(time.time())),
+        "timezonestring":      "Asia/Manila",
+        "iscdn":               "1",
+        "x-requested-with":    "com.zzkko",
+        # ── Fetch metadata ──
+        "sec-fetch-site":    "none",
+        "sec-fetch-mode":    "navigate",
+        "sec-fetch-user":    "?1",
+        "sec-fetch-dest":    "document",
+        "accept-encoding":   "gzip, deflate, br",
+        "accept-language":   "en-PH,en-US;q=0.9,en;q=0.8",
+    }
+
+
+def is_login_error(top_code, top_msg):
+    if top_code in ERR_LOGIN_CODES:
+        return True
+    return any(kw in top_msg.lower() for kw in ERR_LOGIN_KEYWORDS)
+
+
+def sse(msg):
+    return f"data: {msg}\n\n"
+
+
+def run_collect(cfg, q):
+    tokens = cfg.get("tokens", [])
+    codes  = cfg.get("codes", [])
+    pkg_id = cfg.get("pkg_id", "")
+    mode   = cfg.get("mode", "bind")
+
+    def emit(msg): q.put(msg)
+
+    if mode == "brute":
+        _run_brute(cfg, q)
+        return
+
+
+    emit("=" * 60)
+    emit("  SHEIN COUPON COLLECTOR  —  App API Mode")
+    emit("=" * 60)
+    emit(f"  Accounts : {len(tokens)}")
+    emit(f"  Codes    : {len(codes)}")
+    emit(f"  Package  : {pkg_id}")
+    emit(f"  Country  : {cfg.get('claim_country','PH')}")
+    emit("=" * 60)
+
+    delay = int(cfg.get("account_delay", 3))
+    for i, token in enumerate(tokens):
+        emit(f"\n{'#'*60}")
+        emit(f"  Account {i+1}/{len(tokens)}  [...{token[-20:]}]")
+        emit(f"{'#'*60}")
+        if mode == "delivery":
+            _collect_delivery(cfg, token, emit)
+        else:
+            _collect_bind(cfg, token, codes, pkg_id, emit)
+        # ── ARK campaign auto-claim (runs after every main claim) ──
+        _collect_ark(cfg, token, emit)
+        if i < len(tokens) - 1:
+            emit(f"\n  Waiting {delay}s before next account...")
+            time.sleep(delay)
+
+    emit("\n" + "=" * 60)
+    emit("  All done!")
+    emit("=" * 60)
+    q.put(None)
+
+
+def _collect_bind(cfg, token, codes, pkg_id, emit):
+    headers = build_headers(cfg, token)
+    payload = {
+        "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
+        "scene": "home", "idempotentCode": str(uuid.uuid4()),
+    }
+    emit(f"\n  {'─'*54}")
+    emit(f"  Package  : {pkg_id}")
+    emit(f"  Country  : {cfg.get('claim_country','PH')}")
+    emit(f"  Claiming {len(codes)} code(s): {', '.join(codes)}")
+    emit(f"  {'─'*54}")
+    try:
+        r = requests.post(COUPON_URL, json=payload, headers=headers, timeout=15, verify=False)
+        try: raw = r.json()
+        except: raw = {}
+        data = raw if isinstance(raw, dict) else {}
+        top_code = str(data.get("code") or data.get("ret_msg_code") or "")
+        top_msg  = str(data.get("msg")  or data.get("tips") or "")
+        info     = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
+        success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
+        fail_list    = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
+        result_list  = info.get("bindResult") or []
+        result_list  = result_list if isinstance(result_list, list) else []
+
+        if is_login_error(top_code, top_msg):
+            emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
+            return
+        if top_code == str(ERR_ALREADY_CLAIMED):
+            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+        elif success_list:
+            emit(f"  \u2705 CLAIMED! codes={', '.join(success_list)}")
+        elif result_list:
+            claimed_c, conflict_c, other_c = [], [], []
+            for item in result_list:
+                if not isinstance(item, dict): continue
+                cv = str(item.get("couponCode") or "?")
+                ec = str(item.get("errorCode") or item.get("code") or "")
+                if ec in ("0","200",""): claimed_c.append(cv)
+                elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
+                else: other_c.append(f"{cv}[{ec}]")
+            if claimed_c: emit(f"  \u2705 CLAIMED! {claimed_c}")
+            for code in conflict_c: emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
+            if other_c: emit(f"  \u274c FAILED \u2192 {other_c}")
+        elif fail_list:
+            emit(f"  \u274c FAILED {fail_list}")
+        elif top_code not in ("0","200",""):
+            emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
+        elif top_code in ("0","200"):
+            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
+        else:
+            emit(f"  \u2753 Ambiguous response \u2014 code={top_code} msg={top_msg[:60]}")
+    except requests.exceptions.Timeout:
+        emit("  \u274c Request timed out")
+    except Exception as e:
+        emit(f"  \u274c Error: {str(e)[:120]}")
+    emit(f"  {'─'*54}")
+
+
+def _collect_delivery(cfg, token, emit):
+    gm_site = cfg.get("gm_site", "andshph")
+    gm_mid  = cfg.get("gm_mid", "4142402")
+    claim_country  = cfg.get("claim_country", "PH")
+    claim_currency = {"PH":"PHP","MY":"MYR","TH":"THB"}.get(claim_country, "PHP")
+    av        = cfg.get("app_version", "11.2.3")
+    gm_device = cfg.get("gm_device_id", cfg.get("device_id", ""))
+
+    headers = build_delivery_headers(cfg, token)
+    payload = {
+        "client_info": {"app_version": av, "client_id": 100, "currency": claim_currency,
+                        "dev_id": gm_device, "language": LANGUAGE, "site_uid": gm_site,
+                        "token": token, "brand": "shein"},
+        "material_request_info": {
+            "mid": gm_mid,
+            "param_map": {"coupon_common_req": {"coupon_type": 2, "coupon_sequence": 3}, "auto_bind": True},
+            "data_type": "SwiftCouponOnePlugin", "data_scene": 0,
+            "data_scene_flag": "0_SwiftCouponOnePlugin"},
+        "ext_map": {},
+    }
+    emit(f"\n  {'─'*54}")
+    emit(f"  Mode     : DELIVERY API (auto_bind)")
+    emit(f"  MID      : {gm_mid}")
+    emit(f"  Country  : {claim_country} ({claim_currency})")
+    emit(f"  {'─'*54}")
+    try:
+        r = requests.post(DELIVERY_URL, json=payload, headers=headers,
+                          params={"sw_site": gm_site, "sw_lang": LANGUAGE}, timeout=15, verify=False)
+        try: data = r.json()
+        except: data = {}
+        code = str(data.get("code", ""))
+        if code not in ("0","200"):
+            top_msg_d = str(data.get("msg","Unknown"))
+            if is_login_error(code, top_msg_d):
+                emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={code})")
+            else:
+                emit(f"  \u274c API error: {top_msg_d}")
+            return
+        info         = data.get("info") or {}
+        coupon_info  = info.get("coupon_info") or {}
+        bind_result  = coupon_info.get("bind_result") or {}
+        bind_data    = bind_result.get("bindResult") or {}
+        success_list = bind_data.get("successList") or []
+        fail_list    = bind_data.get("failList") or []
+        hit_coupon   = coupon_info.get("hit_coupon") or []
+        recv_coupon  = coupon_info.get("received_coupon") or []
+        if success_list:
+            emit(f"  \u2705 {len(success_list)} claimed, {len(fail_list)} failed")
+            for c in success_list:
+                emit(f"     \u2713 {c.get('couponCode','?')} (id:{c.get('couponId','?')})")
+        elif hit_coupon:
+            emit(f"  \u26a0\ufe0f  Already claimed \u2014 {len(hit_coupon)} coupon(s) already in account")
+        elif recv_coupon:
+            emit(f"  \u2705 {len(recv_coupon)} already received")
+        else:
+            emit(f"  \u2753 No bind result \u2014 bindCode={bind_result.get('bindCode','')} detail={info.get('detail_msg') or data.get('msg') or 'No result'}")
+    except requests.exceptions.Timeout:
+        emit("  \u274c Request timed out")
+    except Exception as e:
+        emit(f"  \u274c Error: {str(e)[:120]}")
+    emit(f"  {'─'*54}")
+
+
+
+def _collect_ark(cfg, token, emit):
+    """Claim ark/11504 delivery campaign — auto_bind + SwiftCouponOnePlugin.
+
+    ARK errors use ⚠ (warn) not ❌ (err) so they never cause
+    "Claim Failed" in the modal when the main claim already succeeded.
+    """
+    gm_site        = cfg.get("gm_site", "andshph")
+    claim_country  = cfg.get("claim_country", "PH")
+    claim_currency = {"PH": "PHP", "MY": "MYR", "TH": "THB"}.get(claim_country, "PHP")
+    av             = cfg.get("app_version", "11.2.3")
+    gm_device      = cfg.get("gm_device_id", cfg.get("device_id", ""))
+
+    emit(f"\n  {chr(0x2550)*54}")
+    emit(f"  ARK     : Claiming mid={ARK_MID} (gm0 campaign)")
+    emit(f"  {chr(0x2550)*54}")
+
+    headers = build_delivery_headers(cfg, token)
+    payload = {
+        "client_info": {
+            "app_version": av, "client_id": 100, "currency": claim_currency,
+            "dev_id": gm_device, "language": LANGUAGE, "site_uid": gm_site,
+            "token": token, "brand": "shein",
+        },
+        "material_request_info": {
+            "mid": ARK_MID,
+            "param_map": {
+                "coupon_common_req": {"coupon_type": 2, "coupon_sequence": 3},
+                "auto_bind": True,
+            },
+            "data_type":       "SwiftCouponOnePlugin",
+            "data_scene":      0,
+            "data_scene_flag": "0_SwiftCouponOnePlugin",
+        },
+        "ext_map": {},
+    }
+    try:
+        r = requests.post(
+            DELIVERY_URL, json=payload, headers=headers,
+            params={"sw_site": gm_site, "sw_lang": LANGUAGE},
+            timeout=15, verify=False,
+        )
+        try:    data = r.json()
+        except: data = {}
+
+        code    = str(data.get("code", ""))
+        top_msg = str(data.get("msg", "Unknown"))
+
+        if code not in ("0", "200"):
+            if is_login_error(code, top_msg):
+                emit(f"  \U0001f512 ARK: NOT LOGGED IN (code={code})")
+            else:
+                # ⚠ not ❌ — ARK API error should not cause "Claim Failed"
+                emit(f"  \u26a0\ufe0f  ARK: API error [{code}] — {top_msg[:60]}")
+            emit(f"  {chr(0x2500)*54}")
+            return
+
+        info         = data.get("info") or {}
+        coupon_info  = info.get("coupon_info") or {}
+        no_reason    = coupon_info.get("no_coupon_reason") or ""
+        risk_code    = coupon_info.get("risk_result_code")
+        recv_coupon  = coupon_info.get("received_coupon") or []
+        bind_result  = coupon_info.get("bind_result") or {}
+        bind_data    = (bind_result.get("bindResult") or {}) if isinstance(bind_result, dict) else {}
+        success_list = bind_data.get("successList") or []
+        fail_list    = bind_data.get("failList")    or []
+
+        # ── Case 1: Successful fresh claim ──────────────────────────────────
+        if success_list:
+            codes = [c.get("couponCode", "?") for c in success_list]
+            emit(f"  \u2705 CLAIMED! [{', '.join(codes)}]")
+            for code_name in codes:
+                emit(f"     \u2713 {code_name}")
+            if fail_list:
+                emit(f"  \u26a0\ufe0f  ARK fail: {[c.get('couponCode','?') for c in fail_list]}")
+
+        # ── Case 2: Already claimed (COUPON_EXCLUSIVE) ──────────────────────
+        elif no_reason == "COUPON_EXCLUSIVE" or recv_coupon:
+            codes = [c.get("couponCode", "?") for c in recv_coupon] if recv_coupon else []
+            emit(f"  \u26a0\ufe0f  ARK: Already claimed"
+                 + (f" — {', '.join(codes)}" if codes else ""))
+
+        # ── Case 3: Risk check blocked (1004) ────────────────────────────────
+        elif risk_code and str(risk_code) not in ("0", "1002"):
+            # ⚠ not ❌ — risk block is informational, not a "failure"
+            emit(f"  \u26a0\ufe0f  ARK: Risk blocked [risk_code={risk_code}]")
+
+        # ── Case 4: Other / no result ─────────────────────────────────────────
+        elif no_reason:
+            emit(f"  \u26a0\ufe0f  ARK: {no_reason}")
+        else:
+            emit(f"  \u26a0\ufe0f  ARK: No result — {top_msg[:60]}")
+
+    except requests.exceptions.Timeout:
+        # ⚠ not ❌ — timeout is non-fatal for the overall run
+        emit("  \u26a0\ufe0f  ARK: Request timed out")
+    except Exception as e:
+        emit(f"  \u26a0\ufe0f  ARK: {str(e)[:120]}")
+    emit(f"  {chr(0x2500)*54}")
+
+
+def _run_brute(cfg, q):
+    tokens = cfg.get("tokens", [])
+    codes  = cfg.get("codes", [])
+    start  = int(cfg.get("brute_start", 17130000))
+    end    = int(cfg.get("brute_end",   17140000))
+    threads     = min(int(cfg.get("brute_threads", 10)), 30)
+    max_claims  = int(cfg.get("brute_max_claims", 1))
+    claim_country = cfg.get("claim_country", "PH")
+    claim_currency = {"PH":"PHP","MY":"MYR","TH":"THB"}.get(claim_country, "PHP")
+    token = tokens[0] if tokens else ""
+
+    print_lock  = threading.Lock()
+    claims_lock = threading.Lock()
+    done_lock   = threading.Lock()
+    stop_event  = threading.Event()
+    claims_total  = [0]
+    done_count    = [0]
+    already_claimed = []
+
+    def emit(msg):
+        with print_lock: q.put(msg)
+
+    pkg_range = list(range(start, end + 1))
+    total = len(pkg_range)
+    emit("=" * 64)
+    emit("  BRUTE-FORCE MODE  —  live output")
+    emit(f"  Range   : {start} \u2192 {end}  ({total} IDs)")
+    emit(f"  Threads : {threads}")
+    emit(f"  Stop at : {max_claims} claim(s)  (0 = unlimited)")
+    emit(f"  Country : {claim_country} ({claim_currency})")
+    emit(f"  Codes   : {', '.join(codes)}")
+    emit("=" * 64)
+
+    def probe(pkg_id):
+        if stop_event.is_set(): return
+        headers = build_headers(cfg, token)
+        payload = {
+            "couponPackages": [{"couponPackageId": str(pkg_id), "couponCodes": ",".join(codes)}],
+            "scene": "home", "idempotentCode": str(uuid.uuid4()),
+        }
+        with done_lock:
+            done_count[0] += 1
+            done = done_count[0]
+        pct = min(done * 100 // total, 100)
+        try:
+            r = requests.post(COUPON_URL, json=payload, headers=headers, timeout=12, verify=False)
+            try: raw = r.json()
+            except: raw = {}
+            data = raw if isinstance(raw, dict) else {}
+            top_code = str(data.get("code") or data.get("ret_msg_code") or "")
+            top_msg  = str(data.get("msg")  or data.get("tips") or "")
+            info = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
+            success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
+            pkg_code   = str(info.get("couponPackageCode") or "")
+            error_code = str(info.get("errorCode") or "")
+
+            if top_code == str(ERR_INVALID_PKG): return
+            if top_code == str(ERR_ALREADY_CLAIMED) or pkg_code == str(ERR_ALREADY_CLAIMED) or error_code == str(ERR_ALREADY_CLAIMED):
+                emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u26a0  ALREADY CLAIMED [501405]")
+                already_claimed.append(pkg_id); return
+            if success_list:
+                with claims_lock:
+                    claims_total[0] += len(success_list)
+                    total_so_far = claims_total[0]
+                    if max_claims > 0 and claims_total[0] >= max_claims: stop_event.set()
+                emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2605 CLAIMED! codes=[{', '.join(success_list)}] total={total_so_far}"); return
+            result_list = info.get("bindResult") or []
+            result_list = result_list if isinstance(result_list, list) else []
+            if result_list:
+                claimed_c, conflict_c, other_c = [], [], []
+                for item in result_list:
+                    if not isinstance(item, dict): continue
+                    cv = str(item.get("couponCode") or "?")
+                    ec = str(item.get("errorCode") or item.get("code") or "")
+                    if ec in ("0","200",""): claimed_c.append(cv)
+                    elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
+                    else: other_c.append(f"{cv}[{ec}]")
+                if claimed_c:
+                    with claims_lock:
+                        claims_total[0] += len(claimed_c)
+                        total_so_far = claims_total[0]
+                        if max_claims > 0 and claims_total[0] >= max_claims: stop_event.set()
+                    emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2605 CLAIMED! {claimed_c}")
+                if conflict_c: emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u26a0  [501405] \u2192 {conflict_c}")
+                if other_c:    emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2717 FAIL \u2192 {other_c}")
+                return
+            fail_list = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
+            if fail_list:
+                emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2717 FAILED {fail_list}"); return
+            if top_code not in ("0","200",""):
+                emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2717 ERR {top_code}: {top_msg[:50]}")
+        except requests.exceptions.Timeout:
+            emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2717 TIMEOUT")
+        except Exception as e:
+            emit(f"  [{pct:3d}%] [{done}/{total}] pkg={pkg_id} \u2717 EXC: {str(e)[:80]}")
+
+    with ThreadPoolExecutor(max_workers=threads) as exe:
+        futs = [exe.submit(probe, pkg) for pkg in pkg_range]
+        try:
+            for fut in as_completed(futs):
+                if stop_event.is_set():
+                    exe.shutdown(wait=False, cancel_futures=True); break
+        except Exception: pass
+
+    emit("=" * 64)
+    emit(f"  Done. Scanned {done_count[0]}/{total} IDs.")
+    emit(f"  Total claimed   : {claims_total[0]} coupon(s)")
+    emit(f"  Already claimed : {len(already_claimed)} package(s)")
+    for p in already_claimed: emit(f"    \u2192 {p}")
+    emit("=" * 64)
+    q.put(None)
+
+
+# ─── ROUTES ───────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    return "", 404
+
+@app.route("/mainscript.html")
+def mainscript():
+    return render_template("mainscript.html")
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
+@app.route("/user/login", methods=["POST"])
+def user_login():
+    data = request.get_json(force=True) or {}
+    key  = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    if not key:
+        return jsonify({"error": "No access key provided"}), 400
+    gemini_key = get_gemini_key()
+
+    if key == ADMIN_KEY:
+        return jsonify({"ok": True, "is_admin": True, "username": "Admin",
+                        "coins": {"bronze": 999, "silver": 999, "gold": 999},
+                        "gemini_key": gemini_key,
+                        "spin_next_in": 0})
+
+    user = get_user(key)
+    if not user:
+        return jsonify({"error": "Invalid access key"}), 401
+
+    # ── Group key path ──
+    if _is_group_key(user):
+        device_id = (data.get("device_id") or "").strip()
+
+        # If this device already holds a seat, auto-resume it (no name prompt needed).
+        existing_seat, _existing_key = _find_seat_by_device(user, device_id)
+        if existing_seat and not first_name:
+            first_name = existing_seat.get("first_name", "")
+        elif existing_seat and _norm_name(first_name) != _norm_name(existing_seat.get("first_name", "")):
+            # Different name attempt from a device that's already seated.
+            return jsonify({
+                "ok": False,
+                "code": "device_seated",
+                "seated_as": existing_seat.get("first_name", ""),
+                "group_label": user.get("label", "Group"),
+                "error": "This device already holds the \"" + existing_seat.get("first_name", "") + "\" seat. Continue with that name.",
+            }), 403
+
+        # No first_name yet — ask for it (and ship the whitelist so the page can show options)
+        if not first_name:
+            return jsonify({
+                "ok": False,
+                "requires_name": True,
+                "group_label": user.get("label", "Group"),
+                "seats_used": len((user.get("seats") or {})),
+                "max_seats": int(user.get("max_seats", 0)),
+                "allowed_names": get_whitelist(),
+            })
+
+        # Try to seat the user
+        with _users_lock:
+            users = _load_users()
+            u = users.get(key)
+            if not u or not _is_group_key(u):
+                return jsonify({"error": "Invalid access key"}), 401
+            seat, err = _add_or_get_seat(u, first_name, device_id)
+            if err and err.get("code") == SEAT_ERR_SEAT_FULL:
+                return jsonify({
+                    "ok": False,
+                    "seat_full": True,
+                    "group_label": u.get("label", "Group"),
+                    "seats_used": len(u.get("seats", {})),
+                    "max_seats": int(u.get("max_seats", 0)),
+                })
+            if err:
+                resp = {"ok": False, "code": err.get("code"), "error": err.get("error")}
+                if "seated_as" in err: resp["seated_as"] = err["seated_as"]
+                if err.get("code") == SEAT_ERR_NAME_NOT_ALLOWED:
+                    resp["allowed_names"] = get_whitelist()
+                return jsonify(resp), 403
+            _save_users(users)
+        _apply_daily_coins()
+        with _users_lock:
+            u = _load_users().get(key) or u
+            seat = _get_seat(u, first_name) or seat
+        return jsonify({
+            "ok": True,
+            "is_admin": False,
+            "is_group": True,
+            "username": seat["first_name"],
+            "first_name": seat["first_name"],
+            "group_label": u.get("label", "Group"),
+            "coins": u.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+            "gemini_key": gemini_key,
+            "spin_next_in": _spin_remaining_seconds(u),
+            "max_claims_per_day": int(u.get("max_claims_per_day", 0)),
+            "claims_today": _seat_claims_today(seat),
+            "seats_used": len(u.get("seats", {})),
+            "max_seats": int(u.get("max_seats", 0)),
+        })
+
+    # ── Regular user path ──
+    _apply_daily_coins()
+    user = get_user(key)
+    return jsonify({"ok": True, "is_admin": False,
+                    "username": user.get("username", "User"),
+                    "coins": user.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+                    "gemini_key": gemini_key,
+                    "spin_next_in": _spin_remaining_seconds(user)})
+
+
+@app.route("/user/use_coin", methods=["POST"])
+def use_coin():
+    data  = request.get_json(force=True) or {}
+    key   = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    batch = data.get("batch", "").strip()
+    if not key or not batch:
+        return jsonify({"error": "Missing access_key or batch"}), 400
+
+    log_id = str(uuid.uuid4())
+    now_str = datetime.now().isoformat()
+
+    if key == ADMIN_KEY:
+        _append_log({
+            "log_id":    log_id,
+            "user":      "Admin",
+            "access_key": "[admin]",
+            "batch":     batch,
+            "coin_type": "—",
+            "result":    "pending",
+            "detail":    "",
+            "created_at": now_str,
+            "completed_at": None,
+        })
+        return jsonify({"ok": True, "coins": {"bronze": 999, "silver": 999, "gold": 999},
+                        "used_coin": "—", "log_id": log_id})
+
+    cost_info = VOUCHER_COIN_COST.get(batch)
+    if not cost_info:
+        return jsonify({"error": f"Unknown batch: {batch}"}), 400
+    coin_type = cost_info["coin"]
+
+    with _users_lock:
+        users = _load_users()
+        user  = users.get(key)
+        if not user:
+            return jsonify({"error": "Invalid access key"}), 401
+
+        # ── Group key: enforce per-seat daily claim limit ──
+        is_group = _is_group_key(user)
+        log_user = user.get("username", "User")
+        if is_group:
+            seat = _get_seat(user, first_name)
+            if not seat:
+                return jsonify({"error": "No active seat — please re-enter your first name"}), 401
+            limit = int(user.get("max_claims_per_day", 0))
+            claims = _seat_claims_today(seat)
+            if limit > 0 and claims >= limit:
+                return jsonify({
+                    "error": f"Daily limit reached ({claims}/{limit}). Try again tomorrow.",
+                    "claims_today": claims,
+                    "max_claims_per_day": limit,
+                }), 429
+            log_user = seat.get("first_name") or first_name
+
+        # GT deduction (group-shared if group)
+        coins   = user.setdefault("coins", {"bronze": 0, "silver": 0, "gold": 0})
+        balance = coins.get(coin_type, 0)
+        if balance <= 0:
+            return jsonify({"error": f"Not enough {coin_type} coins for {cost_info['label']}"}), 402
+        coins[coin_type] = balance - 1
+        _save_users(users)
+
+    _append_log({
+        "log_id":     log_id,
+        "user":       log_user,
+        "access_key": key,
+        "first_name": (first_name if is_group else ""),
+        "is_group":   is_group,
+        "batch":      batch,
+        "coin_type":  coin_type,
+        "result":     "pending",
+        "detail":     "",
+        "created_at": now_str,
+        "completed_at": None,
+    })
+    return jsonify({"ok": True, "coins": coins, "used_coin": coin_type, "log_id": log_id})
+
+
+def _require_admin(data):
+    return data.get("admin_key") == ADMIN_KEY
+
+
+@app.route("/admin/users", methods=["POST"])
+def admin_list_users():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    users = all_users()
+    individuals = []
+    groups = []
+    today = date.today().isoformat()
+    for k, v in users.items():
+        if _is_group_key(v):
+            seats_out = []
+            for sk, s in (v.get("seats") or {}).items():
+                claims_today = int(s.get("claims_today", 0)) if s.get("last_claim_date") == today else 0
+                seats_out.append({
+                    "first_name": s.get("first_name", sk),
+                    "joined_at":  s.get("joined_at", ""),
+                    "claims_today": claims_today,
+                })
+            groups.append({
+                "key": k,
+                "label": v.get("label", "Group"),
+                "max_seats": int(v.get("max_seats", 0)),
+                "max_claims_per_day": int(v.get("max_claims_per_day", 0)),
+                "seats_used": len(seats_out),
+                "seats": seats_out,
+                "coins": v.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+            })
+        else:
+            individuals.append({
+                "key": k,
+                "username": v.get("username", ""),
+                "coins": v.get("coins", {"bronze": 0, "silver": 0, "gold": 0}),
+                "last_daily": v.get("last_daily", ""),
+            })
+    return jsonify({"ok": True, "users": individuals, "groups": groups})
+
+
+@app.route("/admin/create_group_key", methods=["POST"])
+def admin_create_group_key():
+    """Create a new group access key with N seats and daily claim limit."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = (data.get("key") or "").strip()
+    label = (data.get("label") or "Group").strip() or "Group"
+    max_seats = int(data.get("max_seats", 1))
+    max_claims = int(data.get("max_claims_per_day", 0))
+    initial_gt = float(data.get("gt", 0))
+    if not key:
+        return jsonify({"error": "No key provided"}), 400
+    if get_user(key):
+        return jsonify({"error": "Key already exists"}), 409
+    if max_seats < 1 or max_seats > 100:
+        return jsonify({"error": "max_seats must be between 1 and 100"}), 400
+    if max_claims < 0:
+        return jsonify({"error": "max_claims_per_day must be >= 0"}), 400
+    save_user(key, {
+        "type": "group",
+        "label": label,
+        "max_seats": max_seats,
+        "max_claims_per_day": max_claims,
+        "coins": {"bronze": 0, "silver": 0, "gold": initial_gt, "gt": initial_gt},
+        "last_daily": "",
+        "created": datetime.now().isoformat(),
+        "seats": {},
+    })
+    return jsonify({"ok": True, "key": key})
+
+
+@app.route("/admin/edit_group_key", methods=["POST"])
+def admin_edit_group_key():
+    """Update label / max_seats / max_claims_per_day on an existing group."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = (data.get("key") or "").strip()
+    with _users_lock:
+        users = _load_users()
+        u = users.get(key)
+        if not u or not _is_group_key(u):
+            return jsonify({"error": "Group key not found"}), 404
+        if "label" in data:
+            u["label"] = (data["label"] or "").strip() or u.get("label", "Group")
+        if "max_seats" in data:
+            ms = int(data["max_seats"])
+            if ms < 1 or ms > 100:
+                return jsonify({"error": "max_seats must be 1-100"}), 400
+            u["max_seats"] = ms
+        if "max_claims_per_day" in data:
+            mc = int(data["max_claims_per_day"])
+            if mc < 0:
+                return jsonify({"error": "max_claims_per_day must be >= 0"}), 400
+            u["max_claims_per_day"] = mc
+        _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/get_name_whitelist", methods=["POST"])
+def admin_get_name_whitelist():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({"ok": True, "names": get_whitelist()})
+
+
+@app.route("/admin/set_name_whitelist", methods=["POST"])
+def admin_set_name_whitelist():
+    """Replace the whitelist with the names list provided. Empty list resets
+    to the default seed list."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    names = data.get("names")
+    if not isinstance(names, list):
+        return jsonify({"error": "names must be a list"}), 400
+    if not names:
+        names = list(DEFAULT_WHITELIST)
+    clean = set_whitelist(names)
+    return jsonify({"ok": True, "names": clean})
+
+
+@app.route("/admin/kick_seat", methods=["POST"])
+def admin_kick_seat():
+    """Remove a single seat from a group, freeing the slot."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = (data.get("key") or "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    name_key = _norm_name(first_name)
+    with _users_lock:
+        users = _load_users()
+        u = users.get(key)
+        if not u or not _is_group_key(u):
+            return jsonify({"error": "Group key not found"}), 404
+        if name_key in (u.get("seats") or {}):
+            del u["seats"][name_key]
+            _save_users(users)
+            return jsonify({"ok": True})
+        return jsonify({"error": "Seat not found"}), 404
+
+
+@app.route("/admin/create_user", methods=["POST"])
+def admin_create_user():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key      = data.get("key", "").strip()
+    username = data.get("username", "User").strip()
+    coins    = data.get("coins", {"bronze": 0, "silver": 0, "gold": 0})
+    if not key: return jsonify({"error": "No key provided"}), 400
+    if get_user(key): return jsonify({"error": f"Key already exists"}), 409
+    save_user(key, {"username": username,
+                    "coins": {"bronze": int(coins.get("bronze",0)),
+                              "silver": int(coins.get("silver",0)),
+                              "gold":   int(coins.get("gold",0))},
+                    "last_daily": "", "created": datetime.now().isoformat()})
+    return jsonify({"ok": True, "key": key})
+
+
+@app.route("/admin/set_coins", methods=["POST"])
+def admin_set_coins():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = data.get("key", "").strip()
+    coins = data.get("coins", {})
+    with _users_lock:
+        users = _load_users()
+        user  = users.get(key)
+        if not user: return jsonify({"error": "User not found"}), 404
+        user["coins"] = {"bronze": int(coins.get("bronze", user["coins"].get("bronze",0))),
+                         "silver": int(coins.get("silver", user["coins"].get("silver",0))),
+                         "gold":   int(coins.get("gold",   user["coins"].get("gold",0)))}
+        _save_users(users)
+    return jsonify({"ok": True, "coins": user["coins"]})
+
+
+@app.route("/admin/add_coins", methods=["POST"])
+def admin_add_coins():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = data.get("key", "").strip()
+    coins = data.get("coins", {})
+    with _users_lock:
+        users = _load_users()
+        user  = users.get(key)
+        if not user: return jsonify({"error": "User not found"}), 404
+        for ct in ("bronze","silver","gold"):
+            user["coins"][ct] = user["coins"].get(ct,0) + int(coins.get(ct,0))
+        _save_users(users)
+    return jsonify({"ok": True, "coins": user["coins"]})
+
+
+@app.route("/admin/delete_user", methods=["POST"])
+def admin_delete_user():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = data.get("key", "").strip()
+    with _users_lock:
+        users = _load_users()
+        if key not in users: return jsonify({"error": "User not found"}), 404
+        del users[key]
+        _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/get_daily_config", methods=["POST"])
+def admin_get_daily_config():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({"ok": True, "daily_coins": _load_daily_config()})
+
+
+@app.route("/admin/set_daily_config", methods=["POST"])
+def admin_set_daily_config():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    cfg = {"bronze": int(data.get("bronze",0)),
+           "silver": int(data.get("silver",0)),
+           "gold":   int(data.get("gold",1))}
+    _save_daily_config(cfg)
+    return jsonify({"ok": True, "daily_coins": cfg})
+
+
+@app.route("/admin/set_gemini_key", methods=["POST"])
+def admin_set_gemini_key():
+    """Admin-only — store the shared Gemini API key in gemini_key.json.
+    Pass {admin_key, gemini_key}. Empty gemini_key clears it."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    new_key = (data.get("gemini_key") or "").strip()
+    if new_key and not (new_key.startswith("AIza") or new_key.startswith("AQ.")):
+        return jsonify({"error": "Invalid key format (expected AIza... or AQ....)"}), 400
+    set_gemini_key(new_key)
+    return jsonify({"ok": True})
+
+
+# ─── SPIN TO WIN (daily lottery) ─────────────────────────────────────────────
+# Prize index here MUST match the SPIN_PRIZES array in mainscript.html.
+# Server is authoritative for both the random pick and the GT credit.
+# Weights MUST stay in sync with SPIN_PRIZES in mainscript.html.
+# Probabilities (total weight 200):
+#   5 GT      → 0.5 %     0.5 GT   → 4.5 %
+#   3 GT      → 1.0 %     0.2 GT   → 10  %
+#   2 GT      → 1.5 %     0.1 GT   → 30  %
+#   1 GT      → 2.5 %     Try Again → 50 %
+SPIN_PRIZES = [
+    {"index": 0, "label": "5 GT",       "value": 5.0,  "weight": 1},
+    {"index": 1, "label": "Try Again",  "value": 0.0,  "weight": 100},
+    {"index": 2, "label": "1 GT",       "value": 1.0,  "weight": 5},
+    {"index": 3, "label": "0.1 GT",     "value": 0.1,  "weight": 60},
+    {"index": 4, "label": "3 GT",       "value": 3.0,  "weight": 2},
+    {"index": 5, "label": "0.5 GT",     "value": 0.5,  "weight": 9},
+    {"index": 6, "label": "0.2 GT",     "value": 0.2,  "weight": 20},
+    {"index": 7, "label": "2 GT",       "value": 2.0,  "weight": 3},
+]
+
+
+def _pick_spin_prize():
+    weights = [p["weight"] for p in SPIN_PRIZES]
+    return random.choices(SPIN_PRIZES, weights=weights, k=1)[0]
+
+
+SPIN_COOLDOWN_SECONDS = 86400  # rolling 24h
+
+
+def _spin_remaining_seconds(user):
+    """Returns seconds remaining on a user's spin cooldown, or 0 if available."""
+    last_at_str = user.get("last_spin_at", "") if user else ""
+    if not last_at_str:
+        return 0
+    try:
+        last_dt = datetime.fromisoformat(last_at_str)
+        elapsed = (datetime.now() - last_dt).total_seconds()
+        if elapsed >= SPIN_COOLDOWN_SECONDS:
+            return 0
+        return int(SPIN_COOLDOWN_SECONDS - elapsed)
+    except Exception:
+        return 0
+
+
+@app.route("/user/spin", methods=["POST"])
+def user_spin():
+    """One free spin per rolling 24h window. Server picks the prize and credits GT.
+
+    Admins can spin freely (no cooldown, no GT credit since they have ∞).
+    Non-admins are gated by user.last_spin_at (ISO timestamp).
+    """
+    data = request.get_json(force=True) or {}
+    key = (data.get("access_key") or "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+
+    now = datetime.now()
+
+    # Admin path — always pick a prize but don't track or credit
+    if key == ADMIN_KEY:
+        prize = _pick_spin_prize()
+        return jsonify({
+            "ok": True,
+            "prize_index": prize["index"],
+            "prize_label": prize["label"],
+            "prize_value": prize["value"],
+            "gt": 999.0,
+            "is_admin": True,
+            "next_spin_in": 0,
+        })
+
+    # Non-admin: enforce 24h cooldown + credit GT atomically
+    with _users_lock:
+        users = _load_users()
+        user = users.get(key)
+        if not user:
+            return jsonify({"error": "Invalid access key"}), 401
+
+        remaining = _spin_remaining_seconds(user)
+        if remaining > 0:
+            return jsonify({
+                "error": "Spin on cooldown. Please wait.",
+                "next_spin_in": remaining,
+            }), 429
+
+        prize = _pick_spin_prize()
+
+        # GT is stored under coins.gold for legacy compat; mirror to coins.gt as float
+        coins = user.setdefault("coins", {"bronze": 0, "silver": 0, "gold": 0})
+        current_gt = float(coins.get("gt", coins.get("gold", 0) or 0))
+        new_gt = round(current_gt + float(prize["value"]), 2)
+        coins["gt"] = new_gt
+        coins["gold"] = new_gt        # keep legacy field in sync so /user/use_coin still works
+        user["last_spin_at"] = now.isoformat()
+        # Drop legacy field if present
+        user.pop("last_spin", None)
+        _save_users(users)
+
+    return jsonify({
+        "ok": True,
+        "prize_index": prize["index"],
+        "prize_label": prize["label"],
+        "prize_value": prize["value"],
+        "gt": new_gt,
+        "coins": coins,
+        "next_spin_in": SPIN_COOLDOWN_SECONDS,
+    })
+
+
+@app.route("/logs", methods=["POST"])
+def get_logs():
+    data = request.get_json(force=True) or {}
+    key  = data.get("access_key", "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+    is_admin = (key == ADMIN_KEY)
+    logs = _load_logs()
+    # Only show SUCCESSFUL claims — never failures, already-claimed, or pending.
+    logs = [l for l in logs if l.get("result") == "success"]
+    if not is_admin:
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        # Both regular users and group users see every successful claim under their key.
+        logs = [l for l in logs if l.get("access_key") == key]
+    safe = []
+    for l in logs:
+        e = dict(l)
+        e.pop("access_key", None)
+        safe.append(e)
+    return jsonify({"ok": True, "logs": safe})
+
+
+@app.route("/logs/update", methods=["POST"])
+def update_log():
+    data   = request.get_json(force=True) or {}
+    key    = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    log_id = data.get("log_id", "").strip()
+    result = data.get("result", "unknown").strip()   # 'success' | 'failed' | 'already_claimed' | 'stopped'
+    detail = data.get("detail", "").strip()
+    if not key or not log_id:
+        return jsonify({"error": "Missing access_key or log_id"}), 400
+    is_admin = (key == ADMIN_KEY)
+    user = None
+    if not is_admin:
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+    _update_log(log_id, result, detail)
+
+    # On a successful claim, bump the seat's daily count.
+    if result == "success" and user and _is_group_key(user) and first_name:
+        with _users_lock:
+            users = _load_users()
+            u = users.get(key)
+            if u and _is_group_key(u):
+                seat = _get_seat(u, first_name)
+                if seat:
+                    _record_seat_claim(seat)
+                    _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/logs/clear", methods=["POST"])
+def clear_logs():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    with _log_lock:
+        _save_logs([])
+    return jsonify({"ok": True})
+
+
+@app.route("/run", methods=["POST"])
+def run_script():
+    data = request.get_json(force=True) or {}
+    access_key = data.get("access_key", "").strip()
+    is_admin   = access_key == ADMIN_KEY
+    if not is_admin:
+        if not get_user(access_key):
+            return jsonify({"error": "Unauthorized"}), 401
+    cfg   = data.get("cfg", {})
+    batch = data.get("batch", "").strip()
+    if not cfg.get("tokens"):
+        return jsonify({"error": "No tokens provided"}), 400
+
+    # ── Server-side code whitelist enforcement for non-admins ──
+    if not is_admin and batch:
+        allowed = VALID_BATCH_CODES.get(batch)
+        if allowed is None:
+            return jsonify({"error": f"Unknown batch: {batch}"}), 400
+        submitted = cfg.get("codes", [])
+        bad = [c for c in submitted if c not in allowed]
+        if bad:
+            return jsonify({"error": f"Unauthorized codes for batch '{batch}': {', '.join(bad)}"}), 403
+
+    q = queue.Queue()
+    def worker():
+        try: run_collect(cfg, q)
+        except Exception as e:
+            q.put(f"  \u274c Fatal error: {str(e)}"); q.put(None)
+    threading.Thread(target=worker, daemon=True).start()
+
+    def generate():
+        while True:
+            try:
+                msg = q.get(timeout=120)
+                if msg is None: yield sse("[DONE]"); break
+                yield sse(msg)
+            except queue.Empty:
+                yield sse("  \u26a0\ufe0f  Timeout waiting for output")
+                yield sse("[DONE]"); break
+
+    return Response(generate(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, threaded=True)
