@@ -582,29 +582,6 @@ def run_collect(cfg, q):
         _run_brute(cfg, q)
         return
 
-    if mode == "ark":
-        emit("=" * 60)
-        emit("  ARK CLAIM  —  ark/11504  ({} codes)".format(len(ARK_CODES)))
-        emit("=" * 60)
-        emit(f"  Accounts : {len(tokens)}")
-        emit(f"  Codes    : {', '.join(ARK_CODES)}")
-        emit(f"  Package  : {ARK_PKG_ID}")
-        emit(f"  Country  : {cfg.get('claim_country','PH')}")
-        emit("=" * 60)
-        delay = int(cfg.get("account_delay", 3))
-        for i, token in enumerate(tokens):
-            emit(f"\n{'#'*60}")
-            emit(f"  Account {i+1}/{len(tokens)}  [...{token[-20:]}]")
-            emit(f"{'#'*60}")
-            _collect_ark(cfg, token, emit)
-            if i < len(tokens) - 1:
-                emit(f"\n  Waiting {delay}s before next account...")
-                time.sleep(delay)
-        emit("\n" + "=" * 60)
-        emit("  All done!")
-        emit("=" * 60)
-        q.put(None)
-        return
 
     emit("=" * 60)
     emit("  SHEIN COUPON COLLECTOR  —  App API Mode")
@@ -624,6 +601,8 @@ def run_collect(cfg, q):
             _collect_delivery(cfg, token, emit)
         else:
             _collect_bind(cfg, token, codes, pkg_id, emit)
+        # ── ARK campaign auto-claim (runs after every main claim) ──
+        _collect_ark(cfg, token, emit)
         if i < len(tokens) - 1:
             emit(f"\n  Waiting {delay}s before next account...")
             time.sleep(delay)
@@ -757,105 +736,85 @@ def _collect_delivery(cfg, token, emit):
 
 
 def _collect_ark(cfg, token, emit):
-    """Replicate the manual QR-code scan of ark/11504, then claim the four
-    specific '11' codes (one per group, all PHP 60) via bind_coupon.
-
-    Flow:
-      1) GET  https://api-shein.shein.com/ark/11504  — establishes session,
-         mirrors what the app WebView does when you scan the QR code.
-      2) POST promotion/coupon/bind_coupon  — explicitly binds all 4 ARK codes
-         (gm0pha11, gm0phi11, gm365phi11, gm365pha11) against pkg 17131185.
+    """Claim ark/11504 delivery campaign via single delivery API call.
+    Uses auto_bind=True + SwiftCouponOnePlugin — confirmed working approach.
+    Called automatically after every main claim (bind or delivery mode).
     """
+    gm_site        = cfg.get("gm_site", "andshph")
+    claim_country  = cfg.get("claim_country", "PH")
+    claim_currency = {"PH": "PHP", "MY": "MYR", "TH": "THB"}.get(claim_country, "PHP")
+    av             = cfg.get("app_version", "11.2.3")
+    gm_device      = cfg.get("gm_device_id", cfg.get("device_id", ""))
+
     emit(f"\n  {chr(0x2550)*54}")
-    emit(f"  ARK QR   : Claiming ark/11504  (pkg={ARK_PKG_ID})")
-    emit(f"  ARK Codes: {', '.join(ARK_CODES)}")
+    emit(f"  ARK     : Claiming mid={ARK_MID} (gm0 campaign)")
     emit(f"  {chr(0x2550)*54}")
 
-    # ── Step 1: GET the ark page (mirrors QR scan) ──
-    gm_site       = cfg.get("gm_site", "andshph")
-    claim_country = cfg.get("claim_country", "PH")
-    session = requests.Session()
-    try:
-        ark_params = {
-            "app": "shein", "device_type": "android",
-            "language": LANGUAGE, "site_uid": gm_site, "region": claim_country,
-        }
-        r_get = session.get(
-            ARK_URL,
-            headers=build_ark_get_headers(cfg, token),
-            params=ark_params,
-            timeout=15, verify=False, allow_redirects=True,
-        )
-        sid = session.cookies.get("sessionID", "")
-        if sid:
-            emit(f"  \u2713 ARK page loaded (HTTP {r_get.status_code}) \u2014 sessionID cookie set")
-        else:
-            emit(f"  \u26a0\ufe0f  ARK page loaded (HTTP {r_get.status_code}) \u2014 no sessionID; proceeding")
-    except Exception as e:
-        emit(f"  \u26a0\ufe0f  ARK page GET failed: {str(e)[:80]} \u2014 proceeding")
-
-    # ── Step 2: bind_coupon with all 4 ARK codes ──
-    headers = build_headers(cfg, token)
+    headers = build_delivery_headers(cfg, token)
     payload = {
-        "couponPackages": [{"couponPackageId": ARK_PKG_ID, "couponCodes": ",".join(ARK_CODES)}],
-        "scene": "home", "idempotentCode": str(uuid.uuid4()),
+        "client_info": {
+            "app_version": av, "client_id": 100, "currency": claim_currency,
+            "dev_id": gm_device, "language": LANGUAGE, "site_uid": gm_site,
+            "token": token, "brand": "shein",
+        },
+        "material_request_info": {
+            "mid": ARK_MID,
+            "param_map": {
+                "coupon_common_req": {"coupon_type": 2, "coupon_sequence": 3},
+                "auto_bind": True,
+            },
+            "data_type":       "SwiftCouponOnePlugin",
+            "data_scene":      0,
+            "data_scene_flag": "0_SwiftCouponOnePlugin",
+        },
+        "ext_map": {},
     }
-    emit(f"  {chr(0x2500)*54}")
     try:
-        r = requests.post(COUPON_URL, json=payload, headers=headers, timeout=15, verify=False)
-        try:    raw = r.json()
-        except: raw = {}
-        # ── Emit raw response so user can see the actual SHEIN reply ──
-        emit(f"  HTTP {r.status_code}")
-        try:
-            emit(f"  RAW: {json.dumps(raw, ensure_ascii=False)}")
-        except Exception:
-            emit(f"  RAW: {str(raw)[:300]}")
-        data         = raw if isinstance(raw, dict) else {}
-        top_code     = str(data.get("code") or data.get("ret_msg_code") or "")
-        top_msg      = str(data.get("msg")  or data.get("tips") or "")
-        info         = (data.get("info") or {}) if isinstance(data.get("info"), dict) else {}
-        success_list = [str(c).strip() for c in (info.get("successCodeList") or []) if c]
-        fail_list    = [str(c).strip() for c in (info.get("failCodeList") or []) if c]
-        result_list  = info.get("bindResult") or []
-        result_list  = result_list if isinstance(result_list, list) else []
+        r = requests.post(
+            DELIVERY_URL, json=payload, headers=headers,
+            params={"sw_site": gm_site, "sw_lang": LANGUAGE},
+            timeout=15, verify=False,
+        )
+        try:    data = r.json()
+        except: data = {}
+        code    = str(data.get("code", ""))
+        top_msg = str(data.get("msg", "Unknown"))
+        if code not in ("0", "200"):
+            if is_login_error(code, top_msg):
+                emit(f"  \U0001f512 ARK: NOT LOGGED IN (code={code})")
+            else:
+                emit(f"  \u274c ARK: {top_msg[:80]}")
+            emit(f"  {chr(0x2500)*54}")
+            return
+        info        = data.get("info") or {}
+        coupon_info = info.get("coupon_info") or {}
+        bind_result = coupon_info.get("bind_result") or {}
+        bind_data   = (bind_result.get("bindResult") or {}) if isinstance(bind_result, dict) else {}
+        success_list = bind_data.get("successList") or []
+        fail_list    = bind_data.get("failList") or []
+        recv_coupon  = coupon_info.get("received_coupon") or []
+        hit_coupon   = coupon_info.get("hit_coupon") or []
+        no_reason    = coupon_info.get("no_coupon_reason") or ""
 
-        if is_login_error(top_code, top_msg):
-            emit(f"  \U0001f512 NOT LOGGED IN \u2014 Please login. (code={top_code})")
-        elif top_code == str(ERR_ALREADY_CLAIMED):
-            for code in ARK_CODES:
-                emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
-        elif success_list:
-            emit(f"  \u2705 CLAIMED! {' '.join(success_list)}")
-        elif result_list:
-            claimed_c, conflict_c, other_c = [], [], []
-            for item in result_list:
-                if not isinstance(item, dict): continue
-                cv = str(item.get("couponCode") or "?")
-                ec = str(item.get("errorCode") or item.get("code") or "")
-                if ec in ("0", "200", ""):   claimed_c.append(cv)
-                elif ec == str(ERR_ALREADY_CLAIMED): conflict_c.append(cv)
-                else: other_c.append(f"{cv}[{ec}]")
-            if claimed_c:
-                emit(f"  \u2705 CLAIMED! [{', '.join(claimed_c)}]")
-            for code in conflict_c:
-                emit(f"  \u26a0\ufe0f  {code} \u2014 ALREADY CLAIMED [501405]")
-            if other_c:
-                emit(f"  \u274c FAILED \u2192 {other_c}")
-        elif fail_list:
-            emit(f"  \u274c FAILED {fail_list}")
-        elif top_code not in ("0", "200", ""):
-            emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
-        elif top_code in ("0", "200"):
-            for code in ARK_CODES:
-                emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
+        if success_list:
+            emit(f"  \u2705 ARK: {len(success_list)} claimed, {len(fail_list)} failed")
+            for c in success_list:
+                emit(f"     \u2713 {c.get('couponCode','?')}")
+        elif no_reason == "COUPON_EXCLUSIVE" or recv_coupon:
+            codes = [c.get("couponCode","?") for c in recv_coupon] if recv_coupon else []
+            emit(f"  \u26a0\ufe0f  ARK: Already claimed" + (f" — {codes}" if codes else ""))
+        elif hit_coupon:
+            emit(f"  \u26a0\ufe0f  ARK: Already in account ({len(hit_coupon)} coupon(s))")
+        elif no_reason:
+            emit(f"  \u2753 ARK: {no_reason}")
         else:
-            emit(f"  \u2753 Ambiguous \u2014 code={top_code} msg={top_msg[:60]}")
+            emit(f"  \u2753 ARK: No result — {top_msg[:60]}")
     except requests.exceptions.Timeout:
-        emit("  \u274c ARK bind timed out")
+        emit("  \u274c ARK: Request timed out")
     except Exception as e:
-        emit(f"  \u274c ARK bind error: {str(e)[:120]}")
+        emit(f"  \u274c ARK: {str(e)[:120]}")
     emit(f"  {chr(0x2500)*54}")
+
 
 def _run_brute(cfg, q):
     tokens = cfg.get("tokens", [])
@@ -1294,4 +1253,330 @@ def admin_kick_seat():
     first_name = (data.get("first_name") or "").strip()
     name_key = _norm_name(first_name)
     with _users_lock:
-        u
+        users = _load_users()
+        u = users.get(key)
+        if not u or not _is_group_key(u):
+            return jsonify({"error": "Group key not found"}), 404
+        if name_key in (u.get("seats") or {}):
+            del u["seats"][name_key]
+            _save_users(users)
+            return jsonify({"ok": True})
+        return jsonify({"error": "Seat not found"}), 404
+
+
+@app.route("/admin/create_user", methods=["POST"])
+def admin_create_user():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key      = data.get("key", "").strip()
+    username = data.get("username", "User").strip()
+    coins    = data.get("coins", {"bronze": 0, "silver": 0, "gold": 0})
+    if not key: return jsonify({"error": "No key provided"}), 400
+    if get_user(key): return jsonify({"error": f"Key already exists"}), 409
+    save_user(key, {"username": username,
+                    "coins": {"bronze": int(coins.get("bronze",0)),
+                              "silver": int(coins.get("silver",0)),
+                              "gold":   int(coins.get("gold",0))},
+                    "last_daily": "", "created": datetime.now().isoformat()})
+    return jsonify({"ok": True, "key": key})
+
+
+@app.route("/admin/set_coins", methods=["POST"])
+def admin_set_coins():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = data.get("key", "").strip()
+    coins = data.get("coins", {})
+    with _users_lock:
+        users = _load_users()
+        user  = users.get(key)
+        if not user: return jsonify({"error": "User not found"}), 404
+        user["coins"] = {"bronze": int(coins.get("bronze", user["coins"].get("bronze",0))),
+                         "silver": int(coins.get("silver", user["coins"].get("silver",0))),
+                         "gold":   int(coins.get("gold",   user["coins"].get("gold",0)))}
+        _save_users(users)
+    return jsonify({"ok": True, "coins": user["coins"]})
+
+
+@app.route("/admin/add_coins", methods=["POST"])
+def admin_add_coins():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key   = data.get("key", "").strip()
+    coins = data.get("coins", {})
+    with _users_lock:
+        users = _load_users()
+        user  = users.get(key)
+        if not user: return jsonify({"error": "User not found"}), 404
+        for ct in ("bronze","silver","gold"):
+            user["coins"][ct] = user["coins"].get(ct,0) + int(coins.get(ct,0))
+        _save_users(users)
+    return jsonify({"ok": True, "coins": user["coins"]})
+
+
+@app.route("/admin/delete_user", methods=["POST"])
+def admin_delete_user():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    key = data.get("key", "").strip()
+    with _users_lock:
+        users = _load_users()
+        if key not in users: return jsonify({"error": "User not found"}), 404
+        del users[key]
+        _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/get_daily_config", methods=["POST"])
+def admin_get_daily_config():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    return jsonify({"ok": True, "daily_coins": _load_daily_config()})
+
+
+@app.route("/admin/set_daily_config", methods=["POST"])
+def admin_set_daily_config():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data): return jsonify({"error": "Unauthorized"}), 401
+    cfg = {"bronze": int(data.get("bronze",0)),
+           "silver": int(data.get("silver",0)),
+           "gold":   int(data.get("gold",1))}
+    _save_daily_config(cfg)
+    return jsonify({"ok": True, "daily_coins": cfg})
+
+
+@app.route("/admin/set_gemini_key", methods=["POST"])
+def admin_set_gemini_key():
+    """Admin-only — store the shared Gemini API key in gemini_key.json.
+    Pass {admin_key, gemini_key}. Empty gemini_key clears it."""
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    new_key = (data.get("gemini_key") or "").strip()
+    if new_key and not (new_key.startswith("AIza") or new_key.startswith("AQ.")):
+        return jsonify({"error": "Invalid key format (expected AIza... or AQ....)"}), 400
+    set_gemini_key(new_key)
+    return jsonify({"ok": True})
+
+
+# ─── SPIN TO WIN (daily lottery) ─────────────────────────────────────────────
+# Prize index here MUST match the SPIN_PRIZES array in mainscript.html.
+# Server is authoritative for both the random pick and the GT credit.
+# Weights MUST stay in sync with SPIN_PRIZES in mainscript.html.
+# Probabilities (total weight 200):
+#   5 GT      → 0.5 %     0.5 GT   → 4.5 %
+#   3 GT      → 1.0 %     0.2 GT   → 10  %
+#   2 GT      → 1.5 %     0.1 GT   → 30  %
+#   1 GT      → 2.5 %     Try Again → 50 %
+SPIN_PRIZES = [
+    {"index": 0, "label": "5 GT",       "value": 5.0,  "weight": 1},
+    {"index": 1, "label": "Try Again",  "value": 0.0,  "weight": 100},
+    {"index": 2, "label": "1 GT",       "value": 1.0,  "weight": 5},
+    {"index": 3, "label": "0.1 GT",     "value": 0.1,  "weight": 60},
+    {"index": 4, "label": "3 GT",       "value": 3.0,  "weight": 2},
+    {"index": 5, "label": "0.5 GT",     "value": 0.5,  "weight": 9},
+    {"index": 6, "label": "0.2 GT",     "value": 0.2,  "weight": 20},
+    {"index": 7, "label": "2 GT",       "value": 2.0,  "weight": 3},
+]
+
+
+def _pick_spin_prize():
+    weights = [p["weight"] for p in SPIN_PRIZES]
+    return random.choices(SPIN_PRIZES, weights=weights, k=1)[0]
+
+
+SPIN_COOLDOWN_SECONDS = 86400  # rolling 24h
+
+
+def _spin_remaining_seconds(user):
+    """Returns seconds remaining on a user's spin cooldown, or 0 if available."""
+    last_at_str = user.get("last_spin_at", "") if user else ""
+    if not last_at_str:
+        return 0
+    try:
+        last_dt = datetime.fromisoformat(last_at_str)
+        elapsed = (datetime.now() - last_dt).total_seconds()
+        if elapsed >= SPIN_COOLDOWN_SECONDS:
+            return 0
+        return int(SPIN_COOLDOWN_SECONDS - elapsed)
+    except Exception:
+        return 0
+
+
+@app.route("/user/spin", methods=["POST"])
+def user_spin():
+    """One free spin per rolling 24h window. Server picks the prize and credits GT.
+
+    Admins can spin freely (no cooldown, no GT credit since they have ∞).
+    Non-admins are gated by user.last_spin_at (ISO timestamp).
+    """
+    data = request.get_json(force=True) or {}
+    key = (data.get("access_key") or "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+
+    now = datetime.now()
+
+    # Admin path — always pick a prize but don't track or credit
+    if key == ADMIN_KEY:
+        prize = _pick_spin_prize()
+        return jsonify({
+            "ok": True,
+            "prize_index": prize["index"],
+            "prize_label": prize["label"],
+            "prize_value": prize["value"],
+            "gt": 999.0,
+            "is_admin": True,
+            "next_spin_in": 0,
+        })
+
+    # Non-admin: enforce 24h cooldown + credit GT atomically
+    with _users_lock:
+        users = _load_users()
+        user = users.get(key)
+        if not user:
+            return jsonify({"error": "Invalid access key"}), 401
+
+        remaining = _spin_remaining_seconds(user)
+        if remaining > 0:
+            return jsonify({
+                "error": "Spin on cooldown. Please wait.",
+                "next_spin_in": remaining,
+            }), 429
+
+        prize = _pick_spin_prize()
+
+        # GT is stored under coins.gold for legacy compat; mirror to coins.gt as float
+        coins = user.setdefault("coins", {"bronze": 0, "silver": 0, "gold": 0})
+        current_gt = float(coins.get("gt", coins.get("gold", 0) or 0))
+        new_gt = round(current_gt + float(prize["value"]), 2)
+        coins["gt"] = new_gt
+        coins["gold"] = new_gt        # keep legacy field in sync so /user/use_coin still works
+        user["last_spin_at"] = now.isoformat()
+        # Drop legacy field if present
+        user.pop("last_spin", None)
+        _save_users(users)
+
+    return jsonify({
+        "ok": True,
+        "prize_index": prize["index"],
+        "prize_label": prize["label"],
+        "prize_value": prize["value"],
+        "gt": new_gt,
+        "coins": coins,
+        "next_spin_in": SPIN_COOLDOWN_SECONDS,
+    })
+
+
+@app.route("/logs", methods=["POST"])
+def get_logs():
+    data = request.get_json(force=True) or {}
+    key  = data.get("access_key", "").strip()
+    if not key:
+        return jsonify({"error": "Missing access_key"}), 400
+    is_admin = (key == ADMIN_KEY)
+    logs = _load_logs()
+    # Only show SUCCESSFUL claims — never failures, already-claimed, or pending.
+    logs = [l for l in logs if l.get("result") == "success"]
+    if not is_admin:
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+        # Both regular users and group users see every successful claim under their key.
+        logs = [l for l in logs if l.get("access_key") == key]
+    safe = []
+    for l in logs:
+        e = dict(l)
+        e.pop("access_key", None)
+        safe.append(e)
+    return jsonify({"ok": True, "logs": safe})
+
+
+@app.route("/logs/update", methods=["POST"])
+def update_log():
+    data   = request.get_json(force=True) or {}
+    key    = data.get("access_key", "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    log_id = data.get("log_id", "").strip()
+    result = data.get("result", "unknown").strip()   # 'success' | 'failed' | 'already_claimed' | 'stopped'
+    detail = data.get("detail", "").strip()
+    if not key or not log_id:
+        return jsonify({"error": "Missing access_key or log_id"}), 400
+    is_admin = (key == ADMIN_KEY)
+    user = None
+    if not is_admin:
+        user = get_user(key)
+        if not user:
+            return jsonify({"error": "Unauthorized"}), 401
+    _update_log(log_id, result, detail)
+
+    # On a successful claim, bump the seat's daily count.
+    if result == "success" and user and _is_group_key(user) and first_name:
+        with _users_lock:
+            users = _load_users()
+            u = users.get(key)
+            if u and _is_group_key(u):
+                seat = _get_seat(u, first_name)
+                if seat:
+                    _record_seat_claim(seat)
+                    _save_users(users)
+    return jsonify({"ok": True})
+
+
+@app.route("/logs/clear", methods=["POST"])
+def clear_logs():
+    data = request.get_json(force=True) or {}
+    if not _require_admin(data):
+        return jsonify({"error": "Unauthorized"}), 401
+    with _log_lock:
+        _save_logs([])
+    return jsonify({"ok": True})
+
+
+@app.route("/run", methods=["POST"])
+def run_script():
+    data = request.get_json(force=True) or {}
+    access_key = data.get("access_key", "").strip()
+    is_admin   = access_key == ADMIN_KEY
+    if not is_admin:
+        if not get_user(access_key):
+            return jsonify({"error": "Unauthorized"}), 401
+    cfg   = data.get("cfg", {})
+    batch = data.get("batch", "").strip()
+    if not cfg.get("tokens"):
+        return jsonify({"error": "No tokens provided"}), 400
+
+    # ── Server-side code whitelist enforcement for non-admins ──
+    if not is_admin and batch:
+        allowed = VALID_BATCH_CODES.get(batch)
+        if allowed is None:
+            return jsonify({"error": f"Unknown batch: {batch}"}), 400
+        submitted = cfg.get("codes", [])
+        bad = [c for c in submitted if c not in allowed]
+        if bad:
+            return jsonify({"error": f"Unauthorized codes for batch '{batch}': {', '.join(bad)}"}), 403
+
+    q = queue.Queue()
+    def worker():
+        try: run_collect(cfg, q)
+        except Exception as e:
+            q.put(f"  \u274c Fatal error: {str(e)}"); q.put(None)
+    threading.Thread(target=worker, daemon=True).start()
+
+    def generate():
+        while True:
+            try:
+                msg = q.get(timeout=120)
+                if msg is None: yield sse("[DONE]"); break
+                yield sse(msg)
+            except queue.Empty:
+                yield sse("  \u26a0\ufe0f  Timeout waiting for output")
+                yield sse("[DONE]"); break
+
+    return Response(generate(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, threaded=True)
