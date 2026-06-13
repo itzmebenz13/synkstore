@@ -679,7 +679,7 @@ def _collect_bind(cfg, token, codes, pkg_id, emit):
         elif top_code not in ("0","200",""):
             emit(f"  \u274c ERR {top_code}: {top_msg[:80]}")
         elif top_code in ("0","200"):
-            for code in codes: emit(f"  \u26a0\ufe0f  {code} \u2014 already owned or ambiguous (code={top_code})")
+            emit(f"  \u2753 Ambiguous \u2014 code={top_code}, no detail returned. Codes may already be owned.")
         else:
             emit(f"  \u2753 Ambiguous response \u2014 code={top_code} msg={top_msg[:60]}")
     except requests.exceptions.Timeout:
@@ -799,17 +799,6 @@ def _collect_ark(cfg, token, emit):
 
         code    = str(data.get("code", ""))
         top_msg = str(data.get("msg", "Unknown"))
-
-        # ── Emit key response fields — visible as warn item in modal ──
-        try:
-            ci = (data.get("info") or {}).get("coupon_info") or {}
-            emit(f"  \u26a0\ufe0f  ARK debug: code={code} "
-                 f"risk={ci.get('risk_result_code')} "
-                 f"reason={ci.get('no_coupon_reason')} "
-                 f"recv={len(ci.get('received_coupon') or [])} "
-                 f"bind={'YES' if ci.get('bind_result') else 'null'}")
-        except Exception as _de:
-            emit(f"  \u26a0\ufe0f  ARK debug err: {_de}")
 
         if code not in ("0", "200"):
             if is_login_error(code, top_msg):
