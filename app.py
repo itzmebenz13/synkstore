@@ -1668,6 +1668,133 @@ def run_script():
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+
+
+# ─── EMAIL BINDER — Change SHEIN account email via browser session ────────────
+# Uses m.shein.com (mobile web) endpoints, NOT the app API.
+# Requires headers/cookies captured from a live browser session.
+
+def _parse_raw_request(raw_text):
+    """Parse a raw HTTP request block into headers and cookies dicts."""
+    headers = {}
+    cookies = {}
+    lines = raw_text.replace("\r\n", "\n").split("\n")
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("------") or line.startswith("Content-Disposition"):
+            continue
+        if ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key = key.strip().lower()
+        val = val.strip()
+        # Skip pseudo-headers
+        if key in ("host", ":method", ":path", ":scheme", ":authority",
+                   "content-length", "accept-encoding"):
+            continue
+        if key == "cookie":
+            # Parse cookie string
+            for part in val.split(";"):
+                part = part.strip()
+                if "=" in part:
+                    ck, _, cv = part.partition("=")
+                    cookies[ck.strip()] = cv.strip()
+        else:
+            headers[key] = val
+    return headers, cookies
+
+
+@app.route("/email/send_code", methods=["POST"])
+def email_send_code():
+    """Step 1: Send verification code to the new email address.
+    Expects JSON: { raw_headers: str, new_email: str }
+    """
+    data = request.get_json(force=True) or {}
+    raw = data.get("raw_headers", "").strip()
+    new_email = (data.get("new_email") or "").strip()
+    if not raw:
+        return jsonify({"error": "No RAW request provided"}), 400
+    if not new_email or "@" not in new_email:
+        return jsonify({"error": "Invalid new email"}), 400
+
+    hdrs, ckies = _parse_raw_request(raw)
+
+    # Build multipart form data
+    form_data = {
+        "alias":            new_email,
+        "alias_type":       "1",
+        "scene":            "bind_msg_verify",
+        "third_party_type": "7",
+        "validate":         "0",
+    }
+
+    try:
+        r = requests.post(
+            "https://m.shein.com/ph/bff-api/user/account/send_email_code",
+            params={"_ver": "1.1.8", "_lang": "en"},
+            data=form_data,
+            headers=hdrs,
+            cookies=ckies,
+            timeout=20,
+            verify=False,
+        )
+        try:
+            return jsonify({"ok": True, "status": r.status_code, "data": r.json()})
+        except Exception:
+            return jsonify({"ok": True, "status": r.status_code, "raw": r.text[:500]})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/email/bind", methods=["POST"])
+def email_bind():
+    """Step 2: Confirm new email with the verification code.
+    Expects JSON: { raw_headers: str, new_email: str, otp: str, original_alias: str }
+    """
+    data = request.get_json(force=True) or {}
+    raw = data.get("raw_headers", "").strip()
+    new_email      = (data.get("new_email") or "").strip()
+    otp            = (data.get("otp") or "").strip()
+    original_alias = (data.get("original_alias") or "").strip()
+
+    if not raw:
+        return jsonify({"error": "No RAW request provided"}), 400
+    if not new_email or "@" not in new_email:
+        return jsonify({"error": "Invalid new email"}), 400
+    if not otp:
+        return jsonify({"error": "No verification code provided"}), 400
+
+    hdrs, ckies = _parse_raw_request(raw)
+
+    form_data = {
+        "email":             new_email,
+        "original_alias":    original_alias,
+        "is_subscribed":     "1",
+        "bind_scene":        "bind_msg_verify",
+        "bind_type":         "2",
+        "validate":          "0",
+        "verification_code": otp,
+        "check_tk":          "0",
+    }
+
+    try:
+        r = requests.post(
+            "https://m.shein.com/ph/bff-api/user/account/bind_email",
+            params={"_ver": "1.1.8", "_lang": "en"},
+            data=form_data,
+            headers=hdrs,
+            cookies=ckies,
+            timeout=20,
+            verify=False,
+        )
+        try:
+            return jsonify({"ok": True, "status": r.status_code, "data": r.json()})
+        except Exception:
+            return jsonify({"ok": True, "status": r.status_code, "raw": r.text[:500]})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, threaded=True)
