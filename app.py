@@ -1897,57 +1897,86 @@ def pc_lookup():
     goods_name = f"Product #{goods_id}"
     sale_price = ""
     try:
+        # Exact params from captured URL
         rd_r = requests.get(
             "https://api-service.shein.com/product/get_goods_detail_realtime_data",
-            params={
-                "priorityMallType": "1", "sceneFromPage": "",
-                "isRelatedColorNeedPromotion": "", "promotionId": "",
-                "isAppointMall": "0", "useSupplyGoods": "",
-                "isUserSelectedMallCode": "0", "sceneFlag": "",
-                "mallCode": "1", "localSiteQueryFlag": "0",
-                "orderPrice": "", "isHideNotSatisfied": "",
-                "isSizeGatherTag": "", "hasReportMember": "0",
-                "sourceFrom": "goods_detail", "promotionLogoType": "",
-                "promotionType": "", "isHidePromotionTip": "",
-                "goods_id": goods_id, "timeZone": "Asia/Manila",
-                "isHideEstimatePriceInfo": "", "popComponentEntry": "",
-                "bundledPurchaseMainGoodsId": "", "visitNumOfDay": "2",
-                "isShowMall": "0", "isPaidMember": "0",
-                "billno": "", "promotionProductMark": "",
-            },
+            params=[
+                ("priorityMallType",           "1"),
+                ("sceneFromPage",              ""),
+                ("isRelatedColorNeedPromotion",""),
+                ("promotionId",                ""),
+                ("isAppointMall",              "0"),
+                ("useSupplyGoods",             ""),
+                ("isUserSelectedMallCode",     "0"),
+                ("sceneFlag",                  ""),
+                ("mallCode",                   "1"),
+                ("localSiteQueryFlag",         "0"),
+                ("orderPrice",                 ""),
+                ("isHideNotSatisfied",         ""),
+                ("isSizeGatherTag",            ""),
+                ("hasReportMember",            "0"),
+                ("sourceFrom",                 "goods_detail"),
+                ("promotionLogoType",          ""),
+                ("promotionType",              ""),
+                ("isHidePromotionTip",         ""),
+                ("goods_id",                   goods_id),
+                ("timeZone",                   "Asia/Manila"),
+                ("isHideEstimatePriceInfo",    ""),
+                ("popComponentEntry",          ""),
+                ("bundledPurchaseMainGoodsId", ""),
+                ("visitNumOfDay",              "2"),
+                ("isShowMall",                 "0"),
+                ("isPaidMember",               "0"),
+                ("billno",                     ""),
+                ("promotionProductMark",       ""),
+            ],
             headers=_pc_hdr(auth=auth),
             timeout=10, verify=False,
         )
         rd = rd_r.json()
         if str(rd.get("code")) == "0":
             rdi = rd.get("info") or {}
-            # Try multiple paths for SKU list
-            sku_list = (rdi.get("skuList")
-                        or (rdi.get("detail") or {}).get("skuList")
-                        or (rdi.get("productInfo") or {}).get("skuList")
-                        or (rdi.get("skuInfo") or {}).get("skuList")
-                        or [])
+
+            # Exhaustive SKU list extraction — try every known path
+            def _find_sku_list(d):
+                for key in ("sku_list", "skuList", "sku_detail", "skuDetail"):
+                    v = d.get(key)
+                    if v:
+                        return v
+                return []
+
+            sku_list = (_find_sku_list(rdi)
+                        or _find_sku_list(rdi.get("detail") or {})
+                        or _find_sku_list(rdi.get("productInfo") or {})
+                        or _find_sku_list(rdi.get("skuInfo") or {})
+                        or _find_sku_list(rdi.get("multiSkcPrice") or {}))
+
             if sku_list:
                 first_sku = sku_list[0]
-                sku_code  = (first_sku.get("skuCode")
-                             or first_sku.get("sku_code")
+                sku_code  = (first_sku.get("sku_code")
+                             or first_sku.get("skuCode")
                              or first_sku.get("sku") or "")
-                attrs = (first_sku.get("skuSaleAttr")
-                         or first_sku.get("sku_sale_attr") or [])
+                attrs = (first_sku.get("sku_sale_attr")
+                         or first_sku.get("skuSaleAttr")
+                         or first_sku.get("saleAttr") or [])
                 sku_label = ", ".join(
                     a.get("attrValue") or a.get("attr_value") or ""
                     for a in attrs
                     if (a.get("attrValue") or a.get("attr_value"))
                 )
-            # Try to get name / price
+
+            # Name / price
             det = rdi.get("detail") or {}
-            if det.get("goods_name"):
-                goods_name = det["goods_name"]
-            pri = (det.get("salePrice") or (rdi.get("priceInfo") or {}).get("salePrice") or {})
-            if pri.get("amountWithSymbol"):
-                sale_price = pri["amountWithSymbol"]
+            gn  = det.get("goods_name") or rdi.get("goods_name") or ""
+            if gn:
+                goods_name = gn
+            sp = (det.get("salePrice")
+                  or (rdi.get("priceInfo") or {}).get("salePrice")
+                  or {})
+            if sp.get("amountWithSymbol"):
+                sale_price = sp["amountWithSymbol"]
     except Exception:
-        pass  # image + placeholder still shown; add_to_cart will fill details
+        pass  # image card still shows; add_to_cart response will fill details
 
     return jsonify({
         "ok":         True,
@@ -1983,8 +2012,13 @@ def pc_add_to_cart():
     except Exception as e:
         return jsonify({"ok": False, "error": f"Add to cart failed: {e}"}), 500
 
-    if str(result.get("code")) != "0":
-        return jsonify({"ok": False, "error": result.get("msg") or "Failed to add to cart"})
+    rc = str(result.get("code", ""))
+    if rc != "0":
+        raw_msg = result.get("msg") or ""
+        err = raw_msg or f"SHEIN add-to-cart error (code {rc})"
+        if rc in ("100002", "200401", "401"):
+            err = f"Token expired — re-paste RAW in Cloud Runner (code {rc})"
+        return jsonify({"ok": False, "error": err})
 
     info    = result.get("info") or {}
     cart    = info.get("cart") or {}
