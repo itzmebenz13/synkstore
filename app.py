@@ -1705,30 +1705,50 @@ def _parse_raw_request(raw_text):
 
 
 
+# ─── VOUCHER CHECKER TOKENS (from check4.py — update when expired) ──────────────
+_VC_CSRF_TOKEN  = "H4m5n5g4-M69ByiNrBD4fPe5765ZY2TNB4xA"
+_VC_ARMOR_TOKEN = "T1_3.11.1_i7HCNI8sWSUN4Wsff-xWfA_wymkZr8ZujyE4SsVt9utwml9IWwOcS7ira_dRreckHQcsoFJKau3k91-w442rYjAQjYfCjfFyqRSedoUDvS7Q9JCqUlbf8vNIB1glhOV2FQFl1yZkSfTFkWj0j3g9Sz8gRFRQg43YKJbBPvQfuIR2nMJof8NfUqmc905vqvrk_1771293583244"
+_VC_GW_AUTH     = "a=xjqHR52UWJdjKJ0x6QrCsus66rNXR9@2.0.13&b=1771293617218&d=06942fbc37be6a98b8dee877d03ae8f6&e=mFh0dNjY5MTNhZjUyMDQ4ZjI3ODllNzI0ZDM3ZGIzNDlhOWJmYjI5NTZiZWFjMzBhMjA3MmI0YTYyYTE3YTdjNGE1NQ%3D%3D"
+_VC_OETS        = "Q0RERERBOEZfRDdBOHwxNzcxMjkzNjE3MjE0fF9BOEM0XzAzMzNfMjFFRTQ4NkVDOEUz"
+_VC_AD_FLAG     = "8FkZa3NuCnoO+IBsqSDbVS0ujpVi/IXf//kOjWMsgnOZ0k+h6+rK67aH0c1E5efGgWYq61YJe9rvWC5xPj7ZVVYoP3i9GVpBfVkWfa8EsrsGa2KgaixOSZmJfGKy6YI874yU0pb2l85B3RSMhSMlbQ=="
+_VC_CS_RANDOM   = "13d0ed2175cf112b17e661ea448bf807dc073fff312f9a732f747fddde75b7081483643d1d2b8b191459bb55b8152817be5a149d8282469aeb2e021dd95d3806380d1b37b49f2"
+_VC_SMDEVICE_ID = "WHJMrwNw1k/E+z84j8tgt0f9TxszxjZNAF2hDlFX7M/j2A2yEqRYNlBkLVY6ldWz+PAi3O8iCtcEt8WvL21GJWz3he++ufgg9dCW1tldyDzmQI99+chXEirQLphdG1x7TYp5HxsF710xU/V4b7llpcwCHPPxycwCneu8bpbMPuOTJc3aMEBGDbKyOlsVOXoQi+2yltWZPHiNiNVCcw5ywKABbHDKE2ZJX47xtY+olePHdwMGnu62zyIYmEYy08SbpU5HFArMcZ/s4=1487582755342"
+_VC_COOKIES     = "AT=MDEwMDE.eyJiIjo3LCJnIjoxNzcxMjkyNjMzLCJyIjoiVjE3a29QIiwidCI6MX0.521118d5108204c6; armorUuid=20260217094353400b02ad9368610b36a11e1aeab7548a000118dbe4250f9400; sessionID_shein_m_pwa=s%3ACawpVdJzUolGkgtr2urOf8OdVvYm5Oy4.lzw6IjzIJMrSHiPSHtjcBcb7NT1s6m7GwUyukf4oQoc; _cfuvid=TeMBOHqid.Gp1YtFdYVdEk.Rt.mbWkfvUqCGp7KUVU0-1771292633255-0.0.1.1-604800000; smidV2=20260217094355ab6d3ee5a4abe43ca0b980dfee559e3500e2453714a609340; zpnvSrwrNdywdz=center; _fbp=fb.1.1771292636328.841372440921999766; _gcl_au=1.1.2083526680.1771292636; _pin_unauth=dWlkPU5UZGlabVF6WWpNdFpqYzVOaTAwTW1VNUxUbG1ZVFV0WkRVek5qZGlOamM0TWpCbQ; _cbp=fb.1.1771292637098.15324706; cf_clearance=hx8uapTLCiBc_3.dCP5APmgp3VS8_LKV3_GhBq.WaaQ-1771293582-1.2.1.1-lg0cXDZt5Qe.Yg4q.ytI_NZC5a9lPEMp5SOVApPlAP1Bja7aJheu0Rzx6.jhXxUNmiMSV8fTz1wgVSM3QkD5j.JAUQJ_.85F1exuU6LI.BxyzaZ_Azv4s7N1eM1yJN0VaVKFc9p7KJI_BKzJcnXWeuxcLcUn8bV.zBw7WXCL8V7GC_ut9z0FC_HPgM1uOLVFd5xRj1PFa1PAkuR_vLkObhC_GEOnnN0Uvam803KSHhs; _uetsid=1f429ae00ba211f1b1a9ed8eb5ef1e3d; _uetvid=1f4304700ba211f18fc439a6eadea8ec; cto_bundle=98A2_l9yJTJCSEN0eHUlMkYyRFAwRlZLb0hCcThXUmtDUjlVYkFwUCUyRlZ6WDB0eDZYNHdlQmhFS3pleVBhUmlPejJ4anR6bFdCJTJGZ2dDSHpjVHRzVlhUNzRyaEVwUXlyVnVSZkFRc0dTUVp6dVRVU3R0NU9QUkE3T2dVTCUyRkJRRUVpeWFyMGpSTWo; language=ph"
+
+_VC_HEADERS = {
+    "User-Agent":   "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36",
+    "Accept":       "application/json, text/plain, */*",
+    "Content-Type": "application/json",
+    "smdeviceid":   _VC_SMDEVICE_ID,
+    "timezone":     "GMT+8",
+    "x-cs-random":  _VC_CS_RANDOM,
+    "x-gw-auth":    _VC_GW_AUTH,
+    "armortoken":   _VC_ARMOR_TOKEN,
+    "x-csrf-token": _VC_CSRF_TOKEN,
+    "x-oets":       _VC_OETS,
+    "x-ad-flag":    _VC_AD_FLAG,
+    "Cookie":       _VC_COOKIES,
+}
+
+
 @app.route("/check_coupon", methods=["POST"])
 def check_coupon():
     """Check a single SHEIN voucher code for validity.
-    Expects JSON: { raw_headers: str, code: str }
+    Expects JSON: { code: str }
     Returns: { ok: bool, valid: bool, code: str, discount: str, min_spend: str }
     """
     data = request.get_json(force=True) or {}
-    raw  = data.get("raw_headers", "").strip()
     code = (data.get("code") or "").strip()
 
-    if not raw:
-        return jsonify({"ok": False, "error": "No RAW request provided"}), 400
     if not code:
         return jsonify({"ok": False, "error": "No code provided"}), 400
-
-    hdrs, ckies = _parse_raw_request(raw)
 
     try:
         r = requests.post(
             "https://m.shein.com/ph/bff-api/user-api/lure/query_coupons",
             params={"_ver": "1.1.8", "_lang": "en"},
             json={"couponCodes": [code], "login_from": "coupon"},
-            headers=hdrs,
-            cookies=ckies,
+            headers=_VC_HEADERS,
             timeout=8,
             verify=False,
         )
