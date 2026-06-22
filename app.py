@@ -1860,81 +1860,45 @@ def _pc_hdr(extra=None, auth=None):
 
 @app.route("/pc/lookup", methods=["POST"])
 def pc_lookup():
-    """Fetch product detail + first SKU by goods_id."""
+    """Fetch product image by goods_id.
+    Skips the unreliable static-data-v2 endpoint (returns 836000 on some accounts).
+    Full product info (name, price, SKU) is returned by /pc/add_to_cart.
+    """
     data     = request.get_json(force=True) or {}
     goods_id = str(data.get("goods_id", "")).strip()
     auth     = data.get("auth") or {}
     if not goods_id:
         return jsonify({"ok": False, "error": "No goods_id provided"}), 400
 
-    # Static product detail
-    try:
-        r = requests.get(
-            "https://api-service.shein.com/product/get_goods_detail_static_data_v2",
-            params={
-                "priorityMallType": "1", "goods_id": goods_id,
-                "goodsPicAbAbt": "B", "isHidePaidMemberInfo": "0",
-                "mall_code": "1", "isUserSelectedMallCode": "0",
-                "underPriceShowAbtParam": "B", "isShowMall": "0",
-                "isPaidMember": "0", "sourceFrom": "goods_detail",
-            },
-            headers=_pc_hdr(auth=auth),
-            timeout=12, verify=False,
-        )
-        sd = r.json()
-    except Exception as e:
-        return jsonify({"ok": False, "error": f"Product lookup failed: {e}"}), 500
-
-    code = str(sd.get("code", ""))
-    if code != "0":
-        msg = sd.get("msg") or f"SHEIN error (code {code})"
-        if code in ("100002", "200401", "10000", "401", "460101"):
-            msg = f"Token expired — re-paste your app RAW in Cloud Runner first (SHEIN code {code})"
-        return jsonify({"ok": False, "error": msg})
-
-    info   = sd.get("info") or {}
-    detail = info.get("detail") or {}
-
-    goods_name = (detail.get("goods_name") or "Unknown Product")
-
-    # Price — try multiple paths
-    price_info = info.get("priceInfo") or {}
-    sale_price = ((price_info.get("salePrice") or {}).get("amountWithSymbol")
-                  or (detail.get("salePrice") or {}).get("amountWithSymbol")
-                  or "")
-
-    # First available SKU
-    sku_code  = ""
-    sku_label = ""
-    skc_list  = info.get("skc_list") or []
-    if skc_list:
-        sku_list = skc_list[0].get("sku_list") or []
-        if sku_list:
-            first = sku_list[0]
-            sku_code  = first.get("sku_code") or ""
-            attrs     = first.get("sku_sale_attr") or []
-            sku_label = ", ".join(a.get("attrValue", "") for a in attrs if a.get("attrValue"))
-
-    # Image
-    main_image = detail.get("goods_img") or ""
     try:
         ir = requests.get(
             "https://api-service.shein.com/product/get_goods_detail_image",
             params={"goods_id": goods_id},
-            headers=_pc_hdr(),
-            timeout=8, verify=False,
+            headers=_pc_hdr(auth=auth),
+            timeout=10, verify=False,
         )
-        imgs = (ir.json().get("info") or {}).get("goods_images") or []
-        if imgs:
-            main_image = imgs[0].get("image_url") or main_image
-    except Exception:
-        pass
+        img_data = ir.json()
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Lookup failed: {e}"}), 500
+
+    img_code = str(img_data.get("code", ""))
+    if img_code != "0":
+        msg = img_data.get("msg") or f"SHEIN error (code {img_code})"
+        if img_code in ("100002", "200401", "10000", "401", "460101"):
+            msg = f"Token expired — re-paste your app RAW in Cloud Runner (code {img_code})"
+        return jsonify({"ok": False, "error": msg})
+
+    imgs     = (img_data.get("info") or {}).get("goods_images") or []
+    main_img = imgs[0].get("image_url") if imgs else ""
 
     return jsonify({
-        "ok": True, "goods_id": goods_id,
-        "goods_name": goods_name, "sale_price": sale_price,
-        "image_url": main_image, "sku_code": sku_code,
-        "sku_label": sku_label or "Default",
+        "ok":         True,
+        "goods_id":   goods_id,
+        "image_url":  main_img,
+        "goods_name": f"Product #{goods_id}",
+        "sale_price": "",
+        "sku_code":   "",
+        "sku_label":  "Tap Add to Cart to load full details",
     })
 
 
@@ -1968,12 +1932,19 @@ def pc_add_to_cart():
     cart    = info.get("cart") or {}
     product = cart.get("product") or {}
 
+    # Extract SKU label (color + size) from sku_sale_attr
+    attrs     = product.get("sku_sale_attr") or []
+    sku_label = ", ".join(a.get("attrValue", "") for a in attrs if a.get("attrValue"))
+    sku_code  = product.get("sku_code") or cart.get("skuCode") or ""
+
     return jsonify({
         "ok":         True,
         "quantity":   info.get("effectiveProductLineSumQuantity", 1),
         "unit_price": (cart.get("unitPrice") or {}).get("amountWithSymbol", ""),
         "saved":      (info.get("savedPrice") or {}).get("amountWithSymbol", ""),
         "goods_name": product.get("goods_name", ""),
+        "sku_code":   sku_code,
+        "sku_label":  sku_label or "Default",
     })
 
 
