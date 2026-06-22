@@ -1670,8 +1670,8 @@ def run_script():
 
 
 
-# ─── EMAIL BINDER — Change SHEIN account email via browser session ────────────
-# Uses m.shein.com (mobile web) endpoints, NOT the app API.
+# ─── VOUCHER CHECKER — Check SHEIN coupon code validity ─────────────────────────
+# Uses m.shein.com (mobile web) endpoint, NOT the app API.
 # Requires headers/cookies captured from a live browser session.
 
 def _parse_raw_request(raw_text):
@@ -1704,93 +1704,51 @@ def _parse_raw_request(raw_text):
     return headers, cookies
 
 
-@app.route("/email/send_code", methods=["POST"])
-def email_send_code():
-    """Step 1: Send verification code to the new email address.
-    Expects JSON: { raw_headers: str, new_email: str }
+
+@app.route("/check_coupon", methods=["POST"])
+def check_coupon():
+    """Check a single SHEIN voucher code for validity.
+    Expects JSON: { raw_headers: str, code: str }
+    Returns: { ok: bool, valid: bool, code: str, discount: str, min_spend: str }
     """
     data = request.get_json(force=True) or {}
-    raw = data.get("raw_headers", "").strip()
-    new_email = (data.get("new_email") or "").strip()
+    raw  = data.get("raw_headers", "").strip()
+    code = (data.get("code") or "").strip()
+
     if not raw:
-        return jsonify({"error": "No RAW request provided"}), 400
-    if not new_email or "@" not in new_email:
-        return jsonify({"error": "Invalid new email"}), 400
+        return jsonify({"ok": False, "error": "No RAW request provided"}), 400
+    if not code:
+        return jsonify({"ok": False, "error": "No code provided"}), 400
 
     hdrs, ckies = _parse_raw_request(raw)
 
-    # Build multipart form data
-    form_data = {
-        "alias":            new_email,
-        "alias_type":       "1",
-        "scene":            "bind_msg_verify",
-        "third_party_type": "7",
-        "validate":         "0",
-    }
-
     try:
         r = requests.post(
-            "https://m.shein.com/ph/bff-api/user/account/send_email_code",
+            "https://m.shein.com/ph/bff-api/user-api/lure/query_coupons",
             params={"_ver": "1.1.8", "_lang": "en"},
-            data=form_data,
+            json={"couponCodes": [code], "login_from": "coupon"},
             headers=hdrs,
             cookies=ckies,
-            timeout=20,
+            timeout=8,
             verify=False,
         )
-        try:
-            return jsonify({"ok": True, "status": r.status_code, "data": r.json()})
-        except Exception:
-            return jsonify({"ok": True, "status": r.status_code, "raw": r.text[:500]})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/email/bind", methods=["POST"])
-def email_bind():
-    """Step 2: Confirm new email with the verification code.
-    Expects JSON: { raw_headers: str, new_email: str, otp: str, original_alias: str }
-    """
-    data = request.get_json(force=True) or {}
-    raw = data.get("raw_headers", "").strip()
-    new_email      = (data.get("new_email") or "").strip()
-    otp            = (data.get("otp") or "").strip()
-    original_alias = (data.get("original_alias") or "").strip()
-
-    if not raw:
-        return jsonify({"error": "No RAW request provided"}), 400
-    if not new_email or "@" not in new_email:
-        return jsonify({"error": "Invalid new email"}), 400
-    if not otp:
-        return jsonify({"error": "No verification code provided"}), 400
-
-    hdrs, ckies = _parse_raw_request(raw)
-
-    form_data = {
-        "email":             new_email,
-        "original_alias":    original_alias,
-        "is_subscribed":     "1",
-        "bind_scene":        "bind_msg_verify",
-        "bind_type":         "2",
-        "validate":          "0",
-        "verification_code": otp,
-        "check_tk":          "0",
-    }
-
-    try:
-        r = requests.post(
-            "https://m.shein.com/ph/bff-api/user/account/bind_email",
-            params={"_ver": "1.1.8", "_lang": "en"},
-            data=form_data,
-            headers=hdrs,
-            cookies=ckies,
-            timeout=20,
-            verify=False,
-        )
-        try:
-            return jsonify({"ok": True, "status": r.status_code, "data": r.json()})
-        except Exception:
-            return jsonify({"ok": True, "status": r.status_code, "raw": r.text[:500]})
+        result = r.json()
+        if str(result.get("code")) == "0":
+            items = result.get("info", {}).get("list", [])
+            if items:
+                item      = items[0]
+                discount  = item.get("maxValue")
+                min_spend = item.get("threshold")
+                if (discount not in (None, "", "N/A")
+                        and min_spend not in (None, "", "No minimum", 0, "0")):
+                    return jsonify({
+                        "ok":        True,
+                        "valid":     True,
+                        "code":      code,
+                        "discount":  str(discount),
+                        "min_spend": str(min_spend),
+                    })
+        return jsonify({"ok": True, "valid": False, "code": code})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
