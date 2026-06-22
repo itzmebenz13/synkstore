@@ -1773,6 +1773,295 @@ def check_coupon():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+
+# ─── PRODUCT CHECKER TOKENS (from cart/checkout RAW — update when expired) ────
+_PC_TOKEN    = "MDEwMDE.eyJiIjo3LCJnIjoxNzgyMDk5Nzk3LCJyIjoiS3lCWTRQIiwidCI6MiwibSI6NjE3NjM0ODU1MCwibCI6MTc4MjA5OTc5N30.3f4cd89c419d9ace.2af8846031eb93acee157f4f59dd583f4d76f52964c41acfc238a8ff3844899c"
+_PC_ARMOR    = "T2_4.2.3_dyiSCTrDINqeOVnZoY4i2RfFFqQ3bFnGANIalapIcI9x7CmEzu3VSRDlFAnCDuIOiPe-WlwN1rOEZG2gm6RG8wgNOC-3MgyxAuB_Qes-JJOJ4hnIiEBWUUVeHAFBVP-zstS7hM7lR_aHh9WyPCBMXbSXpseYI5tJwTzw0YOrvwtRzYFbp_Yy4sXkFKPkIpTvapQ78bIJx7NFu3kYgVcTEiE7w9VDjDNuAjcMGQPYCDg_1782099942944"
+_PC_AD_FLAG  = "plXxKLfeqJOYrUN5z1gN6iEjmfeAHd5t5i/TeZsiOKz8D3aIHr0KitBCKO6R4izH5kg3+ym8heA41X6YtSfzSQuH4dkWVzxy7b8ePL9yNK5vMx27SrDIc5D8r/DhNYLQLTAQ9rtyE31/sggdSwdW1c/l2AZltwU+Fny5FvLldGu4ykDgfrBY8rEd+xph1yq4Y03EZWqQDJ7PdcLuTE/POodJahkijQBq+ZW4nivGYhk="
+_PC_GW_AUTH  = "a=vhOvoNStVeIKfdWT0Gp55rGPHqjicT@8.6.4&b=1782099953499&d=1446885240&e=2cXNCNDkzNjgwYTNhYTc1NzFmYmUyM2Q2OTc4OTY1NmQ0YjU0YjZjZjg2MjQ4M2M2YzEwYmJjNGZhODhjZjc4NzM3MA%3D%3D"
+_PC_CS_RND   = "23d0ed2171bd00aab1fa8f9e8dedc46281f44bf38e563d275b69a0e7d3be871e8ed1b9d0a1d2511de48680581e18d86da61342c1ae60763238e625e9ae1637b4b446fb322a052"
+_PC_ANTI_IN  = "2_4.2.3_d4eaff_1jnW8-fGBLGeY1qbHh61uxwrccjQ-cfgkapYR_RGKkrWUwcoPE3Egd9WpW6-eEVM5bFwIfhB_XahsbFadxipq7K6iZS0UBprNkUh7Af8kMzexWRstxsPc1XVpkPb6ceSiD1iBDF6JEz2M2cmD5FO7oRXDbfoIk4H9c1flZ6FU0KCkakJOA9dm3zehxF0dVuLA_KqI7rRosFGiQfDMOePFTO44qkIRSPsBTD2TbQNQAy_FCQvdjADd4UQR3YomCbrT_rIgEqxcJMZCIg8Rn6pJKRvC8lSsDKacDy6gfR6HJzvDC7pCXt5-m9oP4MPX4xgVVc_pHvMwFDO8oaABLJj2h_7D8q6WILVz4J4IN5Cmujtfb90icOCZSHG_9g8aVGk8axipZmZyiV_79znyvPknJ4ixxSZ5uuzFF581NB8ClzuWTrKvOFdjB2KIcGXnKM3ycAGXj-0BmmrwtQkHRYOfOR9g0-fhsavh0MmqsamyVY89pNrP_2cXbXmuCftAoqRAp9GtoBBz7uy_yZtYi74kEVTBTw-iXO1AqJL679nzJ5x2iqKzFaHsXt8ZEKS6f8Q1W3dYrgXvXc3FbpU9FEvKw"
+_PC_SMDEV    = "20260607134457b84e1eabb13a1e5df5c906e87e9b70b801b456fe4e06ba32"
+_PC_UGID     = "040mf5ex2w"
+_PC_SORTUID  = "6176348550"
+_PC_DEV_ID   = "shein_3be5c0ff-9628-3d14-a923-7541c2494e60"
+_PC_DEVICE   = "ELP-NX9 Android16"
+_PC_VERSION  = "13.9.8"
+_PC_UA       = "Shein 13.9.8 Android 16 ELP-NX9 US en 6176348550"
+_PC_COOKIE   = "_f_c_llbs_=K2909_1782099533_V0Ii4yY0WdG1H2ZLT5ZAQQ0WQgqDxLLNejE1mNs9wTNTi8fMo8n5b_whzT6AgimrkIv0GWkZL4pEojihYfmGuFP6uc6JL-K1o-Ay4_RidXDVzdmKOHr04sRWWdSdpFpDEx1Bxx2e3r-Ci_eIeI3_pY7lSZjMk2X7wfqp4hz7DBouPRh_eC5NB81yOQzkD6eLUkEtmurxLxdODyPDrKPvP2D3KRMtHf5sfE1LsmkHiRatndTlOSws9QqNRd63C-FltrObOWMOLR-d7MSneekyhVS6I9L4shsqUt8C4riPDed7na5bGb-OcDkFtKfWAJ0jU1bVRJwPlctpvkgRcj0Ccw"
+_PC_ADDR = {
+    "address_id": "2130879055", "city": "DUMAGUETE-CITY",
+    "postcode": "6200", "state": "NEGROS-ORIENTAL", "country_id": "170",
+}
+
+
+def _pc_hdr(extra=None):
+    h = {
+        "host":             "api-service.shein.com",
+        "app-from":         "shein",
+        "siteuid":          "android",
+        "appcountry":       "US",
+        "uberctx-traffic-mark-member": "6",
+        "devtype":          "Android",
+        "clientid":         "100",
+        "ugid":             _PC_UGID,
+        "accept":           "application/json",
+        "device":           _PC_DEVICE,
+        "armortoken":       _PC_ARMOR,
+        "applanguage":      "en",
+        "usercountry":      "PH",
+        "version":          _PC_VERSION,
+        "devicelanguage":   "en",
+        "x-ad-flag":        _PC_AD_FLAG,
+        "dev-id":           _PC_DEV_ID,
+        "sortuid":          _PC_SORTUID,
+        "device_language":  "en",
+        "apptype":          "shein",
+        "localcountry":     "PH",
+        "smdeviceid":       _PC_SMDEV,
+        "deviceid":         _PC_DEV_ID,
+        "uberctx-personal-switch": "r-1.s-1.u-1",
+        "platform":         "app-native",
+        "appname":          "shein app",
+        "appversion":       _PC_VERSION,
+        "newuid":           _PC_SORTUID,
+        "language":         "en",
+        "currency":         "PHP",
+        "network-type":     "4G",
+        "token":            _PC_TOKEN,
+        "os-version":       "16",
+        "devicesystemversion": "Android16",
+        "appcurrency":      "PHP",
+        "user-agent":       _PC_UA,
+        "anti-in":          _PC_ANTI_IN,
+        "x-gw-auth":        _PC_GW_AUTH,
+        "accept-encoding":  "br,gzip",
+        "x-cs-random":      _PC_CS_RND,
+        "content-type":     "application/json; charset=utf-8",
+        "cookie":           _PC_COOKIE,
+    }
+    if extra:
+        h.update(extra)
+    return h
+
+
+@app.route("/pc/lookup", methods=["POST"])
+def pc_lookup():
+    """Fetch product detail + first SKU by goods_id."""
+    data     = request.get_json(force=True) or {}
+    goods_id = str(data.get("goods_id", "")).strip()
+    if not goods_id:
+        return jsonify({"ok": False, "error": "No goods_id provided"}), 400
+
+    # Static product detail
+    try:
+        r = requests.get(
+            "https://api-service.shein.com/product/get_goods_detail_static_data_v2",
+            params={
+                "priorityMallType": "1", "goods_id": goods_id,
+                "goodsPicAbAbt": "B", "isHidePaidMemberInfo": "0",
+                "mall_code": "1", "isUserSelectedMallCode": "0",
+                "underPriceShowAbtParam": "B", "isShowMall": "0",
+                "isPaidMember": "0", "sourceFrom": "goods_detail",
+            },
+            headers=_pc_hdr(),
+            timeout=12, verify=False,
+        )
+        sd = r.json()
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Product lookup failed: {e}"}), 500
+
+    if str(sd.get("code")) != "0":
+        return jsonify({"ok": False, "error": sd.get("msg") or "Product not found"})
+
+    info   = sd.get("info") or {}
+    detail = info.get("detail") or {}
+
+    goods_name = (detail.get("goods_name") or "Unknown Product")
+
+    # Price — try multiple paths
+    price_info = info.get("priceInfo") or {}
+    sale_price = ((price_info.get("salePrice") or {}).get("amountWithSymbol")
+                  or (detail.get("salePrice") or {}).get("amountWithSymbol")
+                  or "")
+
+    # First available SKU
+    sku_code  = ""
+    sku_label = ""
+    skc_list  = info.get("skc_list") or []
+    if skc_list:
+        sku_list = skc_list[0].get("sku_list") or []
+        if sku_list:
+            first = sku_list[0]
+            sku_code  = first.get("sku_code") or ""
+            attrs     = first.get("sku_sale_attr") or []
+            sku_label = ", ".join(a.get("attrValue", "") for a in attrs if a.get("attrValue"))
+
+    # Image
+    main_image = detail.get("goods_img") or ""
+    try:
+        ir = requests.get(
+            "https://api-service.shein.com/product/get_goods_detail_image",
+            params={"goods_id": goods_id},
+            headers=_pc_hdr(),
+            timeout=8, verify=False,
+        )
+        imgs = (ir.json().get("info") or {}).get("goods_images") or []
+        if imgs:
+            main_image = imgs[0].get("image_url") or main_image
+    except Exception:
+        pass
+
+    return jsonify({
+        "ok": True, "goods_id": goods_id,
+        "goods_name": goods_name, "sale_price": sale_price,
+        "image_url": main_image, "sku_code": sku_code,
+        "sku_label": sku_label or "Default",
+    })
+
+
+@app.route("/pc/add_to_cart", methods=["POST"])
+def pc_add_to_cart():
+    """Add a product to the SHEIN cart."""
+    data     = request.get_json(force=True) or {}
+    goods_id = str(data.get("goods_id", "")).strip()
+    sku_code = str(data.get("sku_code", "")).strip()
+    if not goods_id:
+        return jsonify({"ok": False, "error": "No goods_id"}), 400
+
+    body = {"sku_code": sku_code, "quantity": 1, "mall_code": "1", "goods_id": goods_id}
+    try:
+        r = requests.post(
+            "https://api-service.shein.com/order/add_to_cart",
+            params={"goods_id": goods_id},
+            json=body,
+            headers=_pc_hdr(),
+            timeout=12, verify=False,
+        )
+        result = r.json()
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Add to cart failed: {e}"}), 500
+
+    if str(result.get("code")) != "0":
+        return jsonify({"ok": False, "error": result.get("msg") or "Failed to add to cart"})
+
+    info    = result.get("info") or {}
+    cart    = info.get("cart") or {}
+    product = cart.get("product") or {}
+
+    return jsonify({
+        "ok":         True,
+        "quantity":   info.get("effectiveProductLineSumQuantity", 1),
+        "unit_price": (cart.get("unitPrice") or {}).get("amountWithSymbol", ""),
+        "saved":      (info.get("savedPrice") or {}).get("amountWithSymbol", ""),
+        "goods_name": product.get("goods_name", ""),
+    })
+
+
+@app.route("/pc/checkout", methods=["POST"])
+def pc_checkout():
+    """Simulate SHEIN checkout — returns price breakdown + available coupons."""
+    data        = request.get_json(force=True) or {}
+    coupon_code = (data.get("coupon_code") or "").strip()
+
+    # Build checkout body
+    co_body = {
+        "biz_mode_list":     ["0"],
+        "and_page":          "v2",
+        "request_card_token":"1",
+        "hasCardBin":        "1",
+        "goods_type":        "0",
+        "userLocalSizeCountry": "",
+        "is_old_version":    "0",
+        "giftcard_verify":   "0",
+        "isFirst":           "1",
+        "popup":             {"oneClickLowestTimes": "0"},
+        **_PC_ADDR,
+    }
+    if coupon_code:
+        co_body["cart_optimal_coupon_list"] = [coupon_code]
+
+    co_hdr = _pc_hdr({
+        "frontend-scene": "page_checkout",
+        "ruleids":        "56830_1782099945483",
+        "sessionid":      f"{_PC_SORTUID}1782099953496",
+    })
+
+    try:
+        co_r = requests.post(
+            "https://api-service.shein.com/order/order/checkout",
+            json=co_body, headers=co_hdr, timeout=15, verify=False,
+        )
+        co = co_r.json()
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Checkout failed: {e}"}), 500
+
+    if str(co.get("code")) != "0":
+        return jsonify({"ok": False, "error": co.get("msg") or "Checkout error"})
+
+    info = co.get("info") or {}
+
+    # Price rows (only visible ones)
+    price_rows = []
+    for row in (info.get("sorted_price") or []):
+        if row.get("show") == 1:
+            price_rows.append({
+                "label":    row.get("local_name", ""),
+                "value":    row.get("price_with_symbol", ""),
+                "type":     row.get("type", ""),
+                "negative": "negative_price" in (row.get("show_type") or []),
+            })
+
+    grand_total = (
+        (info.get("total_price_info") or {})
+        .get("grandTotalPrice") or {}
+    ).get("amountWithSymbol", "")
+
+    saved_tip = info.get("saved_total_price_text", "")
+
+    # Applied coupons (from checkout response)
+    coupon_list = info.get("coupon_list") or []
+    coupons_out = []
+    for c in coupon_list:
+        coupons_out.append({
+            "couponCode":    c.get("couponCode", ""),
+            "discount_price": (c.get("discount_price") or {}).get("amountWithSymbol", ""),
+        })
+
+    # Also fetch full available coupon list
+    try:
+        cl_r = requests.get(
+            "https://api-service.shein.com/order/cart/coupon/list",
+            params={"is_return": "1", "enableCouponCmp": "1", "is_old_version": "0"},
+            headers=_pc_hdr(), timeout=10, verify=False,
+        )
+        cl = cl_r.json()
+        usable = (cl.get("info") or {}).get("usableCouponList") or []
+        for c in usable:
+            code = c.get("couponCode") or c.get("coupon_code") or ""
+            if code and not any(x["couponCode"] == code for x in coupons_out):
+                coupons_out.append({
+                    "couponCode":    code,
+                    "discount_price": (c.get("discount_price") or {}).get("amountWithSymbol", ""),
+                })
+    except Exception:
+        pass
+
+    coupon_info = info.get("couponInfo") or {}
+    applied_tip = coupon_info.get("optimalCouponTip", "")
+    import re as _re
+    applied_tip = _re.sub(r"<[^>]+>", "", applied_tip)  # strip HTML tags
+
+    return jsonify({
+        "ok":          True,
+        "grand_total": grand_total,
+        "saved_tip":   saved_tip,
+        "price_rows":  price_rows,
+        "coupons":     coupons_out,
+        "applied_tip": applied_tip,
+    })
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, threaded=True)
