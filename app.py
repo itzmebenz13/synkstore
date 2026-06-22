@@ -1795,46 +1795,59 @@ _PC_ADDR = {
 }
 
 
-def _pc_hdr(extra=None):
+def _pc_hdr(extra=None, auth=None):
+    """Build app API headers. Overrides time-sensitive tokens from fresh user RAW when provided."""
+    a   = auth or {}
+    tok = a.get("token")      or _PC_TOKEN
+    arm = a.get("armor")      or _PC_ARMOR
+    gw  = a.get("gw_auth")    or _PC_GW_AUTH
+    sm  = a.get("smdevice")   or _PC_SMDEV
+    ug  = a.get("ugid")       or _PC_UGID
+    uid = a.get("sortuid")    or _PC_SORTUID
+    did = a.get("device_id")  or _PC_DEV_ID
+    ac  = a.get("appcountry") or "US"
+    av  = a.get("app_version") or _PC_VERSION
+    di  = a.get("device_info") or _PC_DEVICE
+    ua  = f"Shein {av} Android 16 {di} {ac} en {uid}"
     h = {
         "host":             "api-service.shein.com",
         "app-from":         "shein",
         "siteuid":          "android",
-        "appcountry":       "US",
+        "appcountry":       ac,
         "uberctx-traffic-mark-member": "6",
         "devtype":          "Android",
         "clientid":         "100",
-        "ugid":             _PC_UGID,
+        "ugid":             ug,
         "accept":           "application/json",
-        "device":           _PC_DEVICE,
-        "armortoken":       _PC_ARMOR,
+        "device":           di,
+        "armortoken":       arm,
         "applanguage":      "en",
         "usercountry":      "PH",
-        "version":          _PC_VERSION,
+        "version":          av,
         "devicelanguage":   "en",
         "x-ad-flag":        _PC_AD_FLAG,
-        "dev-id":           _PC_DEV_ID,
-        "sortuid":          _PC_SORTUID,
+        "dev-id":           did,
+        "sortuid":          uid,
         "device_language":  "en",
         "apptype":          "shein",
         "localcountry":     "PH",
-        "smdeviceid":       _PC_SMDEV,
-        "deviceid":         _PC_DEV_ID,
+        "smdeviceid":       sm,
+        "deviceid":         did,
         "uberctx-personal-switch": "r-1.s-1.u-1",
         "platform":         "app-native",
         "appname":          "shein app",
-        "appversion":       _PC_VERSION,
-        "newuid":           _PC_SORTUID,
+        "appversion":       av,
+        "newuid":           uid,
         "language":         "en",
         "currency":         "PHP",
         "network-type":     "4G",
-        "token":            _PC_TOKEN,
+        "token":            tok,
         "os-version":       "16",
         "devicesystemversion": "Android16",
         "appcurrency":      "PHP",
-        "user-agent":       _PC_UA,
+        "user-agent":       ua,
         "anti-in":          _PC_ANTI_IN,
-        "x-gw-auth":        _PC_GW_AUTH,
+        "x-gw-auth":        gw,
         "accept-encoding":  "br,gzip",
         "x-cs-random":      _PC_CS_RND,
         "content-type":     "application/json; charset=utf-8",
@@ -1850,6 +1863,7 @@ def pc_lookup():
     """Fetch product detail + first SKU by goods_id."""
     data     = request.get_json(force=True) or {}
     goods_id = str(data.get("goods_id", "")).strip()
+    auth     = data.get("auth") or {}
     if not goods_id:
         return jsonify({"ok": False, "error": "No goods_id provided"}), 400
 
@@ -1864,15 +1878,19 @@ def pc_lookup():
                 "underPriceShowAbtParam": "B", "isShowMall": "0",
                 "isPaidMember": "0", "sourceFrom": "goods_detail",
             },
-            headers=_pc_hdr(),
+            headers=_pc_hdr(auth=auth),
             timeout=12, verify=False,
         )
         sd = r.json()
     except Exception as e:
         return jsonify({"ok": False, "error": f"Product lookup failed: {e}"}), 500
 
-    if str(sd.get("code")) != "0":
-        return jsonify({"ok": False, "error": sd.get("msg") or "Product not found"})
+    code = str(sd.get("code", ""))
+    if code != "0":
+        msg = sd.get("msg") or f"SHEIN error (code {code})"
+        if code in ("100002", "200401", "10000", "401", "460101"):
+            msg = f"Token expired — re-paste your app RAW in Cloud Runner first (SHEIN code {code})"
+        return jsonify({"ok": False, "error": msg})
 
     info   = sd.get("info") or {}
     detail = info.get("detail") or {}
@@ -1929,13 +1947,14 @@ def pc_add_to_cart():
     if not goods_id:
         return jsonify({"ok": False, "error": "No goods_id"}), 400
 
+    auth = data.get("auth") or {}
     body = {"sku_code": sku_code, "quantity": 1, "mall_code": "1", "goods_id": goods_id}
     try:
         r = requests.post(
             "https://api-service.shein.com/order/add_to_cart",
             params={"goods_id": goods_id},
             json=body,
-            headers=_pc_hdr(),
+            headers=_pc_hdr(auth=auth),
             timeout=12, verify=False,
         )
         result = r.json()
@@ -1963,6 +1982,7 @@ def pc_checkout():
     """Simulate SHEIN checkout — returns price breakdown + available coupons."""
     data        = request.get_json(force=True) or {}
     coupon_code = (data.get("coupon_code") or "").strip()
+    auth        = data.get("auth") or {}
 
     # Build checkout body
     co_body = {
@@ -1981,16 +2001,16 @@ def pc_checkout():
     if coupon_code:
         co_body["cart_optimal_coupon_list"] = [coupon_code]
 
-    co_hdr = _pc_hdr({
-        "frontend-scene": "page_checkout",
-        "ruleids":        "56830_1782099945483",
-        "sessionid":      f"{_PC_SORTUID}1782099953496",
-    })
-
     try:
         co_r = requests.post(
             "https://api-service.shein.com/order/order/checkout",
-            json=co_body, headers=co_hdr, timeout=15, verify=False,
+            json=co_body,
+            headers=_pc_hdr(extra={
+                "frontend-scene": "page_checkout",
+                "ruleids":        "56830_1782099945483",
+                "sessionid":      f"{_PC_SORTUID}1782099953496",
+            }, auth=auth),
+            timeout=15, verify=False,
         )
         co = co_r.json()
     except Exception as e:
@@ -2033,7 +2053,7 @@ def pc_checkout():
         cl_r = requests.get(
             "https://api-service.shein.com/order/cart/coupon/list",
             params={"is_return": "1", "enableCouponCmp": "1", "is_old_version": "0"},
-            headers=_pc_hdr(), timeout=10, verify=False,
+            headers=_pc_hdr(auth=auth), timeout=10, verify=False,
         )
         cl = cl_r.json()
         usable = (cl.get("info") or {}).get("usableCouponList") or []
