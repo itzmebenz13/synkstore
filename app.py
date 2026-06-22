@@ -1891,14 +1891,72 @@ def pc_lookup():
     imgs     = (img_data.get("info") or {}).get("goods_images") or []
     main_img = imgs[0].get("image_url") if imgs else ""
 
+    # Try realtime data to get first available SKU and basic product info
+    sku_code  = ""
+    sku_label = ""
+    goods_name = f"Product #{goods_id}"
+    sale_price = ""
+    try:
+        rd_r = requests.get(
+            "https://api-service.shein.com/product/get_goods_detail_realtime_data",
+            params={
+                "priorityMallType": "1", "sceneFromPage": "",
+                "isRelatedColorNeedPromotion": "", "promotionId": "",
+                "isAppointMall": "0", "useSupplyGoods": "",
+                "isUserSelectedMallCode": "0", "sceneFlag": "",
+                "mallCode": "1", "localSiteQueryFlag": "0",
+                "orderPrice": "", "isHideNotSatisfied": "",
+                "isSizeGatherTag": "", "hasReportMember": "0",
+                "sourceFrom": "goods_detail", "promotionLogoType": "",
+                "promotionType": "", "isHidePromotionTip": "",
+                "goods_id": goods_id, "timeZone": "Asia/Manila",
+                "isHideEstimatePriceInfo": "", "popComponentEntry": "",
+                "bundledPurchaseMainGoodsId": "", "visitNumOfDay": "2",
+                "isShowMall": "0", "isPaidMember": "0",
+                "billno": "", "promotionProductMark": "",
+            },
+            headers=_pc_hdr(auth=auth),
+            timeout=10, verify=False,
+        )
+        rd = rd_r.json()
+        if str(rd.get("code")) == "0":
+            rdi = rd.get("info") or {}
+            # Try multiple paths for SKU list
+            sku_list = (rdi.get("skuList")
+                        or (rdi.get("detail") or {}).get("skuList")
+                        or (rdi.get("productInfo") or {}).get("skuList")
+                        or (rdi.get("skuInfo") or {}).get("skuList")
+                        or [])
+            if sku_list:
+                first_sku = sku_list[0]
+                sku_code  = (first_sku.get("skuCode")
+                             or first_sku.get("sku_code")
+                             or first_sku.get("sku") or "")
+                attrs = (first_sku.get("skuSaleAttr")
+                         or first_sku.get("sku_sale_attr") or [])
+                sku_label = ", ".join(
+                    a.get("attrValue") or a.get("attr_value") or ""
+                    for a in attrs
+                    if (a.get("attrValue") or a.get("attr_value"))
+                )
+            # Try to get name / price
+            det = rdi.get("detail") or {}
+            if det.get("goods_name"):
+                goods_name = det["goods_name"]
+            pri = (det.get("salePrice") or (rdi.get("priceInfo") or {}).get("salePrice") or {})
+            if pri.get("amountWithSymbol"):
+                sale_price = pri["amountWithSymbol"]
+    except Exception:
+        pass  # image + placeholder still shown; add_to_cart will fill details
+
     return jsonify({
         "ok":         True,
         "goods_id":   goods_id,
         "image_url":  main_img,
-        "goods_name": f"Product #{goods_id}",
-        "sale_price": "",
-        "sku_code":   "",
-        "sku_label":  "Tap Add to Cart to load full details",
+        "goods_name": goods_name,
+        "sale_price": sale_price,
+        "sku_code":   sku_code,
+        "sku_label":  sku_label or ("Tap Add to Cart to load full details" if not sku_code else "Default"),
     })
 
 
